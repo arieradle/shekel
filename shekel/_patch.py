@@ -1,0 +1,285 @@
+from __future__ import annotations
+
+import threading
+from typing import Any, Generator
+
+from shekel import _context, _pricing
+
+# ---------------------------------------------------------------------------
+# Ref-count + lock — patch once when first budget() opens, unpatch when last closes
+# ---------------------------------------------------------------------------
+_patch_refcount: int = 0
+_refcount_lock: threading.Lock = threading.Lock()
+_originals: dict[str, Any] = {}
+
+
+def apply_patches() -> None:
+    global _patch_refcount
+    with _refcount_lock:
+        _patch_refcount += 1
+        if _patch_refcount == 1:
+            _install_patches()
+
+
+def remove_patches() -> None:
+    global _patch_refcount
+    with _refcount_lock:
+        _patch_refcount -= 1
+        if _patch_refcount == 0:
+            _restore_patches()
+
+
+# ---------------------------------------------------------------------------
+# Install / restore
+# ---------------------------------------------------------------------------
+
+
+def _install_patches() -> None:
+    try:
+        import openai.resources.chat.completions as _oai_completions
+
+        _originals["openai_sync"] = _oai_completions.Completions.create
+        _originals["openai_async"] = _oai_completions.AsyncCompletions.create
+        _oai_completions.Completions.create = _openai_sync_wrapper  # type: ignore[method-assign]
+        _oai_completions.AsyncCompletions.create = _openai_async_wrapper  # type: ignore[method-assign]
+    except ImportError:
+        pass
+
+    try:
+        import anthropic.resources.messages as _ant_messages
+
+        _originals["anthropic_sync"] = _ant_messages.Messages.create
+        _originals["anthropic_async"] = _ant_messages.AsyncMessages.create
+        _ant_messages.Messages.create = _anthropic_sync_wrapper  # type: ignore[method-assign]
+        _ant_messages.AsyncMessages.create = _anthropic_async_wrapper  # type: ignore[method-assign]
+    except ImportError:
+        pass
+
+
+def _restore_patches() -> None:
+    try:
+        import openai.resources.chat.completions as _oai_completions
+
+        if "openai_sync" in _originals:
+            _oai_completions.Completions.create = _originals.pop("openai_sync")  # type: ignore[method-assign]
+        if "openai_async" in _originals:
+            _oai_completions.AsyncCompletions.create = _originals.pop("openai_async")  # type: ignore[method-assign]
+    except ImportError:
+        pass
+
+    try:
+        import anthropic.resources.messages as _ant_messages
+
+        if "anthropic_sync" in _originals:
+            _ant_messages.Messages.create = _originals.pop("anthropic_sync")  # type: ignore[method-assign]
+        if "anthropic_async" in _originals:
+            _ant_messages.AsyncMessages.create = _originals.pop("anthropic_async")  # type: ignore[method-assign]
+    except ImportError:
+        pass
+
+
+# ---------------------------------------------------------------------------
+# Token extraction helpers
+# ---------------------------------------------------------------------------
+
+
+def _extract_openai_tokens(response: Any) -> tuple[int, int, str]:
+    try:
+        input_tokens = response.usage.prompt_tokens or 0
+        output_tokens = response.usage.completion_tokens or 0
+        model = response.model or "unknown"
+        return input_tokens, output_tokens, model
+    except AttributeError:
+        return 0, 0, "unknown"
+
+
+def _extract_anthropic_tokens(response: Any) -> tuple[int, int, str]:
+    try:
+        input_tokens = response.usage.input_tokens or 0
+        output_tokens = response.usage.output_tokens or 0
+        model = response.model or "unknown"
+        return input_tokens, output_tokens, model
+    except AttributeError:
+        return 0, 0, "unknown"
+
+
+def _record(input_tokens: int, output_tokens: int, model: str) -> None:
+    budget = _context.get_active_budget()
+    if budget is None:
+        return
+    try:
+        cost = _pricing.calculate_cost(model, input_tokens, output_tokens, budget.price_override)
+    except Exception:
+        cost = 0.0
+    budget._record_spend(cost, model, {"input": input_tokens, "output": output_tokens})
+
+
+# ---------------------------------------------------------------------------
+# OpenAI sync wrapper
+# ---------------------------------------------------------------------------
+
+
+def _openai_sync_wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
+    original = _originals.get("openai_sync")
+    if original is None:
+        raise RuntimeError("shekel: openai original not stored")
+
+    if kwargs.get("stream") is True:
+        kwargs.setdefault("stream_options", {})["include_usage"] = True
+        stream = original(self, *args, **kwargs)
+        return _wrap_openai_stream(stream)
+
+    response = original(self, *args, **kwargs)
+    input_tokens, output_tokens, model = _extract_openai_tokens(response)
+    _record(input_tokens, output_tokens, model)
+    return response
+
+
+def _wrap_openai_stream(stream: Any) -> Generator[Any, None, None]:
+    seen: list[tuple[int, int, str]] = []
+    try:
+        for chunk in stream:
+            if chunk.usage is not None:
+                try:
+                    it = chunk.usage.prompt_tokens or 0
+                    ot = chunk.usage.completion_tokens or 0
+                    m = getattr(chunk, "model", None) or "unknown"
+                    seen.append((it, ot, m))
+                except AttributeError:
+                    pass
+            yield chunk
+    finally:
+        if seen:
+            it, ot, m = seen[-1]
+        else:
+            it, ot, m = 0, 0, "unknown"
+        _record(it, ot, m)
+
+
+# ---------------------------------------------------------------------------
+# OpenAI async wrapper
+# ---------------------------------------------------------------------------
+
+
+async def _openai_async_wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
+    original = _originals.get("openai_async")
+    if original is None:
+        raise RuntimeError("shekel: openai async original not stored")
+
+    if kwargs.get("stream") is True:
+        kwargs.setdefault("stream_options", {})["include_usage"] = True
+        stream = await original(self, *args, **kwargs)
+        return _wrap_openai_stream_async(stream)
+
+    response = await original(self, *args, **kwargs)
+    input_tokens, output_tokens, model = _extract_openai_tokens(response)
+    _record(input_tokens, output_tokens, model)
+    return response
+
+
+async def _wrap_openai_stream_async(stream: Any) -> Any:
+    seen: list[tuple[int, int, str]] = []
+    try:
+        async for chunk in stream:
+            if chunk.usage is not None:
+                try:
+                    it = chunk.usage.prompt_tokens or 0
+                    ot = chunk.usage.completion_tokens or 0
+                    m = getattr(chunk, "model", None) or "unknown"
+                    seen.append((it, ot, m))
+                except AttributeError:
+                    pass
+            yield chunk
+    finally:
+        if seen:
+            it, ot, m = seen[-1]
+        else:
+            it, ot, m = 0, 0, "unknown"
+        _record(it, ot, m)
+
+
+# ---------------------------------------------------------------------------
+# Anthropic sync wrapper
+# ---------------------------------------------------------------------------
+
+
+def _anthropic_sync_wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
+    original = _originals.get("anthropic_sync")
+    if original is None:
+        raise RuntimeError("shekel: anthropic original not stored")
+
+    response = original(self, *args, **kwargs)
+
+    # Detect streaming: Anthropic returns an iterable event stream
+    if hasattr(response, "__iter__") and not hasattr(response, "usage"):
+        return _wrap_anthropic_stream(response)
+
+    input_tokens, output_tokens, model = _extract_anthropic_tokens(response)
+    _record(input_tokens, output_tokens, model)
+    return response
+
+
+def _wrap_anthropic_stream(stream: Any) -> Generator[Any, None, None]:
+    input_tokens = 0
+    output_tokens = 0
+    model = "unknown"
+    try:
+        for event in stream:
+            event_type = getattr(event, "type", None)
+            if event_type == "message_start":
+                try:
+                    input_tokens = event.message.usage.input_tokens or 0
+                    model = getattr(event.message, "model", None) or "unknown"
+                except AttributeError:
+                    pass
+            elif event_type == "message_delta":
+                try:
+                    output_tokens = event.usage.output_tokens or 0
+                except AttributeError:
+                    pass
+            yield event
+    finally:
+        _record(input_tokens, output_tokens, model)
+
+
+# ---------------------------------------------------------------------------
+# Anthropic async wrapper
+# ---------------------------------------------------------------------------
+
+
+async def _anthropic_async_wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
+    original = _originals.get("anthropic_async")
+    if original is None:
+        raise RuntimeError("shekel: anthropic async original not stored")
+
+    response = await original(self, *args, **kwargs)
+
+    if hasattr(response, "__aiter__") and not hasattr(response, "usage"):
+        return _wrap_anthropic_stream_async(response)
+
+    input_tokens, output_tokens, model = _extract_anthropic_tokens(response)
+    _record(input_tokens, output_tokens, model)
+    return response
+
+
+async def _wrap_anthropic_stream_async(stream: Any) -> Any:
+    input_tokens = 0
+    output_tokens = 0
+    model = "unknown"
+    try:
+        async for event in stream:
+            event_type = getattr(event, "type", None)
+            if event_type == "message_start":
+                try:
+                    input_tokens = event.message.usage.input_tokens or 0
+                    model = getattr(event.message, "model", None) or "unknown"
+                except AttributeError:
+                    pass
+            elif event_type == "message_delta":
+                try:
+                    output_tokens = event.usage.output_tokens or 0
+                except AttributeError:
+                    pass
+            yield event
+    finally:
+        _record(input_tokens, output_tokens, model)

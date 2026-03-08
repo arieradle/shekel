@@ -1,0 +1,81 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "shekel"
+version = "0.1.0"
+description = "LLM cost tracking and budget enforcement. Zero config — with budget(max_usd=1.00): run_agent(). Works with LangGraph, CrewAI, raw OpenAI/Anthropic."
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [{ name = "Arie Radle", email = "arie.radle@gmail.com" }]
+requires-python = ">=3.9"
+keywords = [
+    "llm cost tracking",
+    "openai budget limit",
+    "anthropic spend enforcement",
+    "langchain cost enforcement",
+    "llm spend limit",
+    "agent budget",
+    "llm budget",
+    "langgraph budget",
+    "crewai cost control",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+# Zero hard dependencies — stdlib only
+dependencies = []
+
+[project.optional-dependencies]
+openai = ["openai>=1.0.0"]
+anthropic = ["anthropic>=0.7.0"]
+all = ["openai>=1.0.0", "anthropic>=0.7.0"]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "ruff>=0.1.0",
+    "mypy>=1.0.0",
+    "black>=23.0.0",
+    "isort>=5.12.0",
+    "pytest-cov>=4.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/arieradle/shekel"
+Repository = "https://github.com/arieradle/shekel"
+Issues = "https://github.com/arieradle/shekel/issues"
+Changelog = "https://github.com/arieradle/shekel/blob/main/CHANGELOG.md"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+[tool.black]
+line-length = 100
+target-version = ["py39"]
+
+[tool.isort]
+profile = "black"
+line_length = 100
+
+[tool.ruff]
+target-version = "py39"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+
+[tool.mypy]
+python_version = "3.9"
+strict = true
+warn_return_any = true
+warn_unused_configs = true

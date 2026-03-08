@@ -1,0 +1,49 @@
+{
+  "gpt-4o": {
+    "input_per_1k": 0.0025,
+    "output_per_1k": 0.010,
+    "cached_input_per_1k": 0.00125
+  },
+  "gpt-4o-mini": {
+    "input_per_1k": 0.00015,
+    "output_per_1k": 0.0006,
+    "cached_input_per_1k": 0.000075
+  },
+  "o1": {
+    "input_per_1k": 0.015,
+    "output_per_1k": 0.060,
+    "cached_input_per_1k": 0.0075
+  },
+  "o1-mini": {
+    "input_per_1k": 0.003,
+    "output_per_1k": 0.012,
+    "cached_input_per_1k": 0.0015
+  },
+  "gpt-3.5-turbo": {
+    "input_per_1k": 0.0005,
+    "output_per_1k": 0.0015
+  },
+  "claude-3-5-sonnet-20241022": {
+    "input_per_1k": 0.003,
+    "output_per_1k": 0.015,
+    "cached_input_per_1k": 0.0003
+  },
+  "claude-3-haiku-20240307": {
+    "input_per_1k": 0.00025,
+    "output_per_1k": 0.00125,
+    "cached_input_per_1k": 0.00003
+  },
+  "claude-3-opus-20240229": {
+    "input_per_1k": 0.015,
+    "output_per_1k": 0.075,
+    "cached_input_per_1k": 0.0015
+  },
+  "gemini-1.5-flash": {
+    "input_per_1k": 0.000075,
+    "output_per_1k": 0.0003
+  },
+  "gemini-1.5-pro": {
+    "input_per_1k": 0.00125,
+    "output_per_1k": 0.005
+  }
+}
