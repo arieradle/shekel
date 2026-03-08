@@ -1,6 +1,6 @@
-[![PyPI version](https://badge.fury.io/py/shekel.svg)](https://badge.fury.io/py/shekel)
-[![Python versions](https://img.shields.io/pypi/pyversions/shekel.svg)](https://pypi.org/project/shekel/)
-[![CI](https://github.com/arieradle/shekel/actions/workflows/ci.yml/badge.svg)](https://github.com/arieradle/shekel/actions/workflows/ci.yml)
+[![PyPI version](https://img.shields.io/pypi/v/shekel)](https://pypi.org/project/shekel/)
+[![Python versions](https://img.shields.io/pypi/pyversions/shekel)](https://pypi.org/project/shekel/)
+[![License](https://img.shields.io/pypi/l/shekel)](https://pypi.org/project/shekel/)
 
 ```python
 with budget(max_usd=1.00):
