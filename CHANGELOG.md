@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-03-08
+
+### Fixed
+- Ruff lint errors: replaced `Optional[X]` with `X | None`, removed unused imports, fixed `Generator` import source
+
 ## [0.1.0] - 2024-03-08
 
 ### Added
