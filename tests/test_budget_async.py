@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -51,7 +51,7 @@ async def test_async_budget_exceeded_raises() -> None:
     fake = make_openai_response("gpt-4o", 10000, 5000)
     with patch(OPENAI_ASYNC_CREATE, new=AsyncMock(return_value=fake)):
         with pytest.raises(BudgetExceededError):
-            async with budget(max_usd=0.001) as b:
+            async with budget(max_usd=0.001):
                 import openai
 
                 client = openai.AsyncOpenAI(api_key="test")

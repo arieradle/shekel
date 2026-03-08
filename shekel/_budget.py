@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import warnings
-from typing import Callable, Optional
+from typing import Callable
 
 from shekel import _context, _patch
 from shekel.exceptions import BudgetExceededError
@@ -23,10 +23,10 @@ class Budget:
 
     def __init__(
         self,
-        max_usd: Optional[float] = None,
-        warn_at: Optional[float] = None,
-        on_exceed: Optional[Callable[[float, float], None]] = None,
-        price_per_1k_tokens: Optional[dict[str, float]] = None,
+        max_usd: float | None = None,
+        warn_at: float | None = None,
+        on_exceed: Callable[[float, float], None] | None = None,
+        price_per_1k_tokens: dict[str, float] | None = None,
     ) -> None:
         if warn_at is not None and not (0.0 <= warn_at <= 1.0):
             raise ValueError(f"warn_at must be a fraction between 0.0 and 1.0, got {warn_at}")
@@ -46,13 +46,13 @@ class Budget:
         self._warn_fired: bool = False
         self._last_model: str = "unknown"
         self._last_tokens: dict[str, int] = {"input": 0, "output": 0}
-        self._ctx_token: Optional[object] = None
+        self._ctx_token: object | None = None
 
     # ------------------------------------------------------------------
     # Sync context manager
     # ------------------------------------------------------------------
 
-    def __enter__(self) -> "Budget":
+    def __enter__(self) -> Budget:
         _patch.apply_patches()
         self._ctx_token = _context.set_active_budget(self)
         return self
@@ -67,7 +67,7 @@ class Budget:
     # Async context manager
     # ------------------------------------------------------------------
 
-    async def __aenter__(self) -> "Budget":
+    async def __aenter__(self) -> Budget:
         _patch.apply_patches()
         self._ctx_token = _context.set_active_budget(self)
         return self
@@ -120,18 +120,18 @@ class Budget:
         return self._spent
 
     @property
-    def remaining(self) -> Optional[float]:
+    def remaining(self) -> float | None:
         """Remaining USD budget, or None if track-only mode (max_usd=None)."""
         if self.max_usd is None:
             return None
         return max(0.0, self.max_usd - self._spent)
 
     @property
-    def limit(self) -> Optional[float]:
+    def limit(self) -> float | None:
         """The configured max_usd limit, or None if track-only mode."""
         return self.max_usd
 
     @property
-    def price_override(self) -> Optional[dict[str, float]]:
+    def price_override(self) -> dict[str, float] | None:
         """Price override dict for _patch.py to use."""
         return self.price_per_1k_tokens

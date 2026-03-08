@@ -129,7 +129,7 @@ def test_warn_at_issues_warning_when_no_callback() -> None:
     with patch("openai.resources.chat.completions.Completions.create", return_value=fake):
         with warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always")
-            with budget(max_usd=0.05, warn_at=0.5) as b:
+            with budget(max_usd=0.05, warn_at=0.5):
                 import openai
 
                 client = openai.OpenAI(api_key="test")

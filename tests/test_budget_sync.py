@@ -8,7 +8,6 @@ from shekel import BudgetExceededError, budget
 from shekel._pricing import calculate_cost
 from tests.conftest import (
     make_anthropic_response,
-    make_anthropic_stream,
     make_openai_response,
     make_openai_stream,
 )
@@ -88,7 +87,7 @@ def test_budget_exceeded_raises() -> None:
     fake = make_openai_response("gpt-4o", 10000, 5000)  # large call
     with patch(OPENAI_CREATE, return_value=fake):
         with pytest.raises(BudgetExceededError) as exc_info:
-            with budget(max_usd=0.001) as b:
+            with budget(max_usd=0.001):
                 import openai
 
                 client = openai.OpenAI(api_key="test")
@@ -121,7 +120,7 @@ def test_warn_at_fires_once() -> None:
     # max_usd=0.05: warn fires at $0.025 (50%), budget not exceeded at $0.0325
     fake = make_openai_response("gpt-4o", 5000, 2000)
     with patch(OPENAI_CREATE, return_value=fake):
-        with budget(max_usd=0.05, warn_at=0.5, on_exceed=callback) as b:
+        with budget(max_usd=0.05, warn_at=0.5, on_exceed=callback):
             import openai
 
             client = openai.OpenAI(api_key="test")
@@ -142,7 +141,7 @@ def test_warn_at_fires_only_once_across_multiple_calls() -> None:
     # Set budget so 2nd call crosses warn threshold
     budget_limit = expected_per_call * 1.5  # warn at ~67%
     with patch(OPENAI_CREATE, return_value=fake):
-        with budget(max_usd=budget_limit * 10, warn_at=0.1, on_exceed=callback) as b:
+        with budget(max_usd=budget_limit * 10, warn_at=0.1, on_exceed=callback):
             import openai
 
             client = openai.OpenAI(api_key="test")

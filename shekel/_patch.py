@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import threading
-from typing import Any, Generator
+from collections.abc import Generator
+from typing import Any
 
 from shekel import _context, _pricing
 

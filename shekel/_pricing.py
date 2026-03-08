@@ -2,11 +2,10 @@ from __future__ import annotations
 
 import json
 import os
-from typing import Optional
 
 # Load bundled prices.json at import time
 _PRICES_PATH = os.path.join(os.path.dirname(__file__), "prices.json")
-with open(_PRICES_PATH, "r") as _f:
+with open(_PRICES_PATH) as _f:
     _PRICES: dict[str, dict[str, float]] = json.load(_f)
 
 
@@ -25,7 +24,7 @@ def calculate_cost(
     model: str,
     input_tokens: int,
     output_tokens: int,
-    price_override: Optional[dict[str, float]] = None,
+    price_override: dict[str, float] | None = None,
 ) -> float:
     """Calculate the cost in USD for a given model call.
 
