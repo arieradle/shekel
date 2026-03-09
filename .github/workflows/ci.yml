@@ -37,7 +37,7 @@ jobs:
         run: mypy shekel/
 
       - name: Test (pytest)
-        run: pytest tests/ -v --cov=shekel --cov-report=xml
+        run: pytest tests/ -v --cov=shekel --cov-report=xml --cov-fail-under=90
 
       - name: Upload coverage
         uses: codecov/codecov-action@v4

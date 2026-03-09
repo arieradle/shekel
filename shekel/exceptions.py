@@ -31,5 +31,6 @@ class BudgetExceededError(Exception):
         return (
             f"Budget of ${self.limit:.2f} exceeded (${self.spent:.4f} spent)\n"
             f"{last_call}"
-            f"  Tip: Increase max_usd or add warn_at=0.8 to get an early warning next time."
+            f"  Tip: Increase max_usd, add warn_at=0.8 for an early warning, "
+            f"or add fallback='gpt-4o-mini' to switch to a cheaper model instead of raising."
         )

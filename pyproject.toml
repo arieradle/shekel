@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "shekel"
-version = "0.1.0"
+version = "0.2.2"
 description = "LLM cost tracking and budget enforcement. Zero config — with budget(max_usd=1.00): run_agent(). Works with LangGraph, CrewAI, raw OpenAI/Anthropic."
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -20,9 +20,12 @@ keywords = [
     "llm budget",
     "langgraph budget",
     "crewai cost control",
+    "llm fallback",
+    "model fallback",
+    "ai cost control",
 ]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
@@ -39,6 +42,8 @@ dependencies = []
 openai = ["openai>=1.0.0"]
 anthropic = ["anthropic>=0.7.0"]
 all = ["openai>=1.0.0", "anthropic>=0.7.0"]
+all-models = ["openai>=1.0.0", "anthropic>=0.7.0", "tokencost>=0.1.0"]
+cli = ["click>=8.0.0"]
 dev = [
     "pytest>=7.0.0",
     "pytest-asyncio>=0.21.0",
@@ -47,13 +52,22 @@ dev = [
     "black>=23.0.0",
     "isort>=5.12.0",
     "pytest-cov>=4.0.0",
+    "click>=8.0.0",
+    "mkdocs-material>=9.0.0",
 ]
+
+[project.scripts]
+shekel = "shekel._cli:cli"
 
 [project.urls]
 Homepage = "https://github.com/arieradle/shekel"
 Repository = "https://github.com/arieradle/shekel"
+Documentation = "https://arieradle.github.io/shekel/"
 Issues = "https://github.com/arieradle/shekel/issues"
 Changelog = "https://github.com/arieradle/shekel/blob/main/CHANGELOG.md"
+
+[tool.hatch.build.targets.wheel]
+packages = ["shekel"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -79,3 +93,7 @@ python_version = "3.9"
 strict = true
 warn_return_any = true
 warn_unused_configs = true
+
+[[tool.mypy.overrides]]
+module = "tokencost"
+ignore_missing_imports = true

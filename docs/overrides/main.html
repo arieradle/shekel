@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block extrahead %}
+  <!-- SEO Meta Tags -->
+  <meta name="description" content="{{ config.site_description }}">
+  <meta name="author" content="{{ config.site_author }}">
+  <meta name="keywords" content="llm cost tracking, openai budget, anthropic budget, llm spend limit, agent budget, langgraph budget, crewai cost control, llm fallback, model fallback, ai cost control, python llm budget, budget enforcement, cost tracking">
+  
+  <!-- Open Graph Meta Tags -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Shekel - LLM Cost Tracking and Budget Enforcement">
+  <meta property="og:description" content="Zero-config LLM cost tracking and budget enforcement for Python. Track spending and enforce budget limits on OpenAI, Anthropic, and other LLM APIs.">
+  <meta property="og:url" content="{{ config.site_url }}">
+  <meta property="og:site_name" content="{{ config.site_name }}">
+  <meta property="og:locale" content="en_US">
+  
+  <!-- Twitter Card Meta Tags -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Shekel - LLM Cost Tracking and Budget Enforcement">
+  <meta name="twitter:description" content="Zero-config LLM cost tracking and budget enforcement for Python. One line. Zero config.">
+  <meta name="twitter:site" content="@arieradle">
+  
+  <!-- Additional SEO -->
+  <meta name="robots" content="index, follow">
+  <meta name="googlebot" content="index, follow">
+  <link rel="canonical" href="{{ page.canonical_url }}">
+  
+  <!-- Schema.org markup for Google -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Shekel",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "Python 3.9+",
+    "description": "LLM cost tracking and budget enforcement for Python. Zero config.",
+    "url": "{{ config.site_url }}",
+    "author": {
+      "@type": "Person",
+      "name": "{{ config.site_author }}"
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": "5",
+      "ratingCount": "1"
+    }
+  }
+  </script>
+  
+  <!-- Google Site Verification -->
+  <meta name="google-site-verification" content="i77BcKjpKR5vvDr7QvJiDaJN9hOBn8oI8Q4DK7Lju7s" />
+{% endblock %}

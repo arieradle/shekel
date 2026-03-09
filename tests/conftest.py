@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from typing import Generator
 from unittest.mock import MagicMock
 
 import pytest

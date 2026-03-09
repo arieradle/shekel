@@ -7,7 +7,6 @@ import pytest
 
 from shekel import _patch as patch_module
 from shekel import budget
-from shekel._pricing import calculate_cost
 from tests.conftest import make_openai_response
 
 OPENAI_CREATE = "openai.resources.chat.completions.Completions.create"

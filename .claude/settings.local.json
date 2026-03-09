@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(wc:*)",
+      "Bash(git:*)",
+      "Bash(black:*)",
+      "Bash(ruff check:*)",
+      "Bash(kill %1:*)",
+      "Bash(gh run:*)",
+      "WebFetch(domain:pypi.org)",
+      "Bash(brew install:*)",
+      "Bash(gh:*)",
+      "Bash(mypy:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(pip install:*)",
+      "Bash(black .:*)"
+    ]
+  }
+}

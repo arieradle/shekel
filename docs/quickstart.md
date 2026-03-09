@@ -1,0 +1,314 @@
+# Quick Start
+
+This guide will get you up and running with shekel in 5 minutes.
+
+## Step 1: Install Shekel
+
+Choose the installation that matches your LLM provider:
+
+```bash
+pip install shekel[openai]       # For OpenAI
+pip install shekel[anthropic]    # For Anthropic
+pip install shekel[all]          # For both
+```
+
+## Step 2: Import and Use
+
+```python
+from shekel import budget, BudgetExceededError
+```
+
+That's it! No API keys, no configuration files, no external services.
+
+## Step 3: Track Your First Call
+
+### OpenAI Example
+
+```python
+import openai
+from shekel import budget
+
+client = openai.OpenAI()  # Your API key from environment
+
+# Track cost without enforcing a limit
+with budget() as b:
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": "Hello! How are you?"}],
+    )
+    print(response.choices[0].message.content)
+
+print(f"That cost: ${b.spent:.4f}")
+# Output: That cost: $0.0002
+```
+
+### Anthropic Example
+
+```python
+import anthropic
+from shekel import budget
+
+client = anthropic.Anthropic()  # Your API key from environment
+
+with budget() as b:
+    response = client.messages.create(
+        model="claude-3-haiku-20240307",
+        max_tokens=100,
+        messages=[{"role": "user", "content": "Hello!"}],
+    )
+    print(response.content[0].text)
+
+print(f"That cost: ${b.spent:.4f}")
+```
+
+## Step 4: Enforce a Budget
+
+Add a hard cap to prevent runaway costs:
+
+```python
+from shekel import budget, BudgetExceededError
+
+try:
+    with budget(max_usd=0.50) as b:
+        run_my_agent()  # Your agent code here
+    print(f"Success! Spent: ${b.spent:.4f}")
+except BudgetExceededError as e:
+    print(f"Budget exceeded: {e}")
+    print(f"Spent: ${e.spent:.4f} / ${e.limit:.2f}")
+```
+
+## Step 5: Add Early Warnings
+
+Get warned before you hit the limit:
+
+```python
+with budget(max_usd=1.00, warn_at=0.8) as b:
+    run_my_agent()
+# Prints warning at $0.80 (80% of $1.00)
+```
+
+## Common Patterns
+
+### Pattern 1: Track-Only Mode
+
+No enforcement, just track spending:
+
+```python
+with budget() as b:
+    run_my_agent()
+print(f"Total cost: ${b.spent:.4f}")
+```
+
+### Pattern 2: Hard Cap with Early Warning
+
+Enforce a limit with advance warning:
+
+```python
+with budget(max_usd=2.00, warn_at=0.8) as b:
+    run_my_agent()
+# Warns at $1.60, raises at $2.00
+```
+
+### Pattern 3: Fallback to Cheaper Model
+
+Switch models instead of crashing:
+
+```python
+with budget(max_usd=1.00, fallback="gpt-4o-mini") as b:
+    response = client.chat.completions.create(
+        model="gpt-4o",  # Starts with expensive model
+        messages=[{"role": "user", "content": "Hello"}],
+    )
+# Automatically switches to gpt-4o-mini at $1.00
+
+if b.model_switched:
+    print(f"Switched to fallback at ${b.switched_at_usd:.4f}")
+```
+
+### Pattern 4: Persistent Budget (Session)
+
+Track spending across multiple runs:
+
+```python
+session = budget(max_usd=5.00, persistent=True)
+
+# First run
+with session:
+    process_batch_1()
+print(f"After batch 1: ${session.spent:.4f}")
+
+# Second run - spend accumulates
+with session:
+    process_batch_2()
+print(f"After batch 2: ${session.spent:.4f}")
+
+# Third run
+with session:
+    process_batch_3()
+print(f"Total session spend: ${session.spent:.4f}")
+```
+
+### Pattern 5: Decorator
+
+Wrap functions with a budget:
+
+```python
+from shekel import with_budget
+
+@with_budget(max_usd=0.10)
+def generate_summary(text: str) -> str:
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": f"Summarize: {text}"}],
+    )
+    return response.choices[0].message.content
+
+# Budget enforced on every call
+summary = generate_summary("Long text here...")
+```
+
+### Pattern 6: Async Support
+
+Full async/await support:
+
+```python
+async def process_items():
+    async with budget(max_usd=1.00) as b:
+        for item in items:
+            response = await client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[{"role": "user", "content": item}],
+            )
+            await process(response)
+    print(f"Processed {len(items)} items for ${b.spent:.4f}")
+```
+
+### Pattern 7: Streaming
+
+Budget tracking works with streaming:
+
+```python
+with budget(max_usd=0.50) as b:
+    stream = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": "Count to 10"}],
+        stream=True,
+    )
+    for chunk in stream:
+        print(chunk.choices[0].delta.content or "", end="", flush=True)
+
+print(f"\nStreaming cost: ${b.spent:.4f}")
+```
+
+## Working with Frameworks
+
+Shekel works automatically with any framework that uses OpenAI or Anthropic under the hood.
+
+### LangGraph
+
+```python
+from langgraph.graph import StateGraph, END
+from shekel import budget
+
+# Your graph definition here
+app = graph.compile()
+
+with budget(max_usd=0.50) as b:
+    result = app.invoke({"question": "What is 2+2?"})
+print(f"Graph execution cost: ${b.spent:.4f}")
+```
+
+### CrewAI
+
+```python
+from crewai import Agent, Task, Crew
+from shekel import budget
+
+# Your agents and tasks here
+crew = Crew(agents=[agent], tasks=[task])
+
+with budget(max_usd=2.00) as b:
+    result = crew.kickoff()
+print(f"Crew execution cost: ${b.spent:.4f}")
+```
+
+## Viewing Spend Summary
+
+Get a detailed breakdown of your spending:
+
+```python
+with budget(max_usd=5.00) as b:
+    run_my_agent()
+
+# Print formatted summary
+print(b.summary())
+```
+
+Output:
+
+```
+┌─ Shekel Budget Summary ────────────────────────────────────┐
+│ Total: $1.2340  Limit: $5.00  Calls: 15  Status: OK
+├────────────────────────────────────────────────────────────┤
+│  #    Model                        Input  Output      Cost
+│  ────────────────────────────────────────────────────────
+│  1    gpt-4o-mini                  1,200     300  $0.0003
+│  2    gpt-4o-mini                  1,500     450  $0.0004
+│  ...
+├────────────────────────────────────────────────────────────┤
+│  gpt-4o-mini: 15 calls  $1.2340
+└────────────────────────────────────────────────────────────┘
+```
+
+## CLI Tools
+
+Estimate costs before making API calls:
+
+```bash
+# Estimate cost
+shekel estimate --model gpt-4o --input-tokens 1000 --output-tokens 500
+# Model:          gpt-4o
+# Input tokens:   1,000
+# Output tokens:  500
+# Estimated cost: $0.007500
+
+# List all supported models
+shekel models
+
+# Filter by provider
+shekel models --provider openai
+shekel models --provider anthropic
+```
+
+## Next Steps
+
+Now that you've seen the basics, dive deeper:
+
+- **[Budget Enforcement](usage/budget-enforcement.md)** - Learn about hard caps, warnings, and callbacks
+- **[Fallback Models](usage/fallback-models.md)** - Automatic model switching
+- **[Persistent Budgets](usage/persistent-budgets.md)** - Session-based budget tracking
+- **[Streaming](usage/streaming.md)** - Budget tracking for streaming responses
+- **[API Reference](api-reference.md)** - Complete API documentation
+- **[Integrations](integrations/langgraph.md)** - Framework-specific guides
+
+## Common Questions
+
+### Does shekel require API keys?
+
+No. Shekel uses your existing OpenAI or Anthropic API keys. It doesn't require any additional authentication.
+
+### Does shekel send my data anywhere?
+
+No. Shekel works entirely locally by monkey-patching the OpenAI and Anthropic SDKs. No data leaves your system.
+
+### What happens when I hit the budget limit?
+
+By default, shekel raises a `BudgetExceededError`. You can catch this exception or use the `fallback` parameter to automatically switch to a cheaper model instead.
+
+### Can I use shekel with my custom models?
+
+Yes! Use the `price_per_1k_tokens` parameter to provide custom pricing. See [Extending Shekel](extending.md) for details.
+
+### Does shekel work with streaming?
+
+Yes! Shekel fully supports streaming responses from both OpenAI and Anthropic.

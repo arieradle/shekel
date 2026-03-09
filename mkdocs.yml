@@ -1,0 +1,126 @@
+site_name: Shekel
+site_description: LLM cost tracking and budget enforcement for Python. One line. Zero config.
+site_author: Arie Radle
+site_url: https://arieradle.github.io/shekel/
+
+repo_name: arieradle/shekel
+repo_url: https://github.com/arieradle/shekel
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  language: en
+  custom_dir: docs/overrides
+  palette:
+    # Light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: teal
+      accent: cyan
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    # Dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: teal
+      accent: cyan
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - search.share
+    - content.code.copy
+    - content.code.annotate
+  
+  icon:
+    repo: fontawesome/brands/github
+    admonition:
+      note: octicons/tag-16
+      abstract: octicons/checklist-16
+      info: octicons/info-16
+      tip: octicons/light-bulb-16
+      success: octicons/check-16
+      question: octicons/question-16
+      warning: octicons/alert-16
+      failure: octicons/x-circle-16
+      danger: octicons/zap-16
+      bug: octicons/bug-16
+      example: octicons/beaker-16
+      quote: octicons/quote-16
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/arieradle/shekel
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/shekel/
+  
+  version:
+    provider: mike
+  
+  # SEO metadata
+  generator: false
+
+plugins:
+  - search:
+      separator: '[\s\-,:!=\[\]()"`/]+|\.(?!\d)|&[lg]t;|(?!\b)(?=[A-Z][a-z])'
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+  - attr_list
+  - md_in_html
+  - toc:
+      permalink: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - meta
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Installation: installation.md
+    - Quick Start: quickstart.md
+  - Usage Guide:
+    - Basic Usage: usage/basic-usage.md
+    - Budget Enforcement: usage/budget-enforcement.md
+    - Fallback Models: usage/fallback-models.md
+    - Persistent Budgets: usage/persistent-budgets.md
+    - Streaming: usage/streaming.md
+    - Decorators: usage/decorators.md
+  - Integrations:
+    - LangGraph: integrations/langgraph.md
+    - CrewAI: integrations/crewai.md
+    - OpenAI: integrations/openai.md
+    - Anthropic: integrations/anthropic.md
+  - Reference:
+    - CLI Tools: cli.md
+    - API Reference: api-reference.md
+    - Supported Models: models.md
+  - Advanced:
+    - How It Works: how-it-works.md
+    - Extending Shekel: extending.md
+    - Contributing: contributing.md
+
+copyright: Copyright &copy; 2024-2026 Arie Radle
