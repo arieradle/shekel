@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "shekel"
-version = "0.2.0"
+version = "0.2.1"
 description = "LLM cost tracking and budget enforcement. Zero config — with budget(max_usd=1.00): run_agent(). Works with LangGraph, CrewAI, raw OpenAI/Anthropic."
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -58,6 +58,9 @@ Homepage = "https://github.com/arieradle/shekel"
 Repository = "https://github.com/arieradle/shekel"
 Issues = "https://github.com/arieradle/shekel/issues"
 Changelog = "https://github.com/arieradle/shekel/blob/main/CHANGELOG.md"
+
+[tool.hatch.build.targets.wheel]
+packages = ["shekel"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
