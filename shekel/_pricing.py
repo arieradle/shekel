@@ -43,7 +43,7 @@ def _prefix_lookup(model: str) -> dict[str, float] | None:
 def _try_tokencost(model: str, input_tokens: int, output_tokens: int) -> float | None:
     """Attempt cost lookup via tokencost. Returns None if unavailable or model unknown."""
     try:
-        import tokencost  # type: ignore[import-untyped]  # lazy import — may not be installed
+        import tokencost  # lazy import — may not be installed
     except ImportError:
         return None
 
