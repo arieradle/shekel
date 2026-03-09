@@ -1,4 +1,5 @@
 """Tests for F5 — budget.summary() spend report."""
+
 from __future__ import annotations
 
 import warnings

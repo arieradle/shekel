@@ -8,7 +8,6 @@ import pytest
 
 from shekel._pricing import UnknownModelError, calculate_cost, list_models
 
-
 # ---------------------------------------------------------------------------
 # Bundled model pricing
 # ---------------------------------------------------------------------------
@@ -62,9 +61,7 @@ def test_price_override_takes_precedence_over_tokencost() -> None:
     fake_tokencost.cost_per_token.return_value = 9999.0
 
     with patch.dict(sys.modules, {"tokencost": fake_tokencost}):
-        cost = calculate_cost(
-            "gpt-4o", 1000, 500, price_override={"input": 0.001, "output": 0.002}
-        )
+        cost = calculate_cost("gpt-4o", 1000, 500, price_override={"input": 0.001, "output": 0.002})
 
     expected = (1000 / 1000.0 * 0.001) + (500 / 1000.0 * 0.002)
     assert cost == pytest.approx(expected)

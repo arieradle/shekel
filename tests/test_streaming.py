@@ -93,9 +93,7 @@ async def test_openai_async_stream_full_consumption() -> None:
             import openai
 
             client = openai.AsyncOpenAI(api_key="test")
-            stream = await client.chat.completions.create(
-                model="gpt-4o", messages=[], stream=True
-            )
+            stream = await client.chat.completions.create(model="gpt-4o", messages=[], stream=True)
             async for _ in stream:
                 pass
 

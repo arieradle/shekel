@@ -1,4 +1,5 @@
 """Tests for F1 — Model Fallback on Budget Breach."""
+
 from __future__ import annotations
 
 import asyncio
@@ -478,9 +479,7 @@ def test_fallback_stream_activates_after_stream() -> None:
 
                 client = openai.OpenAI(api_key="test")
                 # First call is streaming — exhausts and triggers switch
-                stream = client.chat.completions.create(
-                    model="gpt-4o", messages=[], stream=True
-                )
+                stream = client.chat.completions.create(model="gpt-4o", messages=[], stream=True)
                 list(stream)  # consume to trigger _record
                 # Second call should use fallback
                 client.chat.completions.create(model="gpt-4o", messages=[])
@@ -524,9 +523,7 @@ def test_warn_at_fires_before_fallback() -> None:
         return call2
 
     with patch(OPENAI_CREATE, new=fake_create):
-        with budget(
-            max_usd=0.10, warn_at=0.5, on_exceed=on_warn, fallback="gpt-4o-mini"
-        ) as b:
+        with budget(max_usd=0.10, warn_at=0.5, on_exceed=on_warn, fallback="gpt-4o-mini") as b:
             import openai
 
             client = openai.OpenAI(api_key="test")

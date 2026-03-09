@@ -80,6 +80,41 @@ def _restore_patches() -> None:
 
 
 # ---------------------------------------------------------------------------
+# Fallback helpers (F1)
+# ---------------------------------------------------------------------------
+
+
+def _validate_same_provider(fallback_model: str, current_provider: str) -> None:
+    """Raise ValueError if fallback model is from a different provider."""
+    is_anthropic = fallback_model.startswith("claude-")
+    is_openai = any(fallback_model.startswith(p) for p in ("gpt-", "o1", "o2", "o3", "o4", "text-"))
+
+    if current_provider == "openai" and is_anthropic:
+        raise ValueError(
+            f"shekel: fallback model '{fallback_model}' appears to be an Anthropic model "
+            f"but the current call is to OpenAI. Cross-provider fallback is not supported in v0.2. "
+            f"Use an OpenAI model as fallback (e.g. fallback='gpt-4o-mini')."
+        )
+    if current_provider == "anthropic" and is_openai:
+        raise ValueError(
+            f"shekel: fallback model '{fallback_model}' appears to be an OpenAI model "
+            f"but the current call is to Anthropic. "
+            f"Cross-provider fallback is not supported in v0.2. "
+            f"Use an Anthropic model as fallback (e.g. fallback='claude-3-haiku-20240307')."
+        )
+
+
+def _apply_fallback_if_needed(active_budget: Any, kwargs: dict[str, Any], provider: str) -> None:
+    """Rewrite model kwarg to fallback if budget has switched. Validates same-provider."""
+    if not active_budget._using_fallback or active_budget.fallback is None:
+        return
+
+    fallback_model: str = active_budget.fallback
+    _validate_same_provider(fallback_model, provider)
+    kwargs["model"] = fallback_model
+
+
+# ---------------------------------------------------------------------------
 # Token extraction helpers
 # ---------------------------------------------------------------------------
 
@@ -125,6 +160,11 @@ def _openai_sync_wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
     if original is None:
         raise RuntimeError("shekel: openai original not stored")
 
+    # Apply fallback model rewrite before the call
+    active_budget = _context.get_active_budget()
+    if active_budget is not None:
+        _apply_fallback_if_needed(active_budget, kwargs, "openai")
+
     if kwargs.get("stream") is True:
         kwargs.setdefault("stream_options", {})["include_usage"] = True
         stream = original(self, *args, **kwargs)
@@ -167,6 +207,11 @@ async def _openai_async_wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
     if original is None:
         raise RuntimeError("shekel: openai async original not stored")
 
+    # Apply fallback model rewrite before the call
+    active_budget = _context.get_active_budget()
+    if active_budget is not None:
+        _apply_fallback_if_needed(active_budget, kwargs, "openai")
+
     if kwargs.get("stream") is True:
         kwargs.setdefault("stream_options", {})["include_usage"] = True
         stream = await original(self, *args, **kwargs)
@@ -208,6 +253,11 @@ def _anthropic_sync_wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
     original = _originals.get("anthropic_sync")
     if original is None:
         raise RuntimeError("shekel: anthropic original not stored")
+
+    # Apply fallback model rewrite before the call
+    active_budget = _context.get_active_budget()
+    if active_budget is not None:
+        _apply_fallback_if_needed(active_budget, kwargs, "anthropic")
 
     response = original(self, *args, **kwargs)
 
@@ -252,6 +302,11 @@ async def _anthropic_async_wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
     original = _originals.get("anthropic_async")
     if original is None:
         raise RuntimeError("shekel: anthropic async original not stored")
+
+    # Apply fallback model rewrite before the call
+    active_budget = _context.get_active_budget()
+    if active_budget is not None:
+        _apply_fallback_if_needed(active_budget, kwargs, "anthropic")
 
     response = await original(self, *args, **kwargs)
 

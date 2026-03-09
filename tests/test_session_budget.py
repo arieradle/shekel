@@ -1,4 +1,5 @@
 """Tests for F2 — Session (Persistent) Budgets."""
+
 from __future__ import annotations
 
 import asyncio

@@ -46,8 +46,6 @@ def test_anthropic_malformed_response_records_zero() -> None:
             import anthropic
 
             client = anthropic.Anthropic(api_key="test")
-            client.messages.create(
-                model="claude-3-5-sonnet-20241022", messages=[], max_tokens=10
-            )
+            client.messages.create(model="claude-3-5-sonnet-20241022", messages=[], max_tokens=10)
 
     assert b.spent == pytest.approx(0.0)

@@ -1,4 +1,5 @@
 """Tests for F4 — @with_budget decorator."""
+
 from __future__ import annotations
 
 import asyncio
