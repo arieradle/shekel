@@ -27,10 +27,23 @@ class UnknownModelError(ValueError):
         )
 
 
+def _prefix_lookup(model: str) -> dict[str, float] | None:
+    """Find the longest bundled model name that is a prefix of the given model string.
+
+    Handles versioned model names like 'gpt-4o-2024-08-06' -> 'gpt-4o'.
+    Returns the pricing entry dict, or None if no prefix matches.
+    """
+    match: str | None = None
+    for key in _PRICES:
+        if model.startswith(key) and (match is None or len(key) > len(match)):
+            match = key
+    return _PRICES[match] if match is not None else None
+
+
 def _try_tokencost(model: str, input_tokens: int, output_tokens: int) -> float | None:
     """Attempt cost lookup via tokencost. Returns None if unavailable or model unknown."""
     try:
-        import tokencost  # type: ignore[import-not-found]  # lazy import — may not be installed
+        import tokencost  # type: ignore[import-untyped]  # lazy import — may not be installed
     except ImportError:
         return None
 
@@ -84,12 +97,20 @@ def calculate_cost(
         output_per_1k = price_override["output"]
         return (input_tokens / 1000.0 * input_per_1k) + (output_tokens / 1000.0 * output_per_1k)
 
-    # Tier 1: bundled prices.json
+    # Tier 1: bundled prices.json — exact match
     if model in _PRICES:
         entry = _PRICES[model]
         return (
             input_tokens / 1000.0 * entry["input_per_1k"]
             + output_tokens / 1000.0 * entry["output_per_1k"]
+        )
+
+    # Tier 1b: prefix match — handles versioned names like "gpt-4o-2024-08-06"
+    prefix_match = _prefix_lookup(model)
+    if prefix_match is not None:
+        return (
+            input_tokens / 1000.0 * prefix_match["input_per_1k"]
+            + output_tokens / 1000.0 * prefix_match["output_per_1k"]
         )
 
     # Tier 2: tokencost (lazy import)

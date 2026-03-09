@@ -9,6 +9,41 @@ import pytest
 from shekel._pricing import UnknownModelError, calculate_cost, list_models
 
 # ---------------------------------------------------------------------------
+# Prefix model name resolution
+# ---------------------------------------------------------------------------
+
+
+def test_versioned_openai_model_resolves_via_prefix() -> None:
+    # gpt-4o-2024-08-06 should resolve to gpt-4o pricing
+    cost_versioned = calculate_cost("gpt-4o-2024-08-06", 1000, 1000)
+    cost_base = calculate_cost("gpt-4o", 1000, 1000)
+    assert cost_versioned == pytest.approx(cost_base)
+
+
+def test_versioned_anthropic_model_resolves_via_prefix() -> None:
+    # claude-3-5-sonnet-20241022-preview should resolve to claude-3-5-sonnet-20241022
+    cost_versioned = calculate_cost("claude-3-5-sonnet-20241022-preview", 500, 200)
+    cost_base = calculate_cost("claude-3-5-sonnet-20241022", 500, 200)
+    assert cost_versioned == pytest.approx(cost_base)
+
+
+def test_prefix_picks_longest_match() -> None:
+    # Both "gpt-4o" and "gpt-4o-mini" are in prices.json
+    # "gpt-4o-mini-2024-07-18" should match "gpt-4o-mini", not "gpt-4o"
+    cost = calculate_cost("gpt-4o-mini-2024-07-18", 1000, 1000)
+    cost_mini = calculate_cost("gpt-4o-mini", 1000, 1000)
+    cost_4o = calculate_cost("gpt-4o", 1000, 1000)
+    assert cost == pytest.approx(cost_mini)
+    assert cost != pytest.approx(cost_4o)
+
+
+def test_exact_match_beats_prefix() -> None:
+    # An exact match in prices.json should not fall through to prefix lookup
+    cost_exact = calculate_cost("gpt-4o", 1000, 1000)
+    assert cost_exact == pytest.approx(0.0025 + 0.010)
+
+
+# ---------------------------------------------------------------------------
 # Bundled model pricing
 # ---------------------------------------------------------------------------
 

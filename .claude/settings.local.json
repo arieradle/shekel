@@ -10,7 +10,11 @@
       "WebFetch(domain:pypi.org)",
       "Bash(brew install:*)",
       "Bash(gh:*)",
-      "Bash(mypy:*)"
+      "Bash(mypy:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(pip install:*)",
+      "Bash(black .:*)"
     ]
   }
 }

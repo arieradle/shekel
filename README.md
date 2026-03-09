@@ -25,6 +25,7 @@ pip install shekel[openai]       # OpenAI
 pip install shekel[anthropic]    # Anthropic
 pip install shekel[all]          # Both
 pip install shekel[all-models]   # Both + tokencost (400+ model pricing)
+pip install shekel[cli]          # CLI tools (shekel estimate, shekel models)
 ```
 
 ---
@@ -77,6 +78,26 @@ print(b.summary())
 ```
 
 Works with **LangGraph, CrewAI, AutoGen, LlamaIndex, Haystack**, and any framework that calls OpenAI or Anthropic under the hood. See [`examples/`](examples/) for runnable demos.
+
+---
+
+## CLI
+
+```bash
+pip install shekel[cli]
+
+# Estimate cost before writing any code
+shekel estimate --model gpt-4o --input-tokens 1000 --output-tokens 500
+# Model:          gpt-4o
+# Input tokens:   1,000
+# Output tokens:  500
+# Estimated cost: $0.007500
+
+# List all bundled models with pricing
+shekel models
+shekel models --provider openai
+shekel models --provider anthropic
+```
 
 ---
 
