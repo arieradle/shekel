@@ -69,9 +69,9 @@ Or without a callback — shekel will emit a `warnings.warn` automatically.
 with budget(max_usd=0.50, fallback="gpt-4o-mini") as b:
     run_my_agent()  # switches to gpt-4o-mini once $0.50 is hit, keeps going
 
-print(f"Switched model: {b.model_switched}")   # True
-print(f"Switched at: ${b.switched_at_usd:.4f}")
-print(f"Fallback cost: ${b.fallback_spent:.4f}")
+print(f"Switched model: {b.model_switched}")    # True
+print(f"Switched at:    ${b.switched_at_usd:.4f}")
+print(f"Fallback cost:  ${b.fallback_spent:.4f}")
 ```
 
 A `hard_cap` (default: `max_usd * 2`) stops runaway spending on the fallback model.
@@ -154,24 +154,305 @@ Or install `shekel[all-models]` for automatic pricing of 400+ models via [tokenc
 
 ---
 
-## Works with LangGraph, CrewAI, and everything else
+## Examples by framework
 
-shekel intercepts at the SDK level — it works with any framework that uses OpenAI or Anthropic under the hood.
+### LangGraph
 
 ```python
-# LangGraph
-with budget(max_usd=2.00, warn_at=0.8) as b:
-    result = app.invoke({"input": "..."})
-print(f"Graph run: ${b.spent:.4f}")
+from langgraph.graph import StateGraph
+from shekel import budget, BudgetExceededError
 
-# CrewAI
-with budget(max_usd=5.00) as b:
+def build_graph():
+    builder = StateGraph(...)
+    # ... define nodes and edges
+    return builder.compile()
+
+app = build_graph()
+
+try:
+    with budget(max_usd=2.00, warn_at=0.8) as b:
+        result = app.invoke({"messages": [{"role": "user", "content": "..."}]})
+    print(f"Graph run cost: ${b.spent:.4f}")
+    print(b.summary())
+except BudgetExceededError as e:
+    print(f"Graph exceeded budget: {e}")
+```
+
+**Retry loops** — the classic money-burning scenario:
+
+```python
+# This loop could cost you $47 without shekel
+with budget(max_usd=1.00) as b:
+    for attempt in range(10):
+        result = app.invoke(state)
+        if result["success"]:
+            break
+# BudgetExceededError raised automatically if cost exceeds $1.00
+```
+
+### CrewAI
+
+```python
+from crewai import Crew, Agent, Task
+from shekel import budget, BudgetExceededError
+
+researcher = Agent(role="researcher", goal="...", llm="gpt-4o")
+writer = Agent(role="writer", goal="...", llm="gpt-4o-mini")
+crew = Crew(agents=[researcher, writer], tasks=[...])
+
+try:
+    with budget(max_usd=3.00, warn_at=0.7) as b:
+        result = crew.kickoff()
+    print(f"Crew run cost: ${b.spent:.4f}")
+except BudgetExceededError:
+    print("Crew exceeded budget — partial result may be available")
+```
+
+**Per-agent budgets** using fallback:
+
+```python
+# Researcher uses gpt-4o but falls back to gpt-4o-mini if too expensive
+with budget(max_usd=1.00, fallback="gpt-4o-mini") as b:
     crew.kickoff()
+```
 
-# Autogen, LlamaIndex, raw SDK — same pattern
+### AutoGen
+
+```python
+import autogen
+from shekel import budget, BudgetExceededError
+
+config_list = [{"model": "gpt-4o", "api_key": "..."}]
+assistant = autogen.AssistantAgent("assistant", llm_config={"config_list": config_list})
+user_proxy = autogen.UserProxyAgent("user_proxy", human_input_mode="NEVER")
+
+try:
+    with budget(max_usd=1.00) as b:
+        user_proxy.initiate_chat(assistant, message="Write a Python web scraper")
+    print(f"Chat cost: ${b.spent:.4f}")
+except BudgetExceededError as e:
+    print(f"AutoGen chat exceeded budget: {e}")
+```
+
+### LlamaIndex
+
+```python
+from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
+from llama_index.llms.openai import OpenAI
+from shekel import budget
+
+llm = OpenAI(model="gpt-4o")
+
+# Cap the cost of building an index
 with budget(max_usd=0.50) as b:
-    for _ in range(100):
-        client.chat.completions.create(...)  # stops when budget hit
+    documents = SimpleDirectoryReader("data").load_data()
+    index = VectorStoreIndex.from_documents(documents, llm=llm)
+print(f"Indexing cost: ${b.spent:.4f}")
+
+# Cap the cost of querying
+with budget(max_usd=0.10) as b:
+    query_engine = index.as_query_engine(llm=llm)
+    response = query_engine.query("What is the main topic?")
+print(f"Query cost: ${b.spent:.4f}")
+```
+
+### Haystack
+
+```python
+from haystack.components.generators import OpenAIGenerator
+from haystack import Pipeline
+from shekel import budget
+
+generator = OpenAIGenerator(model="gpt-4o")
+pipeline = Pipeline()
+pipeline.add_component("generator", generator)
+
+with budget(max_usd=0.50) as b:
+    result = pipeline.run({"generator": {"prompt": "Summarize: ..."}})
+print(f"Pipeline cost: ${b.spent:.4f}")
+```
+
+### Raw OpenAI SDK
+
+```python
+import openai
+from shekel import budget, BudgetExceededError
+
+client = openai.OpenAI()
+
+# Cap a batch processing job
+results = []
+try:
+    with budget(max_usd=5.00, warn_at=0.8) as b:
+        for item in large_dataset:
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[{"role": "user", "content": item}],
+            )
+            results.append(response.choices[0].message.content)
+except BudgetExceededError as e:
+    print(f"Processed {len(results)} items before budget hit: {e}")
+```
+
+**Streaming with budget enforcement:**
+
+```python
+with budget(max_usd=0.50) as b:
+    stream = client.chat.completions.create(
+        model="gpt-4o",
+        messages=[{"role": "user", "content": "Write a long essay about..."}],
+        stream=True,
+    )
+    for chunk in stream:
+        print(chunk.choices[0].delta.content or "", end="")
+# Cost recorded after stream completes
+print(f"\nCost: ${b.spent:.4f}")
+```
+
+### Raw Anthropic SDK
+
+```python
+import anthropic
+from shekel import budget, BudgetExceededError
+
+client = anthropic.Anthropic()
+
+try:
+    with budget(max_usd=1.00, warn_at=0.8) as b:
+        message = client.messages.create(
+            model="claude-3-5-sonnet-20241022",
+            max_tokens=1024,
+            messages=[{"role": "user", "content": "Explain quantum computing"}],
+        )
+    print(f"Cost: ${b.spent:.4f}")
+except BudgetExceededError as e:
+    print(e)
+```
+
+### FastAPI — per-request budget
+
+```python
+from fastapi import FastAPI, HTTPException
+from shekel import budget, BudgetExceededError
+
+app = FastAPI()
+
+@app.post("/ask")
+async def ask(question: str):
+    try:
+        async with budget(max_usd=0.05) as b:  # $0.05 per request max
+            response = await openai_client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[{"role": "user", "content": question}],
+            )
+        return {"answer": response.choices[0].message.content, "cost": b.spent}
+    except BudgetExceededError:
+        raise HTTPException(status_code=402, detail="Request exceeded cost limit")
+```
+
+### Multi-agent with isolated budgets
+
+```python
+import asyncio
+from shekel import budget
+
+async def run_agent(name: str, task: str, max_usd: float):
+    async with budget(max_usd=max_usd) as b:
+        # Each agent has its own isolated budget counter
+        result = await call_llm(task)
+    print(f"{name}: ${b.spent:.4f}")
+    return result
+
+# Run agents concurrently — budgets are fully isolated via ContextVar
+results = await asyncio.gather(
+    run_agent("researcher", "research topic X", max_usd=1.00),
+    run_agent("writer",     "write about Y",    max_usd=0.50),
+    run_agent("reviewer",   "review draft Z",   max_usd=0.25),
+)
+```
+
+### Production: logging and monitoring
+
+```python
+import logging
+from shekel import budget, BudgetExceededError
+
+logger = logging.getLogger(__name__)
+
+def on_warn(spent: float, limit: float) -> None:
+    logger.warning("llm_budget_warning spent=%.4f limit=%.2f", spent, limit)
+
+try:
+    with budget(max_usd=2.00, warn_at=0.8, on_exceed=on_warn) as b:
+        run_my_agent()
+except BudgetExceededError as e:
+    logger.error("llm_budget_exceeded spent=%.4f limit=%.2f model=%s", e.spent, e.limit, e.model)
+    raise
+finally:
+    logger.info("llm_spend spent=%.4f", b.spent)
+```
+
+### Production: graceful degradation with fallback
+
+```python
+from shekel import budget
+
+def on_fallback(spent: float, limit: float, fallback_model: str) -> None:
+    logger.warning(
+        "Switching to %s after spending $%.4f (limit $%.2f)",
+        fallback_model, spent, limit
+    )
+
+with budget(
+    max_usd=1.00,
+    fallback="gpt-4o-mini",
+    hard_cap=2.00,
+    warn_at=0.7,
+    on_fallback=on_fallback,
+) as b:
+    result = run_my_agent()
+
+if b.model_switched:
+    logger.info("Used fallback model. Primary: $%.4f, Fallback: $%.4f",
+                b.switched_at_usd, b.fallback_spent)
+```
+
+### Per-user session budgets
+
+```python
+from shekel import budget
+
+# One persistent budget object per user session
+user_budgets: dict[str, budget] = {}
+
+def get_user_budget(user_id: str) -> budget:
+    if user_id not in user_budgets:
+        user_budgets[user_id] = budget(max_usd=10.00, persistent=True)
+    return user_budgets[user_id]
+
+def handle_request(user_id: str, message: str):
+    b = get_user_budget(user_id)
+    with b:
+        response = call_llm(message)
+    print(f"User {user_id} has spent ${b.spent:.4f} of $10.00 total")
+    return response
+```
+
+### Testing — assert on cost
+
+```python
+from shekel import budget
+
+def test_summarize_is_cheap():
+    with budget() as b:
+        result = summarize("short text")
+    assert b.spent < 0.01, f"summarize cost ${b.spent:.4f}, expected < $0.01"
+
+def test_agent_stays_within_budget():
+    with budget(max_usd=0.50) as b:
+        run_agent("simple task")
+    # If it raised BudgetExceededError, the test fails automatically
+    assert b.spent < 0.50
 ```
 
 ---
