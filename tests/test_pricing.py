@@ -210,6 +210,36 @@ def test_tokencost_token_costs_dict_fallback() -> None:
             sys.modules["tokencost"] = original
 
 
+def test_tokencost_token_costs_dict_raises_falls_through() -> None:
+    """TOKEN_COSTS.get() itself raises — caught by except Exception: pass."""
+    import types
+
+    fake_tokencost = types.ModuleType("tokencost")
+
+    def bad_cost_per_token(model: str, token_type: str) -> float:
+        raise RuntimeError("unavailable")
+
+    fake_tokencost.cost_per_token = bad_cost_per_token  # type: ignore[attr-defined]
+    # Make TOKEN_COSTS.get raise too
+    mock_costs = MagicMock()
+    mock_costs.get.side_effect = RuntimeError("broken dict")
+    fake_tokencost.TOKEN_COSTS = mock_costs  # type: ignore[attr-defined]
+
+    original = sys.modules.get("tokencost")
+    sys.modules["tokencost"] = fake_tokencost
+    try:
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            cost = calculate_cost("mystery-model-broken", 100, 100)
+        assert cost == 0.0
+        assert any("not found" in str(warning.message) for warning in w)
+    finally:
+        if original is None:
+            sys.modules.pop("tokencost", None)
+        else:
+            sys.modules["tokencost"] = original
+
+
 def test_tokencost_not_imported_at_module_level() -> None:
     sys.modules.pop("tokencost", None)
     import shekel  # noqa: F401

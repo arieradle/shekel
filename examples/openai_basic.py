@@ -38,7 +38,21 @@ def main() -> None:
         print(f"Budget exceeded: {e}")
 
     # ------------------------------------------------------------------
-    # 2. Fallback to cheaper model
+    # 2. Versioned model names resolve automatically
+    # ------------------------------------------------------------------
+    print("\n=== Versioned model name ===")
+    with budget() as b:
+        response = client.chat.completions.create(
+            # "gpt-4o-2024-08-06" resolves to gpt-4o pricing automatically
+            model="gpt-4o-2024-08-06",
+            messages=[{"role": "user", "content": "Say hi."}],
+            max_tokens=10,
+        )
+        print(response.choices[0].message.content)
+    print(f"Cost (gpt-4o-2024-08-06 → gpt-4o pricing): ${b.spent:.6f}")
+
+    # ------------------------------------------------------------------
+    # 3. Fallback to cheaper model
     # ------------------------------------------------------------------
     print("\n=== Fallback model ===")
     with budget(max_usd=0.001, fallback="gpt-4o-mini") as b:

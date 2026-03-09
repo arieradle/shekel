@@ -100,3 +100,8 @@ def test_models_filter_google(runner: CliRunner) -> None:
     assert result.exit_code == 0
     assert "gemini" in result.output
     assert "gpt" not in result.output
+
+
+def test_models_invalid_provider(runner: CliRunner) -> None:
+    result = runner.invoke(cli, ["models", "--provider", "invalid"])
+    assert result.exit_code != 0

@@ -153,6 +153,8 @@ shekel models --provider anthropic
 | gemini-1.5-flash | $0.0000750 | $0.000300 |
 | gemini-1.5-pro | $0.00125 | $0.00500 |
 
+Versioned model names resolve automatically — `gpt-4o-2024-08-06` maps to `gpt-4o`, `gpt-4o-mini-2024-07-18` maps to `gpt-4o-mini`.
+
 For unlisted models: pass `price_per_1k_tokens` or install `shekel[all-models]` for 400+ models via [tokencost](https://github.com/AgentOps-AI/tokencost).
 
 ---
