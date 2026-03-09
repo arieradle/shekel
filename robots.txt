@@ -1,0 +1,6 @@
+# robots.txt for shekel documentation
+
+User-agent: *
+Allow: /
+
+Sitemap: https://arieradle.github.io/shekel/sitemap.xml
