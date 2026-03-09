@@ -7,7 +7,7 @@ Thanks for your interest in contributing!
 ```bash
 git clone https://github.com/arieradle/shekel
 cd shekel
-pip install -e ".[all,dev]"
+pip install -e ".[all-models,dev]"
 ```
 
 ## Running checks

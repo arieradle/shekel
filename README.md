@@ -25,9 +25,10 @@ LLM agent loops can burn money fast. A retry bug, an infinite loop, an unexpecte
 ## Install
 
 ```bash
-pip install shekel[openai]      # OpenAI
-pip install shekel[anthropic]   # Anthropic
-pip install shekel[all]         # Both
+pip install shekel[openai]       # OpenAI
+pip install shekel[anthropic]    # Anthropic
+pip install shekel[all]          # Both
+pip install shekel[all-models]   # Both + tokencost (400+ model pricing)
 ```
 
 ---
@@ -62,6 +63,50 @@ with budget(max_usd=1.00, warn_at=0.8, on_exceed=on_warning) as b:
 
 Or without a callback — shekel will emit a `warnings.warn` automatically.
 
+### Fall back to a cheaper model instead of raising
+
+```python
+with budget(max_usd=0.50, fallback="gpt-4o-mini") as b:
+    run_my_agent()  # switches to gpt-4o-mini once $0.50 is hit, keeps going
+
+print(f"Switched model: {b.model_switched}")   # True
+print(f"Switched at: ${b.switched_at_usd:.4f}")
+print(f"Fallback cost: ${b.fallback_spent:.4f}")
+```
+
+A `hard_cap` (default: `max_usd * 2`) stops runaway spending on the fallback model.
+
+### Decorator
+
+```python
+from shekel import with_budget
+
+@with_budget(max_usd=0.10)
+def call_llm():
+    client.chat.completions.create(...)
+
+# Fresh budget on every call
+call_llm()
+call_llm()
+```
+
+Works with async functions too.
+
+### Track spend across multiple runs (persistent budget)
+
+```python
+session = budget(max_usd=5.00, persistent=True)
+
+with session:
+    run_agent_step_1()
+
+with session:
+    run_agent_step_2()
+
+print(f"Total session cost: ${session.spent:.4f}")
+session.reset()  # clear for next session
+```
+
 ### Track spend without enforcing a limit
 
 ```python
@@ -69,6 +114,26 @@ with budget() as b:
     run_my_agent()
 
 print(f"That run cost: ${b.spent:.4f}")
+```
+
+### Spend summary
+
+```python
+with budget(max_usd=2.00) as b:
+    run_my_agent()
+
+print(b.summary())
+# ┌─────────────────────────────────┐
+# │        shekel spend report      │
+# ├─────────────────────────────────┤
+# │ total spent:    $0.1234         │
+# │ limit:          $2.00           │
+# │ remaining:      $1.8766         │
+# ├──────────────┬──────────────────┤
+# │ model        │ cost             │
+# ├──────────────┼──────────────────┤
+# │ gpt-4o       │ $0.1234          │
+# └──────────────┴──────────────────┘
 ```
 
 ### Async support
@@ -84,6 +149,8 @@ async with budget(max_usd=1.00) as b:
 with budget(max_usd=1.00, price_per_1k_tokens={"input": 0.001, "output": 0.003}):
     run_my_agent()
 ```
+
+Or install `shekel[all-models]` for automatic pricing of 400+ models via [tokencost](https://github.com/AgentOps-AI/tokencost).
 
 ---
 
@@ -111,7 +178,7 @@ with budget(max_usd=0.50) as b:
 
 ## API reference
 
-### `budget(max_usd, warn_at, on_exceed, price_per_1k_tokens)`
+### `budget(...)` / `with_budget(...)`
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
@@ -119,14 +186,21 @@ with budget(max_usd=0.50) as b:
 | `warn_at` | `float \| None` | `None` | Fraction of limit (0.0–1.0) at which to warn. |
 | `on_exceed` | `Callable[[float, float], None] \| None` | `None` | Callback fired at `warn_at` threshold. Receives `(spent, limit)`. |
 | `price_per_1k_tokens` | `dict \| None` | `None` | Override pricing: `{"input": 0.001, "output": 0.003}`. |
+| `fallback` | `str \| None` | `None` | Model to switch to when `max_usd` is hit. Same provider only. |
+| `on_fallback` | `Callable[[float, float, str], None] \| None` | `None` | Callback on fallback switch. Receives `(spent, limit, fallback_model)`. |
+| `hard_cap` | `float \| None` | `max_usd * 2` | Absolute ceiling when fallback is active. |
+| `persistent` | `bool` | `False` | If `True`, spend accumulates across multiple `with` blocks. |
 
-### `budget` properties (inside `as b`)
+### `budget` properties
 
 | Property | Type | Description |
 |----------|------|-------------|
 | `b.spent` | `float` | Total USD spent so far. |
 | `b.remaining` | `float \| None` | USD remaining, or `None` in track-only mode. |
 | `b.limit` | `float \| None` | Configured `max_usd`, or `None`. |
+| `b.model_switched` | `bool` | `True` if fallback model was activated. |
+| `b.switched_at_usd` | `float \| None` | Spend level at which fallback was triggered. |
+| `b.fallback_spent` | `float` | Cost accumulated on the fallback model. |
 
 ### `BudgetExceededError`
 
@@ -141,6 +215,8 @@ with budget(max_usd=0.50) as b:
 
 ## Supported models
 
+10 models are bundled with zero dependencies:
+
 | Model | Input / 1k | Output / 1k |
 |-------|-----------|-------------|
 | gpt-4o | $0.00250 | $0.01000 |
@@ -154,7 +230,7 @@ with budget(max_usd=0.50) as b:
 | gemini-1.5-flash | $0.0000750 | $0.000300 |
 | gemini-1.5-pro | $0.00125 | $0.00500 |
 
-Any other model? Use `price_per_1k_tokens` to pass custom pricing.
+For any other model, either pass `price_per_1k_tokens` or install `shekel[all-models]` for automatic pricing of 400+ models.
 
 ---
 
