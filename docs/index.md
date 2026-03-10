@@ -59,18 +59,18 @@ I built shekel so you don't have to learn that lesson yourself.
         run_agent()
     ```
 
--   :material-history:{ .lg .middle } **Persistent Budgets**
+-   :material-tree:{ .lg .middle } **Nested Budgets** :octicons-sparkle-fill-16:{ .new }
 
     ---
 
-    Track spending across multiple sessions and runs.
+    **NEW in v0.2.3**: Hierarchical tracking for multi-stage workflows.
 
     ```python
-    session = budget(max_usd=5.00, persistent=True)
-    with session:
-        run_step_1()
-    with session:
-        run_step_2()
+    with budget(max_usd=10, name="workflow"):
+        with budget(max_usd=2, name="research"):
+            run_research()
+        with budget(max_usd=5, name="analysis"):
+            run_analysis()
     ```
 
 -   :material-speedometer:{ .lg .middle } **Framework Agnostic**

@@ -21,8 +21,8 @@ ASYNC_OPENAI_CREATE = "openai.resources.chat.completions.AsyncCompletions.create
 # ---------------------------------------------------------------------------
 
 
-def test_non_persistent_resets_on_entry() -> None:
-    """persistent=False: second __enter__ starts at $0.00."""
+def test_budget_accumulates_across_entries() -> None:
+    """v0.2.3: Budget variables now accumulate across multiple entries."""
     fake = make_openai_response("gpt-4o", 500, 200)
     b = budget(max_usd=1.00)
 
@@ -35,13 +35,13 @@ def test_non_persistent_resets_on_entry() -> None:
         spent_after_first = b.spent
         assert spent_after_first > 0.0
 
-        # Second entry — spend should reset to 0
+        # Second entry — spend should accumulate, not reset (NEW in v0.2.3)
         with b:
-            assert b.spent == pytest.approx(0.0)
+            assert b.spent == pytest.approx(spent_after_first)
             client.chat.completions.create(model="gpt-4o", messages=[])
 
         spent_after_second = b.spent
-        assert spent_after_second == pytest.approx(spent_after_first)
+        assert spent_after_second == pytest.approx(spent_after_first * 2)
 
 
 # ---------------------------------------------------------------------------
@@ -235,11 +235,11 @@ def test_persistent_async() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_persistent_false_is_default() -> None:
-    """budget(max_usd=1.00) without persistent resets on each entry."""
+def test_budget_always_accumulates() -> None:
+    """v0.2.3: All budgets accumulate (persistent flag is deprecated)."""
     fake = make_openai_response("gpt-4o", 500, 200)
     b = budget(max_usd=1.00)
-    assert b.persistent is False
+    assert b.persistent is False  # Default value
 
     with patch(OPENAI_CREATE, return_value=fake):
         import openai
@@ -249,12 +249,12 @@ def test_persistent_false_is_default() -> None:
             client.chat.completions.create(model="gpt-4o", messages=[])
         first_spent = b.spent
 
-        # Reset on next entry
+        # v0.2.3: Now accumulates instead of resetting
         with b:
-            assert b.spent == pytest.approx(0.0)
+            assert b.spent == pytest.approx(first_spent)
             client.chat.completions.create(model="gpt-4o", messages=[])
 
-    assert b.spent == pytest.approx(first_spent)
+    assert b.spent == pytest.approx(first_spent * 2)
 
 
 # ---------------------------------------------------------------------------

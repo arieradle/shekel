@@ -1,39 +1,32 @@
-# Persistent Budgets
+# Accumulating Budgets
 
-Track spending across multiple sessions and runs with persistent budgets.
+**Updated for v0.2.3** — Budget variables now always accumulate across multiple uses.
 
-## The Problem
+## Overview
 
-By default, each `with budget()` block creates a fresh budget that resets after the context exits:
+When you reuse the same budget variable across multiple `with` blocks, spending automatically accumulates. This is perfect for tracking costs across:
 
-```python
-# Run 1
-with budget(max_usd=1.00) as b:
-    process_batch_1()
-print(f"Batch 1: ${b.spent:.4f}")  # e.g., $0.30
+- Multi-turn conversations
+- Batch processing jobs
+- Per-user daily/monthly limits
+- Long-running workflows
 
-# Run 2 - budget resets!
-with budget(max_usd=1.00) as b:
-    process_batch_2()
-print(f"Batch 2: ${b.spent:.4f}")  # e.g., $0.35, not $0.65
-```
+## How It Works
 
-This is fine for isolated operations, but what if you want to enforce a budget across multiple runs?
-
-## The Solution: Persistent Budgets
-
-Create a budget object and reuse it across multiple contexts:
+In v0.2.3+, all budget variables naturally accumulate:
 
 ```python
-# Create persistent budget
-session = budget(max_usd=5.00, persistent=True)
+from shekel import budget
+
+# Create a budget
+session = budget(max_usd=5.00, name="session")
 
 # Run 1
 with session:
     process_batch_1()
 print(f"After batch 1: ${session.spent:.4f}")  # $0.30
 
-# Run 2 - spend accumulates!
+# Run 2 - spend accumulates automatically!
 with session:
     process_batch_2()
 print(f"After batch 2: ${session.spent:.4f}")  # $0.65
@@ -44,34 +37,59 @@ with session:
 print(f"Total session: ${session.spent:.4f}")  # $1.05
 ```
 
-!!! tip "Session Budgets"
-    Persistent budgets are perfect for:
+!!! tip "Fresh Budget Per Instance"
+    Want a fresh budget? Just create a new instance:
     
-    - Multi-turn conversations
-    - Batch processing across multiple runs
-    - Per-user daily/monthly limits
-    - Long-running workflows
+    ```python
+    # Each creates a fresh budget
+    with budget(max_usd=1.00): process_1()  # $0.30
+    with budget(max_usd=1.00): process_2()  # $0.35 (fresh, not $0.65)
+    ```
 
-## Creating Persistent Budgets
+## Migration from v0.2.2
 
-Set `persistent=True` when creating the budget:
+### What Changed
+
+In v0.2.2, budgets reset on each entry unless you used `persistent=True`:
 
 ```python
-from shekel import budget
-
-# Persistent budget
-session = budget(max_usd=10.00, persistent=True)
-
-# Non-persistent (default)
-oneshot = budget(max_usd=1.00)  # or persistent=False
+# v0.2.2 behavior
+b = budget(max_usd=10.00)
+with b: work1()  # Spends $2
+with b: work2()  # Started at $0 again (spent $2 more)
+# b.spent == $2 (only the last run)
 ```
+
+In v0.2.3+, budgets always accumulate:
+
+```python
+# v0.2.3+ behavior
+b = budget(max_usd=10.00)
+with b: work1()  # Spends $2
+with b: work2()  # Accumulates (spends $2 more)
+# b.spent == $4 (accumulated)
+```
+
+### The `persistent` Parameter
+
+The `persistent` parameter is **deprecated** in v0.2.3:
+
+```python
+# ⚠️  Deprecated (shows warning)
+session = budget(max_usd=5.00, persistent=True)
+
+# ✅ Correct in v0.2.3+
+session = budget(max_usd=5.00, name="session")
+```
+
+The parameter still works for backwards compatibility, but accumulation is now the default behavior.
 
 ## Multi-Turn Conversations
 
 Perfect for chatbots and conversational agents:
 
 ```python
-user_session = budget(max_usd=2.00, persistent=True)
+user_session = budget(max_usd=2.00, name="user_chat")
 
 def handle_user_message(message: str):
     with user_session:
@@ -81,7 +99,7 @@ def handle_user_message(message: str):
         )
         return response.choices[0].message.content
 
-# User sends multiple messages
+# User sends multiple messages - costs accumulate
 response1 = handle_user_message("Hello!")
 print(f"After message 1: ${user_session.spent:.4f}")
 
@@ -100,7 +118,7 @@ Process data in batches with accumulated spending:
 from shekel import budget, BudgetExceededError
 
 def process_all_items(items: list, budget_usd: float):
-    session = budget(max_usd=budget_usd, persistent=True)
+    session = budget(max_usd=budget_usd, name="batch_job")
     results = []
     
     # Process in batches of 10
@@ -130,7 +148,7 @@ results = process_all_items(my_items, budget_usd=10.00)
 Enforce daily spending limits per user:
 
 ```python
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Dict
 
 class UserBudgetManager:
@@ -145,10 +163,10 @@ class UserBudgetManager:
             
             # Reset if it's a new day
             if budget_date != today:
-                budget_obj = budget(max_usd=daily_limit, persistent=True)
+                budget_obj = budget(max_usd=daily_limit, name=f"user_{user_id}")
                 self.user_budgets[user_id] = (budget_obj, today)
         else:
-            budget_obj = budget(max_usd=daily_limit, persistent=True)
+            budget_obj = budget(max_usd=daily_limit, name=f"user_{user_id}")
             self.user_budgets[user_id] = (budget_obj, today)
         
         return budget_obj
@@ -172,12 +190,12 @@ handle_request("user_456", "Hi there")
 handle_request("user_123", "Another message")  # Accumulates with first
 ```
 
-## Resetting Persistent Budgets
+## Resetting Budgets
 
-Reset a persistent budget back to zero:
+Reset a budget back to zero with `.reset()`:
 
 ```python
-session = budget(max_usd=10.00, persistent=True)
+session = budget(max_usd=10.00, name="session")
 
 # Use it
 with session:
@@ -197,7 +215,7 @@ with session:
     You cannot reset a budget while it's active (inside a `with` block). This raises `RuntimeError`:
     
     ```python
-    session = budget(max_usd=10.00, persistent=True)
+    session = budget(max_usd=10.00, name="session")
     
     with session:
         session.reset()  # ❌ RuntimeError
@@ -215,15 +233,15 @@ with session:
         process_again()
     ```
 
-## Persistent with Fallback
+## Accumulation with Fallback
 
-Combine persistent budgets with fallback models:
+Combine accumulating budgets with fallback models:
 
 ```python
 session = budget(
     max_usd=5.00,
     fallback="gpt-4o-mini",
-    persistent=True
+    name="session"
 )
 
 # Run 1 - uses gpt-4o
@@ -252,7 +270,7 @@ if session.model_switched:
     print(f"Total on fallback: ${session.fallback_spent:.4f}")
 ```
 
-## Persistent with Warnings
+## Accumulation with Warnings
 
 Get warned once when the threshold is reached:
 
@@ -264,7 +282,7 @@ session = budget(
     max_usd=10.00,
     warn_at=0.8,
     on_exceed=warn_user,
-    persistent=True
+    name="session"
 )
 
 # Run 1 - no warning
@@ -285,10 +303,10 @@ The warning fires only once per budget instance, not on every context entry.
 
 ## Tracking Session History
 
-The persistent budget maintains full call history:
+Budget variables maintain full call history:
 
 ```python
-session = budget(max_usd=10.00, persistent=True)
+session = budget(max_usd=10.00, name="session")
 
 # Multiple runs
 with session:
@@ -326,11 +344,11 @@ Output shows all calls across all contexts:
 ## Thread Safety Warning
 
 !!! danger "Thread Safety"
-    Persistent budget objects are **not thread-safe** when shared across threads. Each thread should use its own budget instance.
+    Budget objects are **not thread-safe** when shared across threads. Each thread should use its own budget instance.
     
     **Bad** (race conditions):
     ```python
-    session = budget(max_usd=10.00, persistent=True)
+    session = budget(max_usd=10.00, name="session")
     
     def worker():
         with session:  # ❌ Multiple threads sharing
@@ -342,18 +360,18 @@ Output shows all calls across all contexts:
     **Good** (separate budgets):
     ```python
     def worker(worker_id: int):
-        session = budget(max_usd=1.00, persistent=True)
+        session = budget(max_usd=1.00, name=f"worker_{worker_id}")
         with session:  # ✅ Each thread has its own
             process()
     
     threads = [Thread(target=worker, args=(i,)) for i in range(10)]
     ```
 
-Within a single thread, persistent budgets are safe with async/await:
+Within a single thread, budgets are safe with async/await:
 
 ```python
 async def process_items():
-    session = budget(max_usd=10.00, persistent=True)
+    session = budget(max_usd=10.00, name="session")
     
     async with session:
         await process_batch_1()
@@ -364,17 +382,17 @@ async def process_items():
     print(f"Total: ${session.spent:.4f}")
 ```
 
-## When to Use Persistent Budgets
+## When to Accumulate
 
-| Use Case | Persistent? | Why |
-|----------|------------|-----|
-| Single API call | No | No need for accumulation |
-| One-off task | No | Self-contained operation |
-| Multi-turn chat | Yes | Track full conversation cost |
-| Batch processing | Yes | Enforce total batch budget |
-| Per-user limits | Yes | Daily/monthly spend tracking |
-| Testing | No | Isolated test cases |
-| Long workflows | Yes | Multi-step process budget |
+| Use Case | Accumulate? | Why |
+|----------|-------------|-----|
+| Single API call | No (fresh instance) | No need for accumulation |
+| One-off task | No (fresh instance) | Self-contained operation |
+| Multi-turn chat | Yes (reuse variable) | Track full conversation cost |
+| Batch processing | Yes (reuse variable) | Enforce total batch budget |
+| Per-user limits | Yes (reuse variable) | Daily/monthly spend tracking |
+| Testing | No (fresh instance) | Isolated test cases |
+| Long workflows | Yes (reuse variable) | Multi-step process budget |
 
 ## Complete Example
 
@@ -392,7 +410,7 @@ class ConversationManager:
             fallback="gpt-4o-mini",
             on_exceed=self._warn_user,
             on_fallback=self._notify_fallback,
-            persistent=True
+            name=f"user_{user_id}"
         )
     
     def _warn_user(self, spent: float, limit: float):
@@ -435,6 +453,7 @@ print(user.get_stats())
 
 ## Next Steps
 
+- **[Nested Budgets](nested-budgets.md)** - Hierarchical budget tracking
 - **[Streaming](streaming.md)** - Budget tracking for streaming responses
 - **[Decorators](decorators.md)** - Using @with_budget
-- **[API Reference](../api-reference.md)** - Complete persistent budget parameters
+- **[API Reference](../api-reference.md)** - Complete budget parameters

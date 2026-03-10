@@ -1,5 +1,5 @@
 site_name: Shekel
-site_description: LLM cost tracking and budget enforcement for Python. One line. Zero config.
+site_description: LLM cost tracking and budget enforcement for Python. Hierarchical budgets for multi-stage workflows. One line. Zero config.
 site_author: Arie Radle
 site_url: https://arieradle.github.io/shekel/
 
@@ -104,9 +104,10 @@ nav:
     - Quick Start: quickstart.md
   - Usage Guide:
     - Basic Usage: usage/basic-usage.md
+    - Nested Budgets: usage/nested-budgets.md
     - Budget Enforcement: usage/budget-enforcement.md
     - Fallback Models: usage/fallback-models.md
-    - Persistent Budgets: usage/persistent-budgets.md
+    - Accumulating Budgets: usage/accumulating-budgets.md
     - Streaming: usage/streaming.md
     - Decorators: usage/decorators.md
   - Integrations:

@@ -307,15 +307,15 @@ process("item2")  # Budget: $0 → $0.12  (fresh budget!)
 process("item3")  # Budget: $0 → $0.09  (fresh budget!)
 ```
 
-For persistent budgets, use context managers:
+For accumulating budgets, use context managers:
 
 ```python
 def process_all(items: list):
-    session = budget(max_usd=5.00, persistent=True)
+    session = budget(max_usd=5.00, name="batch")
     
     for item in items:
         with session:
-            process(item)  # Accumulates
+            process(item)  # Accumulates automatically (v0.2.3+)
 ```
 
 ## Testing with Decorators
@@ -412,5 +412,5 @@ def process(item: str):
 ## Next Steps
 
 - **[Basic Usage](basic-usage.md)** - Context manager patterns
-- **[Persistent Budgets](persistent-budgets.md)** - Session-based tracking
+- **[Accumulating Budgets](accumulating-budgets.md)** - Multi-session tracking
 - **[API Reference](../api-reference.md)** - Complete decorator parameters

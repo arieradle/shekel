@@ -351,6 +351,6 @@ def call_with_fallback_chain(prompt: str):
 
 ## Next Steps
 
-- **[Persistent Budgets](persistent-budgets.md)** - Track spending across sessions
+- **[Accumulating Budgets](accumulating-budgets.md)** - Multi-session tracking
 - **[Budget Enforcement](budget-enforcement.md)** - More on limits and warnings
 - **[API Reference](../api-reference.md)** - Complete fallback parameters

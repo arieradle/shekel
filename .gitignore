@@ -15,3 +15,11 @@ venv/
 .coverage
 coverage.xml
 htmlcov/
+
+# MkDocs
+site/
+
+# BMad Method
+_bmad-output/
+_bmad/
+.cursor/

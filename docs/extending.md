@@ -309,12 +309,12 @@ Pattern for integrating with agent frameworks:
 from shekel import budget, BudgetExceededError
 
 class BudgetedFrameworkWrapper:
-    def __init__(self, framework_instance, max_usd: float):
+    def __init__(self, framework_instance, max_usd: float, name: str = "framework"):
         self.framework = framework_instance
-        self.budget = budget(max_usd=max_usd, persistent=True)
+        self.budget = budget(max_usd=max_usd, name=name)
     
     def run(self, *args, **kwargs):
-        """Run framework with budget."""
+        """Run framework with budget (accumulates across runs)."""
         try:
             with self.budget:
                 return self.framework.run(*args, **kwargs)

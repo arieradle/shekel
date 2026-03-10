@@ -339,5 +339,5 @@ def test_warning_callback():
 ## Next Steps
 
 - **[Fallback Models](fallback-models.md)** - Automatic model switching instead of raising
-- **[Persistent Budgets](persistent-budgets.md)** - Track spending across sessions
+- **[Accumulating Budgets](accumulating-budgets.md)** - Multi-session tracking
 - **[API Reference](../api-reference.md)** - Complete budget() parameters
