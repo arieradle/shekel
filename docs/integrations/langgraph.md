@@ -236,7 +236,7 @@ user_budgets = {}
 
 def get_user_budget(user_id: str) -> budget:
     if user_id not in user_budgets:
-        user_budgets[user_id] = budget(max_usd=5.00, persistent=True)
+        user_budgets[user_id] = budget(max_usd=5.00, name=f"user_{user_id}")
     return user_budgets[user_id]
 
 def handle_user_query(user_id: str, query: str):
@@ -246,7 +246,7 @@ def handle_user_query(user_id: str, query: str):
         result = app.invoke({"question": query, "answer": ""})
         return result["answer"]
 
-# Each user has their own budget
+# Each user has their own budget that accumulates
 response1 = handle_user_query("user_123", "What is Python?")
 response2 = handle_user_query("user_456", "What is JavaScript?")
 response3 = handle_user_query("user_123", "Tell me more")  # Accumulates

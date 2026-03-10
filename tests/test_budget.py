@@ -163,17 +163,19 @@ def test_warn_at_issues_warning_when_no_callback() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_nested_contexts_isolated() -> None:
+def test_nested_contexts_propagate() -> None:
+    """v0.2.3: Nested contexts now have parent/child relationship."""
     fake = make_openai_response("gpt-4o", 500, 200)
     with patch(OPENAI_CREATE, return_value=fake):
-        with budget(max_usd=10.00) as outer:
-            with budget(max_usd=5.00) as inner:
+        with budget(max_usd=10.00, name="outer") as outer:
+            with budget(max_usd=5.00, name="inner") as inner:
                 import openai
 
                 client = openai.OpenAI(api_key="test")
                 client.chat.completions.create(model="gpt-4o", messages=[])
             assert inner.spent > 0.0
-            assert outer.spent == pytest.approx(0.0)
+            # NEW in v0.2.3: outer receives propagated spend from inner
+            assert outer.spent == pytest.approx(inner.spent)
 
 
 # ---------------------------------------------------------------------------

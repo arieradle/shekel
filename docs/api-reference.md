@@ -11,6 +11,7 @@ Context manager for tracking and enforcing LLM API budgets.
 ```python
 def budget(
     max_usd: float | None = None,
+    name: str | None = None,
     warn_at: float | None = None,
     on_exceed: Callable[[float, float], None] | None = None,
     price_per_1k_tokens: dict[str, float] | None = None,
@@ -25,13 +26,14 @@ def budget(
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `max_usd` | `float \| None` | `None` | Maximum spend in USD. `None` = track-only mode (no enforcement). |
+| `max_usd` | `float \| None` | `None` | Maximum spend in USD. `None` = track-only mode (no enforcement). Must be positive if set. |
+| `name` | `str \| None` | `None` | **NEW v0.2.3**: Budget name for debugging and cost attribution. **Required when nesting budgets**. |
 | `warn_at` | `float \| None` | `None` | Fraction (0.0-1.0) of `max_usd` at which to warn. |
 | `on_exceed` | `Callable[[float, float], None] \| None` | `None` | Callback fired at `warn_at` threshold. Receives `(spent, limit)`. |
 | `price_per_1k_tokens` | `dict[str, float] \| None` | `None` | Override pricing: `{"input": X, "output": Y}` per 1k tokens. |
 | `fallback` | `str \| None` | `None` | Model to switch to when `max_usd` is hit. Same provider only. |
 | `on_fallback` | `Callable[[float, float, str], None] \| None` | `None` | Callback on fallback switch. Receives `(spent, limit, fallback_model)`. |
-| `persistent` | `bool` | `False` | If `True`, accumulate spend across multiple `with` blocks. |
+| `persistent` | `bool` | `False` | **DEPRECATED v0.2.3**: Budgets always accumulate now. Shows deprecation warning if set to `True`. |
 | `hard_cap` | `float \| None` | `max_usd * 2` | Absolute ceiling when fallback is active. Default: `max_usd * 2`. |
 
 ### Returns
@@ -79,16 +81,19 @@ with budget(max_usd=1.00, fallback="gpt-4o-mini") as b:
     run_agent()
 ```
 
-#### Persistent Budget
+#### Accumulating Budget
 
 ```python
-session = budget(max_usd=10.00, persistent=True)
+# Budget variables accumulate across uses (v0.2.3+)
+session = budget(max_usd=10.00, name="session")
 
 with session:
     process_batch_1()
 
 with session:
-    process_batch_2()  # Accumulates
+    process_batch_2()  # Accumulates automatically
+
+print(f"Total: ${session.spent:.2f}")
 ```
 
 #### Custom Pricing
@@ -101,6 +106,27 @@ with budget(
     run_agent()
 ```
 
+#### Nested Budgets (v0.2.3)
+
+```python
+with budget(max_usd=10.00, name="workflow") as workflow:
+    # Research stage: $2 budget
+    with budget(max_usd=2.00, name="research"):
+        run_research()
+    
+    # Analysis stage: $5 budget
+    with budget(max_usd=5.00, name="analysis"):
+        run_analysis()
+    
+    # Parent can spend too
+    finalize()
+
+print(f"Total: ${workflow.spent:.2f}")
+print(workflow.tree())
+```
+
+[See full nested budgets guide →](usage/nested-budgets.md)
+
 ---
 
 ## `Budget` Class
@@ -111,12 +137,24 @@ The budget context manager object.
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `spent` | `float` | Total USD spent in this budget context. |
-| `remaining` | `float \| None` | Remaining USD budget, or `None` if track-only mode. |
-| `limit` | `float \| None` | The configured `max_usd`, or `None` if track-only. |
+| `spent` | `float` | Total USD spent in this budget context (includes children in nested budgets). |
+| `remaining` | `float \| None` | Remaining USD budget (based on effective limit), or `None` if track-only mode. |
+| `limit` | `float \| None` | Effective budget limit (auto-capped if nested), or `None` if track-only. |
+| `name` | `str \| None` | **NEW v0.2.3**: Budget name. |
 | `model_switched` | `bool` | `True` if fallback was activated. |
 | `switched_at_usd` | `float \| None` | USD spent when fallback occurred, or `None`. |
 | `fallback_spent` | `float` | USD spent on the fallback model. |
+
+### Nested Budget Properties (v0.2.3) {#nested-budget-properties}
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `parent` | `Budget \| None` | Parent budget, or `None` if root budget. |
+| `children` | `list[Budget]` | List of child budgets created under this budget. |
+| `active_child` | `Budget \| None` | Currently active child budget, or `None`. |
+| `full_name` | `str` | Hierarchical path name (e.g., `"workflow.research.validation"`). |
+| `spent_direct` | `float` | Direct spend by this budget only (excluding children). |
+| `spent_by_children` | `float` | Sum of spend from all child budgets. |
 
 ### Methods
 
@@ -125,7 +163,7 @@ The budget context manager object.
 Reset spend tracking to zero. Only works when budget is not active.
 
 ```python
-session = budget(max_usd=10.00, persistent=True)
+session = budget(max_usd=10.00, name="session")
 
 with session:
     process()
@@ -177,6 +215,29 @@ print(data["by_model"])
 - `total_calls`: Number of API calls
 - `calls`: List of all call records
 - `by_model`: Aggregated stats per model
+
+#### `tree()`
+
+**NEW in v0.2.3**: Return visual hierarchy of budget tree with spend breakdown.
+
+```python
+with budget(max_usd=20, name="workflow") as w:
+    with budget(max_usd=5, name="research"):
+        research()
+    with budget(max_usd=10, name="analysis"):
+        analyze()
+
+print(w.tree())
+# workflow: $12.50 / $20.00 (direct: $0.00)
+#   research: $3.20 / $5.00 (direct: $3.20)
+#   analysis: $9.30 / $10.00 (direct: $9.30)
+```
+
+**Returns:** Multi-line string with indented tree structure showing:
+- Budget name and hierarchy
+- Total spend / limit
+- Direct spend (excluding children)
+- `[ACTIVE]` marker for currently active children
 
 ---
 
@@ -300,5 +361,6 @@ def fallback_callback(spent: float, limit: float, fallback: str) -> None:
 ## Next Steps
 
 - [Basic Usage](usage/basic-usage.md) - Learn the fundamentals
+- [Nested Budgets](usage/nested-budgets.md) - **NEW v0.2.3**: Hierarchical tracking
 - [Budget Enforcement](usage/budget-enforcement.md) - Hard caps and warnings
 - [Fallback Models](usage/fallback-models.md) - Automatic model switching

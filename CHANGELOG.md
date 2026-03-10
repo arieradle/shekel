@@ -7,6 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.3] - 2026-03-11
+
+### Added
+- **🌳 Nested Budgets** — Hierarchical budget tracking for multi-stage AI workflows
+  - Automatic spend propagation from child to parent on context exit
+  - Auto-capping: child budgets capped to parent's remaining budget
+  - Parent locking: parent cannot spend while child is active (sequential execution)
+  - Named budgets: names required when nesting for clear cost attribution
+  - Track-only children: `max_usd=None` for unlimited child tracking
+- **Rich Introspection API**:
+  - `budget.full_name` — Hierarchical path (e.g., `"workflow.research.validation"`)
+  - `budget.spent_direct` — Direct spend by this budget (excluding children)
+  - `budget.spent_by_children` — Sum of all child spend
+  - `budget.parent` — Reference to parent budget (`None` for root)
+  - `budget.children` — List of child budgets
+  - `budget.active_child` — Currently active child budget
+  - `budget.tree()` — Visual hierarchy of budget tree with spend breakdown
+- **Safety Rails**:
+  - Maximum nesting depth of 5 levels enforced
+  - Async nesting detection (raises clear error — deferred to future version)
+  - Zero/negative budget validation at `__init__`
+  - Spend propagation on all exceptions (money spent is money spent)
+- **Enhanced Properties**:
+  - `budget.limit` now returns effective limit (auto-capped if nested)
+  - `budget.remaining` based on effective limit for nested budgets
+
+### Changed
+- **⚠️ BREAKING**: Budget variables now always accumulate across multiple `with` blocks
+  - Previously: `budget(max_usd=10)` reset on each entry (unless `persistent=True`)
+  - Now: Same budget variable = same accumulated state (matches Python's expected behavior)
+  - Migration: Create new `Budget()` instances instead of relying on reset behavior
+- **⚠️ BREAKING**: Names required when nesting budgets
+  - Both parent and child must have `name` parameter when creating nested contexts
+  - Validation happens at child `__enter__` with clear error messages
+- **⚠️ DEPRECATED**: `persistent` parameter
+  - Shows `DeprecationWarning` when `persistent=True` is explicitly used
+  - Parameter kept for backwards compatibility but no longer has effect
+  - Will be removed in v0.3.0
+
+### Fixed
+- ContextVar token management now uses proper `.reset()` instead of manual `.set(None)`
+- Patch reference counting no longer leaks when validation errors occur before patching
+- Sibling budgets must have unique names under the same parent
+
 ## [0.2.2] - 2026-03-09
 
 ### Added
@@ -37,3 +81,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - `UnknownModelError` is kept for backwards compatibility but no longer raised internally
+
+[Unreleased]: https://github.com/arieradle/shekel/compare/v0.2.3...HEAD
+[0.2.3]: https://github.com/arieradle/shekel/compare/v0.2.2...v0.2.3
+[0.2.2]: https://github.com/arieradle/shekel/compare/v0.2.1...v0.2.2
+[0.2.1]: https://github.com/arieradle/shekel/compare/v0.2.0...v0.2.1
+[0.2.0]: https://github.com/arieradle/shekel/releases/tag/v0.2.0

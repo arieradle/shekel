@@ -90,7 +90,7 @@ asyncio.run(main())
 ## Multi-Turn Conversations
 
 ```python
-conversation = budget(max_usd=2.00, persistent=True)
+conversation = budget(max_usd=2.00, name="conversation")
 messages = []
 
 def chat(user_message: str):
@@ -106,7 +106,7 @@ def chat(user_message: str):
         messages.append({"role": "assistant", "content": assistant_message})
         return assistant_message
 
-# Multi-turn conversation
+# Multi-turn conversation - costs accumulate automatically
 print(chat("Hello! What's your name?"))
 print(f"After turn 1: ${conversation.spent:.4f}\n")
 

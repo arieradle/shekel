@@ -223,7 +223,7 @@ Show costs as they accumulate:
 ```python
 from shekel import budget
 
-session = budget(max_usd=5.00, persistent=True)
+session = budget(max_usd=5.00, name="session")
 
 def stream_with_display(prompt: str):
     with session:
@@ -238,7 +238,7 @@ def stream_with_display(prompt: str):
     
     print(f"\n[Cost: ${session.spent:.4f} / ${session.limit:.2f}]")
 
-# Use multiple times
+# Use multiple times - costs accumulate automatically (v0.2.3+)
 stream_with_display("Tell me about Python")
 stream_with_display("Tell me about JavaScript")
 stream_with_display("Tell me about Rust")
@@ -306,11 +306,11 @@ except KeyboardInterrupt:
 
 ## Streaming Best Practices
 
-### 1. Use Persistent Budgets for Multiple Streams
+### 1. Reuse Budget Variables for Multiple Streams
 
 ```python
-# Good - accumulates across streams
-session = budget(max_usd=5.00, persistent=True)
+# Good - accumulates across streams (v0.2.3+)
+session = budget(max_usd=5.00, name="stream_job")
 for item in items:
     with session:
         stream_response(item)

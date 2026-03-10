@@ -268,6 +268,6 @@ print(f"Models used: {list(data['by_model'].keys())}")
 
 - **[Budget Enforcement](budget-enforcement.md)** - Learn about hard caps and warnings
 - **[Fallback Models](fallback-models.md)** - Automatic model switching
-- **[Persistent Budgets](persistent-budgets.md)** - Session-based tracking
+- **[Accumulating Budgets](accumulating-budgets.md)** - Multi-session tracking
 - **[Streaming](streaming.md)** - Budget tracking for streams
 - **[API Reference](../api-reference.md)** - Complete API documentation

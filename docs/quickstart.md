@@ -125,12 +125,44 @@ if b.model_switched:
     print(f"Switched to fallback at ${b.switched_at_usd:.4f}")
 ```
 
-### Pattern 4: Persistent Budget (Session)
+### Pattern 4: Nested Budgets (v0.2.3)
+
+Control costs for multi-stage workflows:
+
+```python
+with budget(max_usd=10.00, name="workflow") as workflow:
+    # Research phase: $2 budget
+    with budget(max_usd=2.00, name="research"):
+        research_results = search_and_analyze()
+    
+    # Processing phase: $5 budget
+    with budget(max_usd=5.00, name="processing"):
+        processed = process_results(research_results)
+    
+    # Finalization (parent budget)
+    final = finalize(processed)
+
+print(f"Total cost: ${workflow.spent:.2f}")
+print(workflow.tree())
+# workflow: $7.20 / $10.00 (direct: $0.20)
+#   research: $2.00 / $2.00 (direct: $2.00)
+#   processing: $5.00 / $5.00 (direct: $5.00)
+```
+
+**Why this matters:**
+- Each stage has its own budget limit
+- Children auto-capped to parent's remaining budget
+- Clear cost attribution per stage
+- Perfect for complex multi-stage agents
+
+[Learn more about nested budgets →](usage/nested-budgets.md)
+
+### Pattern 5: Accumulating Sessions
 
 Track spending across multiple runs:
 
 ```python
-session = budget(max_usd=5.00, persistent=True)
+session = budget(max_usd=5.00, name="session")
 
 # First run
 with session:
@@ -148,7 +180,9 @@ with session:
 print(f"Total session spend: ${session.spent:.4f}")
 ```
 
-### Pattern 5: Decorator
+**Note:** In v0.2.3, all budget variables accumulate by default (no `persistent=True` needed).
+
+### Pattern 6: Decorator
 
 Wrap functions with a budget:
 
@@ -183,7 +217,23 @@ async def process_items():
     print(f"Processed {len(items)} items for ${b.spent:.4f}")
 ```
 
-### Pattern 7: Streaming
+### Pattern 7: Async Support
+
+Full async/await support:
+
+```python
+async def process_items():
+    async with budget(max_usd=1.00) as b:
+        for item in items:
+            response = await client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[{"role": "user", "content": item}],
+            )
+            await process(response)
+    print(f"Processed {len(items)} items for ${b.spent:.4f}")
+```
+
+### Pattern 8: Streaming
 
 Budget tracking works with streaming:
 
@@ -284,9 +334,9 @@ shekel models --provider anthropic
 
 Now that you've seen the basics, dive deeper:
 
+- **[Nested Budgets](usage/nested-budgets.md)** - **NEW v0.2.3**: Multi-stage workflow budgets
 - **[Budget Enforcement](usage/budget-enforcement.md)** - Learn about hard caps, warnings, and callbacks
 - **[Fallback Models](usage/fallback-models.md)** - Automatic model switching
-- **[Persistent Budgets](usage/persistent-budgets.md)** - Session-based budget tracking
 - **[Streaming](usage/streaming.md)** - Budget tracking for streaming responses
 - **[API Reference](api-reference.md)** - Complete API documentation
 - **[Integrations](integrations/langgraph.md)** - Framework-specific guides

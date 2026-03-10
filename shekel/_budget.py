@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import warnings
+from contextvars import Token
 from typing import TYPE_CHECKING, Any, Callable, TypedDict
 
 from shekel import _context, _patch
@@ -62,9 +63,27 @@ class Budget:
         # --- NEW in v0.2 ---
         fallback: str | None = None,
         on_fallback: Callable[[float, float, str], None] | None = None,
-        persistent: bool = False,
+        persistent: bool = False,  # DEPRECATED in v0.2.3
         hard_cap: float | None = None,
+        # --- NEW in v0.2.3 (nested budgets) ---
+        name: str | None = None,
     ) -> None:
+        # --- NEW in v0.2.3 (Decision #12): Deprecate persistent flag ---
+        if persistent is not False:  # User explicitly set it
+            warnings.warn(
+                "The 'persistent' parameter is deprecated in v0.2.3. "
+                "Budget variables now always accumulate across multiple 'with' blocks. "
+                "To start fresh, create a new Budget instance.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+
+        # --- NEW in v0.2.3 (Decision #24): Validate zero/negative budgets ---
+        if max_usd is not None and max_usd <= 0:
+            raise ValueError(
+                "max_usd must be positive or None for track-only mode. " f"Got: {max_usd}"
+            )
+
         if warn_at is not None and not (0.0 <= warn_at <= 1.0):
             raise ValueError(f"warn_at must be a fraction between 0.0 and 1.0, got {warn_at}")
         if price_per_1k_tokens is not None:
@@ -101,10 +120,19 @@ class Budget:
         self.persistent: bool = persistent
         self.hard_cap: float | None = hard_cap
 
-        self._ctx_token: object | None = None
+        # --- NEW in v0.2.3 (nested budgets) ---
+        self.name: str | None = name
+        self.parent: Budget | None = None
+        self.children: list[Budget] = []
+        self.active_child: Budget | None = None
+        self._depth: int = 0
+        self._effective_limit: float | None = max_usd  # Will be auto-capped in __enter__
+
+        self._ctx_token: Token[Budget | None] | None = None
 
         # All spend-tracking state lives here — reset on each __enter__ for non-persistent
         self._spent: float = 0.0
+        self._spent_direct: float = 0.0  # NEW in v0.2.3: Direct spend (excluding children)
         self._warn_fired: bool = False
         self._last_model: str = "unknown"
         self._last_tokens: dict[str, int] = {"input": 0, "output": 0}
@@ -120,6 +148,7 @@ class Budget:
     def _reset_state(self) -> None:
         """Reset all spend tracking state. Called on __enter__ for non-persistent budgets."""
         self._spent = 0.0
+        self._spent_direct = 0.0
         self._warn_fired = False
         self._last_model = "unknown"
         self._last_tokens = {"input": 0, "output": 0}
@@ -133,15 +162,85 @@ class Budget:
     # ------------------------------------------------------------------
 
     def __enter__(self) -> Budget:
-        if not self.persistent:
-            self._reset_state()
+        # --- REMOVED in v0.2.3 (Decision #12): Always accumulate, never reset ---
+        # Budget variables now always accumulate across multiple entries
+        # if not self.persistent:
+        #     self._reset_state()
+
+        # --- NEW in v0.2.3 (nested budgets): Detect parent and validate BEFORE applying patches ---
+        current_budget = _context.get_active_budget()
+        if current_budget is not None:
+            # We're nesting inside another budget
+
+            # --- NEW in v0.2.3 (Decision #9): Required names for nested budgets ---
+            if current_budget.name is None:
+                raise ValueError(
+                    "Parent budget must have a name when nesting. "
+                    "Add name='...' to the parent budget."
+                )
+            if self.name is None:
+                raise ValueError(
+                    "Child budget must have a name when nesting. "
+                    "Add name='...' to the child budget."
+                )
+
+            # --- NEW in v0.2.3 (Decision #18): Max depth limit ---
+            if current_budget._depth >= 4:  # Depth 4 is max (0, 1, 2, 3, 4)
+                raise ValueError(
+                    f"Maximum budget nesting depth of 5 exceeded. "
+                    f"Current depth: {current_budget._depth}, "
+                    f"attempted depth: {current_budget._depth + 1}"
+                )
+
+            # --- NEW in v0.2.3 (Decision #23): Unique sibling names ---
+            # Check if parent already has a child with this name
+            for existing_child in current_budget.children:
+                if existing_child.name == self.name:
+                    raise ValueError(
+                        f"Child name '{self.name}' already exists under "
+                        f"parent '{current_budget.name}'. "
+                        f"Sibling budgets must have unique names."
+                    )
+
+        # All validation passed - now apply patches
         _patch.apply_patches()
+
+        # Set up parent-child relationships
+        if current_budget is not None:
+            self.parent = current_budget
+            self._depth = current_budget._depth + 1
+            # Register as child of parent
+            current_budget.children.append(self)
+            current_budget.active_child = self
+
+            # --- NEW in v0.2.3 (Decision #2): Auto-capping ---
+            # Cap child limit to parent's remaining budget
+            if self.max_usd is not None and current_budget.remaining is not None:
+                self._effective_limit = min(self.max_usd, current_budget.remaining)
+            else:
+                # Track-only child (max_usd=None) is not capped
+                self._effective_limit = self.max_usd
+        else:
+            # Root budget - no capping needed
+            self._effective_limit = self.max_usd
+
         self._ctx_token = _context.set_active_budget(self)
         return self
 
     def __exit__(self, exc_type: object, exc_val: object, exc_tb: object) -> None:
+        # --- NEW in v0.2.3 (nested budgets): Propagate to parent ---
+        if self.parent is not None:
+            # Propagate our spend to parent
+            self.parent._spent += self._spent
+            # Clear parent's active_child
+            self.parent.active_child = None
+
         # Always clean up — even if BudgetExceededError is in flight
-        _context.set_active_budget(None)
+        # Use proper ContextVar token-based restoration
+        if self._ctx_token is not None:
+            from shekel._context import _active_budget
+
+            _active_budget.reset(self._ctx_token)
         _patch.remove_patches()
         # returning None (not False) — never suppress exceptions
 
@@ -150,14 +249,29 @@ class Budget:
     # ------------------------------------------------------------------
 
     async def __aenter__(self) -> Budget:
-        if not self.persistent:
-            self._reset_state()
+        # --- REMOVED in v0.2.3 (Decision #12): Always accumulate, never reset ---
+        # if not self.persistent:
+        #     self._reset_state()
+
+        # --- NEW in v0.2.3 (Decision #20): No async nesting in MVP ---
+        current_budget = _context.get_active_budget()
+        if current_budget is not None:
+            raise RuntimeError(
+                "Nested budgets not supported in async contexts yet. "
+                "Use sync context managers or a single async budget. "
+                "See https://github.com/arieradle/shekel for details."
+            )
+
         _patch.apply_patches()
         self._ctx_token = _context.set_active_budget(self)
         return self
 
     async def __aexit__(self, exc_type: object, exc_val: object, exc_tb: object) -> None:
-        _context.set_active_budget(None)
+        # Use proper ContextVar token-based restoration
+        if self._ctx_token is not None:
+            from shekel._context import _active_budget
+
+            _active_budget.reset(self._ctx_token)
         _patch.remove_patches()
 
     # ------------------------------------------------------------------
@@ -182,7 +296,17 @@ class Budget:
     # ------------------------------------------------------------------
 
     def _record_spend(self, cost: float, model: str, tokens: dict[str, int]) -> None:
+        # --- NEW in v0.2.3 (Decision #4): Parent locking ---
+        # If this budget has an active child, it cannot record spend
+        if self.active_child is not None:
+            raise RuntimeError(
+                f"shekel: Cannot spend on parent budget '{self.name or 'unnamed'}' "
+                f"while child budget '{self.active_child.name or 'unnamed'}' is active. "
+                f"Wait for child context to exit."
+            )
+
         self._spent += cost
+        self._spent_direct += cost  # NEW in v0.2.3: Track direct spend
         if self._using_fallback:
             self._fallback_spent += cost
         self._last_model = model
@@ -277,15 +401,15 @@ class Budget:
 
     @property
     def remaining(self) -> float | None:
-        """Remaining USD budget, or None if track-only mode (max_usd=None)."""
-        if self.max_usd is None:
+        """Remaining USD budget (based on effective limit), or None if track-only mode."""
+        if self._effective_limit is None:
             return None
-        return max(0.0, self.max_usd - self._spent)
+        return max(0.0, self._effective_limit - self._spent)
 
     @property
     def limit(self) -> float | None:
-        """The configured max_usd limit, or None if track-only mode."""
-        return self.max_usd
+        """The effective limit (auto-capped if nested), or None if track-only mode."""
+        return self._effective_limit
 
     @property
     def price_override(self) -> dict[str, float] | None:
@@ -306,6 +430,63 @@ class Budget:
     def fallback_spent(self) -> float:
         """USD spent on the fallback model (0.0 if no switch occurred)."""
         return self._fallback_spent
+
+    # --- NEW in v0.2.3 (Decision #11): Rich introspection API ---
+
+    @property
+    def full_name(self) -> str:
+        """Hierarchical path name (e.g., 'workflow.research.api_calls')."""
+        if self.parent is None:
+            return self.name or "unnamed"
+        return f"{self.parent.full_name}.{self.name or 'unnamed'}"
+
+    @property
+    def spent_direct(self) -> float:
+        """Direct spend by this budget (excluding children)."""
+        return self._spent_direct
+
+    @property
+    def spent_by_children(self) -> float:
+        """Sum of all child spend."""
+        return self._spent - self._spent_direct
+
+    def tree(self, _indent: int = 0) -> str:
+        """
+        Visual hierarchy of budget tree with spend breakdown.
+
+        Active children are shown with [ACTIVE] marker but no spend details
+        (Decision #27 - consistent with transparent model).
+        """
+        lines = []
+        prefix = "  " * _indent
+
+        # Show this budget
+        if self.active_child is not None:
+            # This budget has an active child - show name only
+            lines.append(f"{prefix}{self.name or 'unnamed'}")
+        else:
+            # Budget completed - show full details
+            limit_str = (
+                f"${self._effective_limit:.2f}"
+                if self._effective_limit is not None
+                else "track-only"
+            )
+            lines.append(
+                f"{prefix}{self.name or 'unnamed'}: "
+                f"${self._spent:.2f} / {limit_str} "
+                f"(direct: ${self._spent_direct:.2f})"
+            )
+
+        # Show children
+        for child in self.children:
+            if child == self.active_child:
+                # Active child - show name with marker, no spend (Decision #27)
+                lines.append(f"{prefix}  {child.name or 'unnamed'} [ACTIVE]")
+            else:
+                # Completed child - recurse
+                lines.append(child.tree(_indent=_indent + 1))
+
+        return "\n".join(lines)
 
     # ------------------------------------------------------------------
     # Summary (F5)
