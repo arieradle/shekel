@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="LLM cost tracking and budget enforcement for Python. One line. Zero config.">
+        <meta name="description" content="LLM cost tracking and budget enforcement for Python. Hierarchical budgets for multi-stage workflows. One line. Zero config.">
       
       
         <meta name="author" content="Arie Radle">
@@ -15,7 +15,7 @@
         <link rel="canonical" href="https://arieradle.github.io/shekel/usage/streaming/">
       
       
-        <link rel="prev" href="../persistent-budgets/">
+        <link rel="prev" href="../accumulating-budgets/">
       
       
         <link rel="next" href="../decorators/">
@@ -127,7 +127,7 @@
     
     
   <!-- SEO Meta Tags -->
-  <meta name="description" content="LLM cost tracking and budget enforcement for Python. One line. Zero config.">
+  <meta name="description" content="LLM cost tracking and budget enforcement for Python. Hierarchical budgets for multi-stage workflows. One line. Zero config.">
   <meta name="author" content="Arie Radle">
   <meta name="keywords" content="llm cost tracking, openai budget, anthropic budget, llm spend limit, agent budget, langgraph budget, crewai cost control, llm fallback, model fallback, ai cost control, python llm budget, budget enforcement, cost tracking">
   
@@ -751,6 +751,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../nested-budgets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Nested Budgets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../budget-enforcement/" class="md-nav__link">
         
   
@@ -807,14 +835,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../persistent-budgets/" class="md-nav__link">
+      <a href="../accumulating-budgets/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Persistent Budgets
+    Accumulating Budgets
   
 
     
@@ -1045,10 +1073,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#1-use-persistent-budgets-for-multiple-streams" class="md-nav__link">
+  <a href="#1-reuse-budget-variables-for-multiple-streams" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Use Persistent Budgets for Multiple Streams
+        1. Reuse Budget Variables for Multiple Streams
       
     </span>
   </a>
@@ -1799,10 +1827,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#1-use-persistent-budgets-for-multiple-streams" class="md-nav__link">
+  <a href="#1-reuse-budget-variables-for-multiple-streams" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Use Persistent Budgets for Multiple Streams
+        1. Reuse Budget Variables for Multiple Streams
       
     </span>
   </a>
@@ -2079,7 +2107,7 @@
 <p>Show costs as they accumulate:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">shekel</span><span class="w"> </span><span class="kn">import</span> <span class="n">budget</span>
 </span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>
-</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="n">session</span> <span class="o">=</span> <span class="n">budget</span><span class="p">(</span><span class="n">max_usd</span><span class="o">=</span><span class="mf">5.00</span><span class="p">,</span> <span class="n">persistent</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="n">session</span> <span class="o">=</span> <span class="n">budget</span><span class="p">(</span><span class="n">max_usd</span><span class="o">=</span><span class="mf">5.00</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;session&quot;</span><span class="p">)</span>
 </span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>
 </span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">stream_with_display</span><span class="p">(</span><span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
 </span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>    <span class="k">with</span> <span class="n">session</span><span class="p">:</span>
@@ -2094,7 +2122,7 @@
 </span><span id="__span-8-15"><a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a>
 </span><span id="__span-8-16"><a id="__codelineno-8-16" name="__codelineno-8-16" href="#__codelineno-8-16"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">[Cost: $</span><span class="si">{</span><span class="n">session</span><span class="o">.</span><span class="n">spent</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> / $</span><span class="si">{</span><span class="n">session</span><span class="o">.</span><span class="n">limit</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">]&quot;</span><span class="p">)</span>
 </span><span id="__span-8-17"><a id="__codelineno-8-17" name="__codelineno-8-17" href="#__codelineno-8-17"></a>
-</span><span id="__span-8-18"><a id="__codelineno-8-18" name="__codelineno-8-18" href="#__codelineno-8-18"></a><span class="c1"># Use multiple times</span>
+</span><span id="__span-8-18"><a id="__codelineno-8-18" name="__codelineno-8-18" href="#__codelineno-8-18"></a><span class="c1"># Use multiple times - costs accumulate automatically (v0.2.3+)</span>
 </span><span id="__span-8-19"><a id="__codelineno-8-19" name="__codelineno-8-19" href="#__codelineno-8-19"></a><span class="n">stream_with_display</span><span class="p">(</span><span class="s2">&quot;Tell me about Python&quot;</span><span class="p">)</span>
 </span><span id="__span-8-20"><a id="__codelineno-8-20" name="__codelineno-8-20" href="#__codelineno-8-20"></a><span class="n">stream_with_display</span><span class="p">(</span><span class="s2">&quot;Tell me about JavaScript&quot;</span><span class="p">)</span>
 </span><span id="__span-8-21"><a id="__codelineno-8-21" name="__codelineno-8-21" href="#__codelineno-8-21"></a><span class="n">stream_with_display</span><span class="p">(</span><span class="s2">&quot;Tell me about Rust&quot;</span><span class="p">)</span>
@@ -2153,9 +2181,9 @@
 <p>If you interrupt a stream (e.g., with Ctrl+C), the cost will still be recorded. OpenAI and Anthropic charge for all tokens generated, even if you don't consume the full stream.</p>
 </div>
 <h2 id="streaming-best-practices">Streaming Best Practices<a class="headerlink" href="#streaming-best-practices" title="Permanent link">&para;</a></h2>
-<h3 id="1-use-persistent-budgets-for-multiple-streams">1. Use Persistent Budgets for Multiple Streams<a class="headerlink" href="#1-use-persistent-budgets-for-multiple-streams" title="Permanent link">&para;</a></h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="c1"># Good - accumulates across streams</span>
-</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="n">session</span> <span class="o">=</span> <span class="n">budget</span><span class="p">(</span><span class="n">max_usd</span><span class="o">=</span><span class="mf">5.00</span><span class="p">,</span> <span class="n">persistent</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<h3 id="1-reuse-budget-variables-for-multiple-streams">1. Reuse Budget Variables for Multiple Streams<a class="headerlink" href="#1-reuse-budget-variables-for-multiple-streams" title="Permanent link">&para;</a></h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="c1"># Good - accumulates across streams (v0.2.3+)</span>
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="n">session</span> <span class="o">=</span> <span class="n">budget</span><span class="p">(</span><span class="n">max_usd</span><span class="o">=</span><span class="mf">5.00</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;stream_job&quot;</span><span class="p">)</span>
 </span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">items</span><span class="p">:</span>
 </span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>    <span class="k">with</span> <span class="n">session</span><span class="p">:</span>
 </span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>        <span class="n">stream_response</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>

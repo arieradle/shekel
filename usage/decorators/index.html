@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="LLM cost tracking and budget enforcement for Python. One line. Zero config.">
+        <meta name="description" content="LLM cost tracking and budget enforcement for Python. Hierarchical budgets for multi-stage workflows. One line. Zero config.">
       
       
         <meta name="author" content="Arie Radle">
@@ -127,7 +127,7 @@
     
     
   <!-- SEO Meta Tags -->
-  <meta name="description" content="LLM cost tracking and budget enforcement for Python. One line. Zero config.">
+  <meta name="description" content="LLM cost tracking and budget enforcement for Python. Hierarchical budgets for multi-stage workflows. One line. Zero config.">
   <meta name="author" content="Arie Radle">
   <meta name="keywords" content="llm cost tracking, openai budget, anthropic budget, llm spend limit, agent budget, langgraph budget, crewai cost control, llm fallback, model fallback, ai cost control, python llm budget, budget enforcement, cost tracking">
   
@@ -751,6 +751,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../nested-budgets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Nested Budgets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../budget-enforcement/" class="md-nav__link">
         
   
@@ -807,14 +835,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../persistent-budgets/" class="md-nav__link">
+      <a href="../accumulating-budgets/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Persistent Budgets
+    Accumulating Budgets
   
 
     
@@ -2245,13 +2273,13 @@
 </span><span id="__span-15-7"><a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a><span class="n">process</span><span class="p">(</span><span class="s2">&quot;item2&quot;</span><span class="p">)</span>  <span class="c1"># Budget: $0 → $0.12  (fresh budget!)</span>
 </span><span id="__span-15-8"><a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a><span class="n">process</span><span class="p">(</span><span class="s2">&quot;item3&quot;</span><span class="p">)</span>  <span class="c1"># Budget: $0 → $0.09  (fresh budget!)</span>
 </span></code></pre></div>
-<p>For persistent budgets, use context managers:</p>
+<p>For accumulating budgets, use context managers:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">process_all</span><span class="p">(</span><span class="n">items</span><span class="p">:</span> <span class="nb">list</span><span class="p">):</span>
-</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>    <span class="n">session</span> <span class="o">=</span> <span class="n">budget</span><span class="p">(</span><span class="n">max_usd</span><span class="o">=</span><span class="mf">5.00</span><span class="p">,</span> <span class="n">persistent</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>    <span class="n">session</span> <span class="o">=</span> <span class="n">budget</span><span class="p">(</span><span class="n">max_usd</span><span class="o">=</span><span class="mf">5.00</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;batch&quot;</span><span class="p">)</span>
 </span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>
 </span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a>    <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">items</span><span class="p">:</span>
 </span><span id="__span-16-5"><a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a>        <span class="k">with</span> <span class="n">session</span><span class="p">:</span>
-</span><span id="__span-16-6"><a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a>            <span class="n">process</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>  <span class="c1"># Accumulates</span>
+</span><span id="__span-16-6"><a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a>            <span class="n">process</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>  <span class="c1"># Accumulates automatically (v0.2.3+)</span>
 </span></code></pre></div>
 <h2 id="testing-with-decorators">Testing with Decorators<a class="headerlink" href="#testing-with-decorators" title="Permanent link">&para;</a></h2>
 <p>Decorators make testing clean:</p>
@@ -2330,7 +2358,7 @@
 <h2 id="next-steps">Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong><a href="../basic-usage/">Basic Usage</a></strong> - Context manager patterns</li>
-<li><strong><a href="../persistent-budgets/">Persistent Budgets</a></strong> - Session-based tracking</li>
+<li><strong><a href="../accumulating-budgets/">Accumulating Budgets</a></strong> - Multi-session tracking</li>
 <li><strong><a href="../../api-reference/">API Reference</a></strong> - Complete decorator parameters</li>
 </ul>
 
