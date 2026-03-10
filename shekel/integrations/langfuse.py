@@ -46,6 +46,7 @@ class LangfuseAdapter(ObservabilityAdapter):
         self.client = client
         self.trace_name = trace_name
         self.tags = tags or []
+        self._trace = None  # Current trace object
 
     def on_cost_update(self, budget_data: dict[str, Any]) -> None:
         """Called after each LLM API call with updated cost information.
@@ -62,8 +63,35 @@ class LangfuseAdapter(ObservabilityAdapter):
                 - model: Model used for this call (str)
                 - call_cost: Cost of this specific call (float)
         """
-        # TODO: Implement in Story 2.2
-        pass
+        try:
+            # Create trace if it doesn't exist
+            if self._trace is None:
+                self._trace = self.client.trace(
+                    name=self.trace_name,
+                    tags=self.tags if self.tags else None,
+                )
+            
+            # Build metadata
+            metadata = {
+                "shekel_spent": budget_data["spent"],
+                "shekel_limit": budget_data["limit"],
+                "shekel_budget_name": budget_data["full_name"],
+                "shekel_last_model": budget_data["model"],
+            }
+            
+            # Add utilization if limit is set
+            if budget_data["limit"] is not None and budget_data["limit"] > 0:
+                utilization = budget_data["spent"] / budget_data["limit"]
+                metadata["shekel_utilization"] = utilization
+            else:
+                metadata["shekel_utilization"] = None
+            
+            # Update trace with new metadata
+            self._trace.update(metadata=metadata)
+            
+        except Exception:
+            # Don't break Shekel if Langfuse fails
+            pass
 
     def on_budget_exceeded(self, error_data: dict[str, Any]) -> None:
         """Called when a budget limit is exceeded.
