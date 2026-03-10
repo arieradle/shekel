@@ -351,6 +351,7 @@ class Budget:
             # Activate fallback instead of raising
             self._using_fallback = True
             self._switched_at_usd = self._spent
+            self._emit_fallback_activated_event()
             if self.on_fallback is not None:
                 self.on_fallback(self._spent, self.max_usd, self.fallback)
             else:
@@ -370,6 +371,7 @@ class Budget:
                 effective_hard_cap = self.max_usd * 2.0
 
             if effective_hard_cap is not None and self._spent > effective_hard_cap:
+                self._emit_budget_exceeded_event()
                 raise BudgetExceededError(
                     self._spent,
                     effective_hard_cap,
@@ -388,7 +390,47 @@ class Budget:
             return
 
         # No fallback — standard raise
+        self._emit_budget_exceeded_event()
         raise BudgetExceededError(self._spent, self.max_usd, self._last_model, self._last_tokens)
+    
+    def _emit_fallback_activated_event(self) -> None:
+        """Emit fallback activated event to adapters."""
+        try:
+            from shekel.integrations import AdapterRegistry
+            
+            AdapterRegistry.emit_event("on_fallback_activated", {
+                "from_model": self._last_model,
+                "to_model": self.fallback,
+                "switched_at": self._switched_at_usd,
+                "cost_primary": self._switched_at_usd,
+                "cost_fallback": 0.0,  # Just activated
+                "savings": 0.0,  # Will be calculated over time
+            })
+        except Exception:
+            # Don't break budget enforcement if adapter system fails
+            pass
+    
+    def _emit_budget_exceeded_event(self) -> None:
+        """Emit budget exceeded event to adapters."""
+        try:
+            from shekel.integrations import AdapterRegistry
+            
+            parent_remaining = None
+            if self.parent is not None:
+                parent_remaining = self.parent.remaining
+            
+            AdapterRegistry.emit_event("on_budget_exceeded", {
+                "budget_name": self.full_name,
+                "spent": self._spent,
+                "limit": self.max_usd or 0.0,
+                "overage": self._spent - (self.max_usd or 0.0),
+                "model": self._last_model,
+                "tokens": self._last_tokens,
+                "parent_remaining": parent_remaining,
+            })
+        except Exception:
+            # Don't break budget enforcement if adapter system fails
+            pass
 
     # ------------------------------------------------------------------
     # Public properties
