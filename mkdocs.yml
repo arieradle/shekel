@@ -59,6 +59,9 @@ theme:
       quote: octicons/quote-16
 
 extra:
+  analytics:
+    provider: google
+    property: G-YJDLR6LJLG
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/arieradle/shekel
