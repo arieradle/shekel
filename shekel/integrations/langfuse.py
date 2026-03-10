@@ -47,11 +47,13 @@ class LangfuseAdapter(ObservabilityAdapter):
         self.trace_name = trace_name
         self.tags = tags or []
         self._trace = None  # Current trace object
+        self._span_stack: list[Any] = []  # Stack of spans for nested budgets
 
     def on_cost_update(self, budget_data: dict[str, Any]) -> None:
         """Called after each LLM API call with updated cost information.
         
         Sends cost and usage data to Langfuse as metadata on the current trace/span.
+        For nested budgets, creates a hierarchy of spans to match the budget structure.
         
         Args:
             budget_data: Dictionary containing:
@@ -64,7 +66,10 @@ class LangfuseAdapter(ObservabilityAdapter):
                 - call_cost: Cost of this specific call (float)
         """
         try:
-            # Create trace if it doesn't exist
+            depth = budget_data["depth"]
+            full_name = budget_data["full_name"]
+            
+            # Create trace if it doesn't exist (depth 0, first call)
             if self._trace is None:
                 self._trace = self.client.trace(
                     name=self.trace_name,
@@ -75,7 +80,7 @@ class LangfuseAdapter(ObservabilityAdapter):
             metadata = {
                 "shekel_spent": budget_data["spent"],
                 "shekel_limit": budget_data["limit"],
-                "shekel_budget_name": budget_data["full_name"],
+                "shekel_budget_name": full_name,
                 "shekel_last_model": budget_data["model"],
             }
             
@@ -86,8 +91,35 @@ class LangfuseAdapter(ObservabilityAdapter):
             else:
                 metadata["shekel_utilization"] = None
             
-            # Update trace with new metadata
-            self._trace.update(metadata=metadata)
+            # Handle nesting
+            if depth == 0:
+                # Top-level budget: update trace
+                # Adjust span stack if we returned from nested budget
+                self._span_stack = []
+                self._trace.update(metadata=metadata)
+            else:
+                # Nested budget: manage span hierarchy
+                # Adjust stack to match current depth
+                while len(self._span_stack) >= depth:
+                    self._span_stack.pop()
+                
+                # Determine parent (trace or parent span)
+                if depth == 1:
+                    parent = self._trace
+                else:
+                    parent = self._span_stack[-1]
+                
+                # Check if we need to create a new span or update existing
+                if len(self._span_stack) < depth:
+                    # Create new span
+                    span = parent.span(name=full_name)
+                    self._span_stack.append(span)
+                else:
+                    # Update existing span at this depth
+                    span = self._span_stack[depth - 1]
+                
+                # Update span with metadata
+                span.update(metadata=metadata)
             
         except Exception:
             # Don't break Shekel if Langfuse fails

@@ -131,7 +131,9 @@ class TestRealTimeCostStreaming:
 
         mock_client = MagicMock()
         mock_trace = MagicMock()
+        mock_span = MagicMock()
         mock_client.trace.return_value = mock_trace
+        mock_trace.span.return_value = mock_span
 
         adapter = LangfuseAdapter(client=mock_client)
 
@@ -145,9 +147,16 @@ class TestRealTimeCostStreaming:
             "call_cost": 0.10,
         })
 
-        update_args = mock_trace.update.call_args[1]
-        metadata = update_args["metadata"]
+        # Should have created a span with hierarchical name
+        mock_trace.span.assert_called_once()
+        span_args = mock_trace.span.call_args[1]
+        assert span_args["name"] == "parent.child"
         
+        # Should have updated span metadata
+        mock_span.update.assert_called()
+        update_args = mock_span.update.call_args[1]
+        metadata = update_args["metadata"]
+
         # Should include hierarchical name
         assert "shekel_budget_name" in metadata
         assert metadata["shekel_budget_name"] == "parent.child"
