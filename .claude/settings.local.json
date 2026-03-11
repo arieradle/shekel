@@ -67,7 +67,22 @@
       "Read(//home/elish/.nvm/**)",
       "Bash(source ~/.nvm/nvm.sh)",
       "Bash(nvm install:*)",
-      "Bash(grep -r \"v0\\\\\\\\.2\\\\\\\\.[0-9]\" /mnt/c/Users/elish/code/shekel/docs/*.md /mnt/c/Users/elish/code/shekel/docs/**/*.md | grep -v \"CHANGELOG\\\\|changelog\" | head -20)"
+      "Bash(grep -r \"v0\\\\\\\\.2\\\\\\\\.[0-9]\" /mnt/c/Users/elish/code/shekel/docs/*.md /mnt/c/Users/elish/code/shekel/docs/**/*.md | grep -v \"CHANGELOG\\\\|changelog\" | head -20)",
+      "Bash(cat /home/elish/.claude/projects/-mnt-c-Users-elish-code-shekel/511ceb7f-1b10-477c-a628-4f32a473aafd/tool-results/toolu_012eRcqWe5kFZnaqkfoTQNcU.txt | jq -r '.[0].text' > /mnt/c/Users/elish/code/shekel/IMPLEMENTATION_PLAN.md)",
+      "Bash(pyenv local:*)",
+      "Bash(python -m pytest tests/providers/test_provider_test_base.py -v 2>&1)",
+      "Bash(python -m pytest tests/ --ignore=tests/providers -x -q 2>&1)",
+      "Bash(python -m pytest tests/providers/test_registry.py -v 2>&1 | head -40)",
+      "Bash(python -m pytest tests/providers/ -v 2>&1 | tail -60)",
+      "Bash(python -m pytest --tb=short -q 2>&1 | tail -20)",
+      "Bash(python -m pytest --tb=short -q 2>&1 | tail -30)",
+      "Bash(python -m pytest --tb=short -q 2>&1 | tail -5)",
+      "Bash(isort --check-only shekel/providers/ tests/providers/ examples/cohere_adapter_template.py 2>&1)",
+      "Bash(isort shekel/providers/ tests/providers/ examples/cohere_adapter_template.py 2>&1 && ruff check shekel/providers/ tests/providers/ examples/cohere_adapter_template.py 2>&1)",
+      "Bash(mkdocs build:*)",
+      "Bash(black shekel/providers/ && python -m pytest tests/providers/ -q 2>&1 | tail -5)",
+      "Bash(echo \"=== BLACK ===\" && black --check shekel/providers/ tests/providers/ examples/cohere_adapter_template.py 2>&1 | tail -3 && echo \"=== ISORT ===\" && isort --check-only shekel/providers/ tests/providers/ examples/cohere_adapter_template.py 2>&1 | tail -3 && echo \"=== RUFF ===\" && ruff check shekel/providers/ tests/providers/ examples/cohere_adapter_template.py 2>&1 && echo \"=== MYPY ===\" && mypy shekel/ 2>&1 | tail -3)",
+      "Bash(isort shekel/providers/ tests/providers/ examples/cohere_adapter_template.py && black shekel/providers/ tests/providers/ examples/cohere_adapter_template.py && ruff check shekel/providers/ tests/providers/ examples/cohere_adapter_template.py 2>&1)"
     ]
   }
 }

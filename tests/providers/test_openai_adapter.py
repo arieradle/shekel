@@ -232,3 +232,38 @@ class TestOpenAIPatching(ProviderTestBase):
                 adapter.install_patches()
             except Exception:
                 pass  # ImportError is expected but not an OpenAI logic error
+
+    def test_remove_patches_safe_without_openai(self):
+        from shekel.providers.openai import OpenAIAdapter
+
+        adapter = OpenAIAdapter()
+        with patch.dict("sys.modules", {"openai": None, "openai.resources.chat.completions": None}):
+            # Should not raise even without the SDK
+            adapter.remove_patches()
+
+    def test_wrap_stream_handles_chunk_usage_attribute_error(self):
+        from shekel.providers.openai import OpenAIAdapter
+
+        adapter = OpenAIAdapter()
+
+        class BrokenUsage:
+            """Usage object that raises AttributeError on access."""
+
+            def __getattr__(self, name: str) -> None:
+                raise AttributeError(f"Broken usage: {name}")
+
+        def stream_with_bad_usage():
+            chunk1 = MagicMock()
+            chunk1.usage = BrokenUsage()
+            chunk1.model = "gpt-4o"
+            yield chunk1
+
+            chunk2 = MagicMock()
+            chunk2.usage = None
+            chunk2.model = "gpt-4o"
+            yield chunk2
+
+        gen = adapter.wrap_stream(stream_with_bad_usage())
+        chunks = list(gen)
+        assert len(chunks) == 2
+        # Should gracefully continue despite AttributeError and return default
