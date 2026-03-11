@@ -9,7 +9,6 @@ Measures:
 
 from __future__ import annotations
 
-from typing import Any
 from unittest.mock import Mock
 
 import pytest
@@ -24,6 +23,7 @@ class TestExceptionCreation:
 
     def test_create_budget_exceeded_minimal(self, benchmark):
         """Measure BudgetExceededError creation with minimal args."""
+
         def create():
             return BudgetExceededError(spent=10.5, limit=10.0)
 
@@ -33,6 +33,7 @@ class TestExceptionCreation:
 
     def test_create_budget_exceeded_with_model(self, benchmark):
         """Measure BudgetExceededError with model name."""
+
         def create():
             return BudgetExceededError(spent=10.5, limit=10.0, model="gpt-4")
 
@@ -41,12 +42,10 @@ class TestExceptionCreation:
 
     def test_create_budget_exceeded_with_tokens(self, benchmark):
         """Measure BudgetExceededError with token information."""
+
         def create():
             return BudgetExceededError(
-                spent=10.5,
-                limit=10.0,
-                model="gpt-4",
-                tokens={"input": 1000, "output": 500}
+                spent=10.5, limit=10.0, model="gpt-4", tokens={"input": 1000, "output": 500}
             )
 
         result = benchmark(create)
@@ -55,10 +54,7 @@ class TestExceptionCreation:
     def test_exception_str_conversion(self, benchmark):
         """Measure string conversion of exception."""
         exc = BudgetExceededError(
-            spent=10.5,
-            limit=10.0,
-            model="gpt-4",
-            tokens={"input": 1000, "output": 500}
+            spent=10.5, limit=10.0, model="gpt-4", tokens={"input": 1000, "output": 500}
         )
 
         def convert():
@@ -225,6 +221,7 @@ class TestStreamWrapperErrorHandling:
 
     def test_wrap_stream_openai_with_exception_in_chunks(self, benchmark, openai_adapter):
         """Measure handling of exceptions during chunk iteration."""
+
         def broken_stream():
             yield Mock(usage=None)
             yield Mock(usage=None)
@@ -254,6 +251,7 @@ class TestStreamWrapperErrorHandling:
 
     def test_wrap_stream_anthropic_with_exception_in_stream(self, benchmark, anthropic_adapter):
         """Measure handling of exceptions in Anthropic stream."""
+
         def broken_stream():
             yield Mock(type="content_block_delta")
             raise RuntimeError("Stream broke")
@@ -296,6 +294,7 @@ class TestValidationErrorHandling:
 
     def test_validate_fallback_anthropic_valid_model(self, benchmark, anthropic_adapter):
         """Measure validation of valid Anthropic model."""
+
         def validate():
             anthropic_adapter.validate_fallback("claude-3-sonnet-20240229")
 
@@ -304,6 +303,7 @@ class TestValidationErrorHandling:
 
     def test_validate_fallback_anthropic_openai_model(self, benchmark, anthropic_adapter):
         """Measure validation detecting OpenAI model."""
+
         def validate():
             try:
                 anthropic_adapter.validate_fallback("gpt-4")
@@ -327,6 +327,7 @@ class TestValidationErrorHandling:
 
     def test_validate_fallback_openai_valid_model(self, benchmark, openai_adapter):
         """Measure validation of valid OpenAI model."""
+
         def validate():
             openai_adapter.validate_fallback("gpt-4")
 
@@ -334,6 +335,7 @@ class TestValidationErrorHandling:
 
     def test_validate_fallback_openai_anthropic_model(self, benchmark, openai_adapter):
         """Measure validation detecting Anthropic model."""
+
         def validate():
             try:
                 openai_adapter.validate_fallback("claude-3-sonnet-20240229")
@@ -365,13 +367,14 @@ class TestErrorPathScaling:
 
     def test_create_many_budget_exceptions(self, benchmark):
         """Measure creation of many budget exceptions."""
+
         def create_many():
             return [
                 BudgetExceededError(
                     spent=i * 0.5,
                     limit=10.0,
                     model="gpt-4",
-                    tokens={"input": i * 10, "output": i * 5}
+                    tokens={"input": i * 10, "output": i * 5},
                 )
                 for i in range(100)
             ]

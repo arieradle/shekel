@@ -13,8 +13,6 @@ import gc
 import sys
 from typing import Any
 
-import pytest
-
 from shekel.providers.anthropic import AnthropicAdapter
 from shekel.providers.base import ProviderRegistry
 from shekel.providers.openai import OpenAIAdapter
@@ -76,6 +74,7 @@ class TestMemoryAllocation:
 
     def test_create_many_adapters_allocation(self, benchmark):
         """Measure memory allocation when creating adapters."""
+
         def create_adapters():
             return [AnthropicAdapter() for _ in range(1000)]
 
@@ -122,6 +121,7 @@ class TestGarbageCollection:
 
             # Measure GC collection time
             import time
+
             start = time.perf_counter()
             gc.collect()
             elapsed = time.perf_counter() - start
@@ -138,6 +138,7 @@ class TestGarbageCollection:
                 registry.register(AnthropicAdapter())
 
             import time
+
             start = time.perf_counter()
             gc.collect()
             elapsed = time.perf_counter() - start
@@ -147,6 +148,7 @@ class TestGarbageCollection:
 
     def test_gc_impact_on_adapter_creation(self, benchmark):
         """Measure creation time with GC enabled vs impact."""
+
         def create_with_gc():
             gc.collect()  # Force collection before measurement
             return [AnthropicAdapter() for _ in range(100)]
@@ -200,8 +202,9 @@ class TestMemoryStability:
             avg_delta = sum(sizes) / len(sizes)
             for delta in sizes:
                 # Allow 20% variance
-                assert abs(delta - avg_delta) < avg_delta * 0.2, \
-                    f"Allocation unstable: {delta} vs avg {avg_delta}"
+                assert (
+                    abs(delta - avg_delta) < avg_delta * 0.2
+                ), f"Allocation unstable: {delta} vs avg {avg_delta}"
         finally:
             gc.enable()
 
@@ -217,16 +220,12 @@ class TestMemoryStability:
                 for i in range(100):
                     registry.register(AnthropicAdapter())
 
-                after = len(gc.get_objects())
-                delta = after - before
-
                 del registry
                 gc.collect()
 
                 # Memory should be cleaned up
                 final = len(gc.get_objects())
-                assert final < before * 1.1, \
-                    f"Memory not cleaned up: {final} vs {before}"
+                assert final < before * 1.1, f"Memory not cleaned up: {final} vs {before}"
         finally:
             gc.enable()
 
@@ -236,6 +235,7 @@ class TestMemoryPressure:
 
     def test_large_adapter_collection(self, benchmark):
         """Measure creation and management of large adapter collection."""
+
         def create_large_collection():
             registry = ProviderRegistry()
             adapters = []
@@ -304,6 +304,7 @@ class TestObjectReuse:
     def test_adapter_reference_counting(self):
         """Verify proper reference counting of adapters."""
         import sys
+
         adapter = AnthropicAdapter()
         initial_refs = sys.getrefcount(adapter)
 

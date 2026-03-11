@@ -49,6 +49,7 @@ class TestRegistryInitialization:
 
     def test_registry_creation_time(self, benchmark):
         """Measure registry instantiation overhead."""
+
         def create_registry():
             return ProviderRegistry()
 
@@ -58,6 +59,7 @@ class TestRegistryInitialization:
 
     def test_registry_creation_with_adapters(self, benchmark):
         """Measure registry creation and immediate registration."""
+
         def create_with_adapters():
             reg = ProviderRegistry()
             for i in range(10):
@@ -81,6 +83,7 @@ class TestAdapterResolution:
 
     def test_get_by_name_first_adapter(self, benchmark, registry_with_adapters):
         """Measure lookup of first registered adapter."""
+
         def lookup():
             return registry_with_adapters.get_by_name("provider_00")
 
@@ -90,6 +93,7 @@ class TestAdapterResolution:
 
     def test_get_by_name_middle_adapter(self, benchmark, registry_with_adapters):
         """Measure lookup of middle adapter (typical case)."""
+
         def lookup():
             return registry_with_adapters.get_by_name("provider_10")
 
@@ -99,6 +103,7 @@ class TestAdapterResolution:
 
     def test_get_by_name_last_adapter(self, benchmark, registry_with_adapters):
         """Measure lookup of last registered adapter (worst case)."""
+
         def lookup():
             return registry_with_adapters.get_by_name("provider_19")
 
@@ -108,6 +113,7 @@ class TestAdapterResolution:
 
     def test_get_by_name_not_found(self, benchmark, registry_with_adapters):
         """Measure lookup of non-existent adapter (full scan)."""
+
         def lookup():
             return registry_with_adapters.get_by_name("nonexistent")
 
@@ -116,6 +122,7 @@ class TestAdapterResolution:
 
     def test_repeated_lookups_same_adapter(self, benchmark, registry_with_adapters):
         """Measure repeated lookups (indicates caching opportunity)."""
+
         def lookup_many():
             results = []
             for _ in range(100):
@@ -205,5 +212,5 @@ class TestRegistryScaling:
 
         # Verify rough scaling: larger batch should take longer
         # Allow high variance due to system noise and GC
-        assert times[1] > times[0], f"Batch 50 should be > batch 10"
-        assert times[2] > times[1], f"Batch 100 should be > batch 50"
+        assert times[1] > times[0], "Batch 50 should be > batch 10"
+        assert times[2] > times[1], "Batch 100 should be > batch 50"

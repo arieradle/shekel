@@ -11,8 +11,6 @@ from __future__ import annotations
 
 from typing import Any
 
-import pytest
-
 from shekel.providers.anthropic import AnthropicAdapter
 from shekel.providers.base import ProviderAdapter
 from shekel.providers.openai import OpenAIAdapter
@@ -52,6 +50,7 @@ class TestAdapterInstantiation:
 
     def test_instantiate_anthropic_adapter(self, benchmark):
         """Measure AnthropicAdapter creation."""
+
         def create():
             return AnthropicAdapter()
 
@@ -61,6 +60,7 @@ class TestAdapterInstantiation:
 
     def test_instantiate_openai_adapter(self, benchmark):
         """Measure OpenAIAdapter creation."""
+
         def create():
             return OpenAIAdapter()
 
@@ -70,6 +70,7 @@ class TestAdapterInstantiation:
 
     def test_instantiate_dummy_adapter_minimal(self, benchmark):
         """Measure minimal adapter creation (no state)."""
+
         def create():
             return DummyStatefulAdapter("test", state_size=0)
 
@@ -78,6 +79,7 @@ class TestAdapterInstantiation:
 
     def test_instantiate_dummy_adapter_with_state(self, benchmark):
         """Measure adapter creation with state initialization."""
+
         def create():
             return DummyStatefulAdapter("test", state_size=1000)
 
@@ -87,6 +89,7 @@ class TestAdapterInstantiation:
 
     def test_instantiate_many_adapters(self, benchmark):
         """Measure batch instantiation."""
+
         def create_many():
             return [DummyStatefulAdapter(f"adapter_{i}") for i in range(100)]
 
@@ -185,6 +188,7 @@ class TestAdapterLifecycle:
 
     def test_full_lifecycle_anthropic(self, benchmark):
         """Measure complete install → remove cycle for Anthropic."""
+
         def lifecycle():
             adapter = AnthropicAdapter()
             adapter.install_patches()
@@ -194,6 +198,7 @@ class TestAdapterLifecycle:
 
     def test_full_lifecycle_openai(self, benchmark):
         """Measure complete install → remove cycle for OpenAI."""
+
         def lifecycle():
             adapter = OpenAIAdapter()
             adapter.install_patches()
@@ -203,6 +208,7 @@ class TestAdapterLifecycle:
 
     def test_full_lifecycle_dummy(self, benchmark):
         """Measure complete lifecycle with dummy adapter."""
+
         def lifecycle():
             adapter = DummyStatefulAdapter("test", state_size=500)
             adapter.install_patches()

@@ -15,8 +15,6 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 from unittest.mock import Mock
 
-import pytest
-
 from shekel.providers.anthropic import AnthropicAdapter
 from shekel.providers.base import ProviderAdapter, ProviderRegistry
 from shekel.providers.openai import OpenAIAdapter
@@ -144,13 +142,7 @@ class TestParallelMessageHandling:
 
         def detect_parallel():
             with ThreadPoolExecutor(max_workers=4) as executor:
-                results = list(
-                    executor.map(
-                        adapter.detect_streaming,
-                        kwargs_list,
-                        responses
-                    )
-                )
+                results = list(executor.map(adapter.detect_streaming, kwargs_list, responses))
             return results
 
         results = benchmark(detect_parallel)
@@ -174,10 +166,7 @@ class TestParallelMessageHandling:
             with ThreadPoolExecutor(max_workers=4) as executor:
                 results = []
                 for stream in streams:
-                    future = executor.submit(
-                        lambda s: list(adapter.wrap_stream(s)),
-                        stream
-                    )
+                    future = executor.submit(lambda s: list(adapter.wrap_stream(s)), stream)
                     results.append(future)
                 return [r.result() for r in results]
 
@@ -215,10 +204,7 @@ class TestRegistryContention:
             with ThreadPoolExecutor(max_workers=4) as executor:
                 futures = []
                 for i in range(100):
-                    future = executor.submit(
-                        registry.register,
-                        DummyAdapter(f"concurrent_{i}")
-                    )
+                    future = executor.submit(registry.register, DummyAdapter(f"concurrent_{i}"))
                     futures.append(future)
                 for f in futures:
                     f.result()
@@ -240,15 +226,9 @@ class TestRegistryContention:
                 # Mix reads and writes
                 for i in range(50):
                     if i % 2 == 0:
-                        future = executor.submit(
-                            registry.get_by_name,
-                            f"initial_{i % 10}"
-                        )
+                        future = executor.submit(registry.get_by_name, f"initial_{i % 10}")
                     else:
-                        future = executor.submit(
-                            registry.register,
-                            DummyAdapter(f"dynamic_{i}")
-                        )
+                        future = executor.submit(registry.register, DummyAdapter(f"dynamic_{i}"))
                     futures.append(future)
                 for f in futures:
                     f.result()
@@ -302,6 +282,7 @@ class TestConcurrentPatchInstallation:
 
     def test_install_remove_lifecycle_concurrent(self, benchmark):
         """Measure full lifecycle with concurrent operations."""
+
         def lifecycle_task(adapter_id):
             adapter = DummyAdapter(f"lifecycle_{adapter_id}")
             adapter.install_patches()
@@ -310,10 +291,7 @@ class TestConcurrentPatchInstallation:
 
         def concurrent_lifecycle():
             with ThreadPoolExecutor(max_workers=4) as executor:
-                futures = [
-                    executor.submit(lifecycle_task, i)
-                    for i in range(20)
-                ]
+                futures = [executor.submit(lifecycle_task, i) for i in range(20)]
                 for f in futures:
                     f.result()
 
@@ -332,10 +310,7 @@ class TestThreadSafety:
 
         def access_concurrent():
             with ThreadPoolExecutor(max_workers=8) as executor:
-                futures = [
-                    executor.submit(access_name)
-                    for _ in range(1000)
-                ]
+                futures = [executor.submit(access_name) for _ in range(1000)]
                 names = [f.result() for f in futures]
             return names
 
@@ -351,10 +326,7 @@ class TestThreadSafety:
 
         def read_concurrent():
             with ThreadPoolExecutor(max_workers=8) as executor:
-                futures = [
-                    executor.submit(lambda: len(registry.adapters))
-                    for _ in range(1000)
-                ]
+                futures = [executor.submit(lambda: len(registry.adapters)) for _ in range(1000)]
                 results = [f.result() for f in futures]
             return results
 
@@ -376,10 +348,7 @@ class TestConcurrencyScaling:
 
         def extract_many_threads():
             with ThreadPoolExecutor(max_workers=16) as executor:
-                futures = [
-                    executor.submit(adapter.extract_tokens, response)
-                    for _ in range(1000)
-                ]
+                futures = [executor.submit(adapter.extract_tokens, response) for _ in range(1000)]
                 results = [f.result() for f in futures]
             return results
 
@@ -397,10 +366,7 @@ class TestConcurrencyScaling:
                 futures = []
                 for i in range(1000):
                     idx = i % 20
-                    future = executor.submit(
-                        registry.get_by_name,
-                        f"adapter_{idx:02d}"
-                    )
+                    future = executor.submit(registry.get_by_name, f"adapter_{idx:02d}")
                     futures.append(future)
                 results = [f.result() for f in futures]
             return results
