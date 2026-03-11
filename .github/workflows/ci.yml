@@ -37,7 +37,7 @@ jobs:
         run: mypy shekel/
 
       - name: Test (pytest)
-        run: pytest tests/ -v --cov=shekel --cov-report=xml --cov-fail-under=90
+        run: pytest tests/ -v --cov=shekel --cov-report=xml --cov-fail-under=90 --ignore=tests/performance
 
       - name: Upload coverage
         uses: codecov/codecov-action@v4
@@ -45,3 +45,38 @@ jobs:
         with:
           files: coverage.xml
           fail_ci_if_error: false
+
+  performance:
+    needs: test
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -e ".[all,dev]"
+
+      - name: Performance Tests (pytest-benchmark)
+        run: |
+          pytest tests/performance/ -v \
+            --benchmark-only \
+            --benchmark-json=.benchmarks/results.json \
+            --benchmark-compare=0 \
+            --benchmark-compare-fail=min:5% \
+            2>&1 | tee performance-report.txt
+        continue-on-error: true
+
+      - name: Store performance results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: performance-results
+          path: |
+            .benchmarks/results.json
+            performance-report.txt
+          retention-days: 30

@@ -67,6 +67,7 @@ cli = ["click>=8.0.0"]
 dev = [
     "pytest>=7.0.0",
     "pytest-asyncio>=0.21.0",
+    "pytest-benchmark>=4.0.0",
     "ruff>=0.1.0",
     "mypy>=1.0.0",
     "black>=23.0.0",
@@ -92,6 +93,10 @@ packages = ["shekel"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+addopts = "--benchmark-skip"
+benchmark_min_rounds = 5
+benchmark_disable_gc = true
+benchmark_warmup = false
 
 [tool.black]
 line-length = 100
