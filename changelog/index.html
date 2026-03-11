@@ -1335,6 +1335,67 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#025-2026-03-11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.2.5] - 2026-03-11
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.2.5] - 2026-03-11">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#extensible-provider-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🔧 Extensible Provider Architecture
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#validated-with-real-integration-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ✅ Validated with Real Integration Tests
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#production-grade-reliability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ⚙️ Production-Grade Reliability
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#quality-improvements" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ✅ Quality Improvements
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#024-2026-03-11" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1705,6 +1766,67 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#025-2026-03-11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.2.5] - 2026-03-11
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.2.5] - 2026-03-11">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#extensible-provider-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🔧 Extensible Provider Architecture
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#validated-with-real-integration-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ✅ Validated with Real Integration Tests
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#production-grade-reliability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ⚙️ Production-Grade Reliability
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#quality-improvements" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ✅ Quality Improvements
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#024-2026-03-11" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1909,6 +2031,51 @@
 
 <h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
 <p>All notable changes to this project are documented here. For detailed information, see <a href="https://github.com/arieradle/shekel/blob/main/CHANGELOG.md">CHANGELOG.md</a> on GitHub.</p>
+<h2 id="025-2026-03-11">[0.2.5] - 2026-03-11<a class="headerlink" href="#025-2026-03-11" title="Permanent link">&para;</a></h2>
+<h3 id="extensible-provider-architecture">🔧 Extensible Provider Architecture<a class="headerlink" href="#extensible-provider-architecture" title="Permanent link">&para;</a></h3>
+<p>Shekel now has a pluggable architecture for adding new LLM provider support without modifying core code.</p>
+<p><strong>ProviderAdapter</strong> — Standard interface for any LLM provider
+- 8 abstract methods: patching, token extraction, streaming, validation
+- All providers (OpenAI, Anthropic, custom) implement this interface
+- Clear contract for what shekel needs from a provider</p>
+<p><strong>ProviderRegistry</strong> — Central hub for provider management
+- Thread-safe registration and lifecycle management
+- Automatic patch installation and removal
+- Provider discovery by name for fallback validation
+- Decoupled from core code — no core changes needed for new providers</p>
+<p><strong>Add your own provider in 3 steps:</strong>
+1. Implement <code>ProviderAdapter</code> interface
+2. Register with <code>ADAPTER_REGISTRY.register(YourAdapter())</code>
+3. Works everywhere automatically</p>
+<p><strong>Community can now add:</strong> Cohere, Replicate, vLLM, Mistral, Bedrock, Vertex AI, and others</p>
+<h3 id="validated-with-real-integration-tests">✅ Validated with Real Integration Tests<a class="headerlink" href="#validated-with-real-integration-tests" title="Permanent link">&para;</a></h3>
+<p>The architecture is battle-tested with comprehensive end-to-end validation:</p>
+<p><strong>Groq API</strong> — 25+ integration tests
+- Custom pricing and budget enforcement
+- Nested budgets and cost attribution
+- Streaming responses and concurrent calls
+- Rate limiting and error handling
+- Real API keys in CI</p>
+<p><strong>Google Gemini API</strong> — 30+ integration tests
+- Multi-turn conversations and streaming
+- JSON mode and function calling
+- Token counting accuracy
+- Budget enforcement and fallback
+- Real API keys in CI</p>
+<p>These test suites serve as <strong>reference implementations</strong> showing how to build a provider adapter.</p>
+<h3 id="production-grade-reliability">⚙️ Production-Grade Reliability<a class="headerlink" href="#production-grade-reliability" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Exponential backoff retry logic</strong> — Gracefully handles rate limiting and transient failures</li>
+<li><strong>100+ integration test scenarios</strong> — Comprehensive validation of architecture under load</li>
+<li><strong>Concurrent test stability</strong> — Reduced flakiness when multiple providers are tested simultaneously</li>
+<li><strong>CI improvements</strong> — Integration and performance tests run in parallel</li>
+</ul>
+<h3 id="quality-improvements">✅ Quality Improvements<a class="headerlink" href="#quality-improvements" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>100+ integration test scenarios</strong> — Comprehensive real API coverage</li>
+<li><strong>mkdocs integrity checks</strong> — Prevent broken documentation links in CI</li>
+<li><strong>Better provider abstraction</strong> — Easier to add new LLM provider support in the future</li>
+</ul>
 <h2 id="024-2026-03-11">[0.2.4] - 2026-03-11<a class="headerlink" href="#024-2026-03-11" title="Permanent link">&para;</a></h2>
 <h3 id="langfuse-integration-new">✨ Langfuse Integration (New!)<a class="headerlink" href="#langfuse-integration-new" title="Permanent link">&para;</a></h3>
 <p>Full LLM observability with zero configuration. See <a href="../integrations/langfuse/">Langfuse Integration Guide</a> for complete documentation.</p>
