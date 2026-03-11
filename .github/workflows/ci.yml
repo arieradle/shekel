@@ -13,6 +13,17 @@ jobs:
       matrix:
         python-version: ["3.9", "3.10", "3.11", "3.12"]
 
+    services:
+      ollama:
+        image: ollama/ollama:latest
+        ports:
+          - 11434:11434
+        options: >-
+          --health-cmd "curl --fail http://localhost:11434/api/tags || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v4
 
@@ -23,6 +34,14 @@ jobs:
 
       - name: Install dependencies
         run: pip install -e ".[all,dev]"
+
+      - name: Pull Ollama model
+        run: |
+          # Wait for Ollama to be ready
+          timeout 120 bash -c 'until curl -s http://localhost:11434/api/tags; do sleep 2; done' || true
+          # Pull a lightweight model for testing
+          curl -X POST http://localhost:11434/api/pull -d '{"name":"tinyllama"}' || true
+        continue-on-error: true
 
       - name: Format check (black)
         run: black --check .

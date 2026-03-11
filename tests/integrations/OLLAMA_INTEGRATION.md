@@ -207,18 +207,53 @@ with budget(
 
 ## CI/CD Integration
 
-In CI/CD pipelines, only mock-based tests run automatically:
+### GitHub Actions with Docker Ollama Service
+
+The CI/CD pipeline automatically runs with Ollama in Docker:
+
+```yaml
+services:
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - 11434:11434
+    options: >-
+      --health-cmd "curl --fail http://localhost:11434/api/tags || exit 1"
+      --health-interval 10s
+      --health-timeout 5s
+      --health-retries 5
+```
+
+This enables:
+- ✅ All mock-based tests run (always reliable)
+- ✅ Real Ollama tests run against the Docker container
+- ✅ Automatic model pulling (tinyllama for lightweight testing)
+- ✅ Health checks before tests start
+
+### Local CI/CD with Docker Compose
+
+For local testing with full Ollama integration:
+
+```bash
+# Start Ollama in Docker
+docker run -d -p 11434:11434 ollama/ollama
+
+# Wait for it to be ready
+until curl -s http://localhost:11434/api/tags; do sleep 2; done
+
+# Pull a model
+curl -X POST http://localhost:11434/api/pull -d '{"name":"tinyllama"}'
+
+# Run tests (both mock and real will run)
+pytest tests/integrations/test_ollama_integration.py -v
+```
+
+### Manual CI/CD Setup
+
+If not using Docker, mock tests still work:
 
 ```bash
 # This runs all tests, but real Ollama tests skip if not available
-pytest tests/integrations/test_ollama_integration.py
-```
-
-To enable real Ollama tests in CI (e.g., with a Docker sidecar):
-
-```bash
-# Environment variable or Docker setup
-export OLLAMA_URL=http://localhost:11434
 pytest tests/integrations/test_ollama_integration.py
 ```
 

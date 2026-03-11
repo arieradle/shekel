@@ -197,16 +197,33 @@ class TestOllamaRealIntegration:
 
         with budget(max_usd=0.10, name="ollama_real") as b:
             try:
-                # Make actual request to Ollama
+                # Try tinyllama first (used in CI), fall back to llama2
+                model = "tinyllama"
                 response = requests.post(
                     "http://localhost:11434/api/chat",
                     json={
-                        "model": "llama2",
+                        "model": model,
                         "messages": [{"role": "user", "content": "Say 'hello' in one word."}],
                         "stream": False,
                     },
                     timeout=30,
                 )
+
+                # If model not found, try llama2
+                if response.status_code == 404 or "not found" in response.text.lower():
+                    model = "llama2"
+                    response = requests.post(
+                        "http://localhost:11434/api/chat",
+                        json={
+                            "model": model,
+                            "messages": [
+                                {"role": "user", "content": "Say 'hello' in one word."}
+                            ],
+                            "stream": False,
+                        },
+                        timeout=30,
+                    )
+
                 assert response.status_code == 200
 
                 # Extract token counts
@@ -221,7 +238,7 @@ class TestOllamaRealIntegration:
                     _record(
                         input_tokens=prompt_tokens,
                         output_tokens=completion_tokens,
-                        model="ollama:llama2",
+                        model=f"ollama:{model}",
                     )
             except requests.exceptions.RequestException:
                 pytest.skip("Could not reach Ollama API")
@@ -236,15 +253,31 @@ class TestOllamaRealIntegration:
 
         with budget(max_usd=0.10, name="ollama_generate") as b:
             try:
+                # Try tinyllama first (used in CI), fall back to llama2
+                model = "tinyllama"
                 response = requests.post(
                     "http://localhost:11434/api/generate",
                     json={
-                        "model": "llama2",
+                        "model": model,
                         "prompt": "Say hello",
                         "stream": False,
                     },
                     timeout=30,
                 )
+
+                # If model not found, try llama2
+                if response.status_code == 404 or "not found" in response.text.lower():
+                    model = "llama2"
+                    response = requests.post(
+                        "http://localhost:11434/api/generate",
+                        json={
+                            "model": model,
+                            "prompt": "Say hello",
+                            "stream": False,
+                        },
+                        timeout=30,
+                    )
+
                 assert response.status_code == 200
 
                 data = response.json()
@@ -257,7 +290,7 @@ class TestOllamaRealIntegration:
                     _record(
                         input_tokens=prompt_tokens,
                         output_tokens=completion_tokens,
-                        model="ollama:llama2",
+                        model=f"ollama:{model}",
                     )
             except requests.exceptions.RequestException:
                 pytest.skip("Could not reach Ollama API")
