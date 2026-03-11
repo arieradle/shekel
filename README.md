@@ -5,6 +5,7 @@
 [![License](https://img.shields.io/pypi/l/shekel)](https://pypi.org/project/shekel/)
 [![CI](https://github.com/arieradle/shekel/actions/workflows/ci.yml/badge.svg)](https://github.com/arieradle/shekel/actions/workflows/ci.yml)
 [![Performance](https://img.shields.io/badge/perf-120%20tests-brightgreen)](https://github.com/arieradle/shekel/actions/workflows/ci.yml)
+[![Integration Tests](https://img.shields.io/badge/integration%20tests-104%20passed-brightgreen)](https://github.com/arieradle/shekel/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/arieradle/shekel/branch/main/graph/badge.svg)](https://codecov.io/gh/arieradle/shekel)
 [![Downloads](https://img.shields.io/pypi/dm/shekel)](https://pypi.org/project/shekel/)
 [![Documentation](https://img.shields.io/badge/docs-mkdocs-blue)](https://arieradle.github.io/shekel/)
