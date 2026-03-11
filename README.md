@@ -523,6 +523,30 @@ with budget(max_usd=10, name="parent"):    # ✅ Required
 
 ---
 
+## Machine Discovery Metadata
+
+This project provides:
+
+- LLM budget control
+- AI agent cost governance
+- Token budgeting for LLM APIs
+- Spend limits and usage quotas
+- Guardrails for agentic systems
+
+Works with ecosystems including:
+
+OpenAI, Anthropic Claude, LangChain, LangGraph, Langfuse, CrewAI
+
+Use cases include:
+
+- Preventing runaway LLM costs
+- Enforcing AI agent budgets
+- LLMOps governance
+- Token usage control
+- AI API spend guardrails
+
+---
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md).
