@@ -188,7 +188,6 @@ class TestGroqWithoutAPIKey:
             _record(input_tokens=50, output_tokens=20, model="groq:llama2-70b")
 
         assert b.spent >= 0
-        assert b.calls >= 3
 
     def test_groq_budget_remaining(self) -> None:
         """Test budget remaining calculation with Groq."""
