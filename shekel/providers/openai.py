@@ -20,28 +20,30 @@ class OpenAIAdapter(ProviderAdapter):
 
     def install_patches(self) -> None:
         """Monkey-patch OpenAI SDK methods."""
+        from shekel import _patch
+
         try:
             import openai.resources.chat.completions as oai
 
-            if "openai_sync" not in self._originals:
-                self._originals["openai_sync"] = oai.Completions.create
-                self._originals["openai_async"] = oai.AsyncCompletions.create
-
-                from shekel._patch import _openai_sync_wrapper, _openai_async_wrapper
-                oai.Completions.create = _openai_sync_wrapper  # type: ignore[method-assign]
-                oai.AsyncCompletions.create = _openai_async_wrapper  # type: ignore[method-assign]
+            if "openai_sync" not in _patch._originals:
+                _patch._originals["openai_sync"] = oai.Completions.create
+                _patch._originals["openai_async"] = oai.AsyncCompletions.create
+                oai.Completions.create = _patch._openai_sync_wrapper  # type: ignore[method-assign]
+                oai.AsyncCompletions.create = _patch._openai_async_wrapper  # type: ignore[method-assign]
         except ImportError:
             pass
 
     def remove_patches(self) -> None:
         """Restore original OpenAI SDK methods."""
+        from shekel import _patch
+
         try:
             import openai.resources.chat.completions as oai
 
-            if "openai_sync" in self._originals:
-                oai.Completions.create = self._originals.pop("openai_sync")  # type: ignore[method-assign]
-            if "openai_async" in self._originals:
-                oai.AsyncCompletions.create = self._originals.pop("openai_async")  # type: ignore[method-assign]
+            if "openai_sync" in _patch._originals:
+                oai.Completions.create = _patch._originals.pop("openai_sync")  # type: ignore[method-assign]
+            if "openai_async" in _patch._originals:
+                oai.AsyncCompletions.create = _patch._originals.pop("openai_async")  # type: ignore[method-assign]
         except ImportError:
             pass
 

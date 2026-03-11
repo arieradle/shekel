@@ -20,28 +20,30 @@ class AnthropicAdapter(ProviderAdapter):
 
     def install_patches(self) -> None:
         """Monkey-patch Anthropic SDK methods."""
+        from shekel import _patch
+
         try:
             import anthropic.resources.messages as ant
 
-            if "anthropic_sync" not in self._originals:
-                self._originals["anthropic_sync"] = ant.Messages.create
-                self._originals["anthropic_async"] = ant.AsyncMessages.create
-
-                from shekel._patch import _anthropic_sync_wrapper, _anthropic_async_wrapper
-                ant.Messages.create = _anthropic_sync_wrapper  # type: ignore[method-assign]
-                ant.AsyncMessages.create = _anthropic_async_wrapper  # type: ignore[method-assign]
+            if "anthropic_sync" not in _patch._originals:
+                _patch._originals["anthropic_sync"] = ant.Messages.create
+                _patch._originals["anthropic_async"] = ant.AsyncMessages.create
+                ant.Messages.create = _patch._anthropic_sync_wrapper  # type: ignore[method-assign]
+                ant.AsyncMessages.create = _patch._anthropic_async_wrapper  # type: ignore[method-assign]
         except ImportError:
             pass
 
     def remove_patches(self) -> None:
         """Restore original Anthropic SDK methods."""
+        from shekel import _patch
+
         try:
             import anthropic.resources.messages as ant
 
-            if "anthropic_sync" in self._originals:
-                ant.Messages.create = self._originals.pop("anthropic_sync")  # type: ignore[method-assign]
-            if "anthropic_async" in self._originals:
-                ant.AsyncMessages.create = self._originals.pop("anthropic_async")  # type: ignore[method-assign]
+            if "anthropic_sync" in _patch._originals:
+                ant.Messages.create = _patch._originals.pop("anthropic_sync")  # type: ignore[method-assign]
+            if "anthropic_async" in _patch._originals:
+                ant.AsyncMessages.create = _patch._originals.pop("anthropic_async")  # type: ignore[method-assign]
         except ImportError:
             pass
 

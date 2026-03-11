@@ -36,47 +36,15 @@ def remove_patches() -> None:
 
 
 def _install_patches() -> None:
-    try:
-        import openai.resources.chat.completions as _oai_completions
-
-        _originals["openai_sync"] = _oai_completions.Completions.create
-        _originals["openai_async"] = _oai_completions.AsyncCompletions.create
-        _oai_completions.Completions.create = _openai_sync_wrapper  # type: ignore[method-assign]
-        _oai_completions.AsyncCompletions.create = _openai_async_wrapper  # type: ignore[method-assign]
-    except ImportError:
-        pass
-
-    try:
-        import anthropic.resources.messages as _ant_messages
-
-        _originals["anthropic_sync"] = _ant_messages.Messages.create
-        _originals["anthropic_async"] = _ant_messages.AsyncMessages.create
-        _ant_messages.Messages.create = _anthropic_sync_wrapper  # type: ignore[method-assign]
-        _ant_messages.AsyncMessages.create = _anthropic_async_wrapper  # type: ignore[method-assign]
-    except ImportError:
-        pass
+    # Lazy import to avoid circular dependency with shekel.providers
+    from shekel.providers import ADAPTER_REGISTRY
+    ADAPTER_REGISTRY.install_all()
 
 
 def _restore_patches() -> None:
-    try:
-        import openai.resources.chat.completions as _oai_completions
-
-        if "openai_sync" in _originals:
-            _oai_completions.Completions.create = _originals.pop("openai_sync")  # type: ignore[method-assign]
-        if "openai_async" in _originals:
-            _oai_completions.AsyncCompletions.create = _originals.pop("openai_async")  # type: ignore[method-assign]
-    except ImportError:
-        pass
-
-    try:
-        import anthropic.resources.messages as _ant_messages
-
-        if "anthropic_sync" in _originals:
-            _ant_messages.Messages.create = _originals.pop("anthropic_sync")  # type: ignore[method-assign]
-        if "anthropic_async" in _originals:
-            _ant_messages.AsyncMessages.create = _originals.pop("anthropic_async")  # type: ignore[method-assign]
-    except ImportError:
-        pass
+    # Lazy import to avoid circular dependency with shekel.providers
+    from shekel.providers import ADAPTER_REGISTRY
+    ADAPTER_REGISTRY.remove_all()
 
 
 # ---------------------------------------------------------------------------
