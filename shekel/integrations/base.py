@@ -1,0 +1,64 @@
+"""Base interface for observability platform adapters."""
+
+from typing import Any
+
+
+class ObservabilityAdapter:
+    """Base interface for observability platform integrations.
+
+    Adapters implement this interface to receive events from Shekel's
+    budget tracking system and forward them to observability platforms.
+
+    All methods are no-ops by default. Subclasses override the methods
+    they need to implement specific platform integrations.
+
+    Example:
+        class LangfuseAdapter(ObservabilityAdapter):
+            def on_cost_update(self, budget_data: dict[str, Any]) -> None:
+                # Update Langfuse span with cost data
+                pass
+    """
+
+    def on_cost_update(self, budget_data: dict[str, Any]) -> None:
+        """Called after each LLM API call with updated cost information.
+
+        Args:
+            budget_data: Dictionary containing:
+                - spent: float - Current total spend in USD
+                - limit: float | None - Budget limit in USD (None for track-only)
+                - name: str | None - Budget name (for nested budgets)
+                - full_name: str - Full hierarchical budget path
+                - depth: int - Nesting depth (0 for root)
+                - model: str - Model used for the call
+                - call_cost: float - Cost of this specific call
+        """
+        pass
+
+    def on_budget_exceeded(self, error_data: dict[str, Any]) -> None:
+        """Called when a budget limit is exceeded.
+
+        Args:
+            error_data: Dictionary containing:
+                - budget_name: str - Name of the budget that was exceeded
+                - spent: float - Total amount spent
+                - limit: float - The budget limit that was exceeded
+                - overage: float - Amount over the limit
+                - model: str - Model that triggered the exception
+                - tokens: dict - Token counts (input, output)
+                - parent_remaining: float | None - Parent budget remaining (if nested)
+        """
+        pass
+
+    def on_fallback_activated(self, fallback_data: dict[str, Any]) -> None:
+        """Called when fallback model is activated due to budget constraints.
+
+        Args:
+            fallback_data: Dictionary containing:
+                - from_model: str - Original model name
+                - to_model: str - Fallback model name
+                - switched_at: float - Cost when switch occurred
+                - cost_primary: float - Cost spent on primary model
+                - cost_fallback: float - Cost spent on fallback model
+                - savings: float - Estimated savings from using fallback
+        """
+        pass

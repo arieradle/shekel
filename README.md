@@ -19,6 +19,36 @@ I spent $47 debugging a LangGraph retry loop. The agent kept failing, LangGraph 
 
 ---
 
+## ⚡️ What's New in v0.2.4: Langfuse Integration
+
+**Full LLM observability with zero configuration.** Track costs, visualize budget hierarchies, and debug overruns in Langfuse — automatically.
+
+```python
+from langfuse import Langfuse
+from shekel import budget
+from shekel.integrations import AdapterRegistry
+from shekel.integrations.langfuse import LangfuseAdapter
+
+# One-time setup
+lf = Langfuse(public_key="pk-lf-...", secret_key="sk-lf-...")
+adapter = LangfuseAdapter(client=lf, trace_name="my-app", tags=["production"])
+AdapterRegistry.register(adapter)
+
+# Use budgets as normal - costs flow to Langfuse automatically!
+with budget(max_usd=10.00, fallback="gpt-4o-mini", name="agent") as b:
+    run_agent()  # Real-time cost tracking in Langfuse UI
+```
+
+**What you get in Langfuse:**
+- 💰 **Real-time cost streaming** — See spend, utilization, model after each LLM call
+- 🌳 **Nested budget hierarchy** — Child budgets → child spans (perfect waterfall view)
+- ⚠️ **Circuit break events** — WARNING events when budgets are exceeded
+- 🔄 **Fallback annotations** — INFO events when fallback models activate
+
+**[📖 Full Langfuse Integration Guide](docs/langfuse-integration.md)**
+
+---
+
 ## ⚡️ What's New in v0.2.3: Nested Budgets
 
 **Control costs for multi-stage AI workflows** with hierarchical budget tracking:
@@ -59,7 +89,8 @@ print(workflow.tree())
 ```bash
 pip install shekel[openai]       # OpenAI
 pip install shekel[anthropic]    # Anthropic
-pip install shekel[all]          # Both
+pip install shekel[langfuse]     # Langfuse integration (NEW in v0.2.4)
+pip install shekel[all]          # OpenAI + Anthropic
 pip install shekel[all-models]   # Both + tokencost (400+ model pricing)
 pip install shekel[cli]          # CLI tools (shekel estimate, shekel models)
 ```

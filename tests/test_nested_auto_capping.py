@@ -95,3 +95,81 @@ def test_track_only_child_not_capped():
             # Track-only child has no limit, not capped
             assert child.limit is None
             assert child.max_usd is None
+
+
+# ---------------------------------------------------------------------------
+# effective_limit enforcement: _check_limit and _check_warn
+# ---------------------------------------------------------------------------
+
+
+class TestAutoCapEnforcement:
+    def test_auto_capped_child_raises_at_effective_limit(self) -> None:
+        """Child capped to $3 must raise BudgetExceededError at $3, not at max_usd ($5)."""
+        import pytest
+
+        from shekel import BudgetExceededError
+
+        with budget(max_usd=10.00, name="parent") as parent:
+            parent._spent = 7.00  # parent has $3 remaining -> child capped to $3
+
+            with pytest.raises(BudgetExceededError) as exc_info:
+                with budget(max_usd=5.00, name="child") as child:
+                    assert child.limit == 3.00
+                    child._record_spend(3.50, "gpt-4o", {"input": 100, "output": 50})
+
+            assert exc_info.value.limit == 3.00
+
+    def test_uncapped_child_still_enforces_max_usd(self) -> None:
+        """Non-capped child enforces max_usd as before."""
+        import pytest
+
+        from shekel import BudgetExceededError
+
+        with budget(max_usd=20.00, name="parent"):
+            with pytest.raises(BudgetExceededError) as exc_info:
+                with budget(max_usd=5.00, name="child") as child:
+                    child._record_spend(6.00, "gpt-4o", {"input": 100, "output": 50})
+
+            assert exc_info.value.limit == 5.00
+
+
+class TestAutoCapWarnAt:
+    def test_warn_fires_at_effective_limit_threshold(self) -> None:
+        """warn_at fires based on effective_limit ($3), not max_usd ($5)."""
+        fired: list[tuple[float, float]] = []
+
+        with budget(max_usd=10.00, name="parent") as parent:
+            parent._spent = 7.00  # child will be capped to $3
+
+            with budget(
+                max_usd=5.00,
+                warn_at=0.5,
+                on_exceed=lambda s, lim: fired.append((s, lim)),
+                name="child",
+            ) as child:
+                assert child.limit == 3.00
+                # $1.60 > 50% of $3 ($1.50), so warn should fire
+                child._record_spend(1.60, "gpt-4o", {"input": 100, "output": 50})
+
+        assert len(fired) == 1
+        _spent, limit = fired[0]
+        assert limit == 3.00, f"Expected warn against $3 effective limit, got ${limit}"
+
+    def test_warn_does_not_fire_below_effective_threshold(self) -> None:
+        """warn_at must NOT fire if spend is below effective threshold."""
+        fired: list[tuple[float, float]] = []
+
+        with budget(max_usd=10.00, name="parent") as parent:
+            parent._spent = 7.00  # child capped to $3
+
+            with budget(
+                max_usd=5.00,
+                warn_at=0.5,
+                on_exceed=lambda s, lim: fired.append((s, lim)),
+                name="child",
+            ) as child:
+                assert child.limit == 3.00
+                # $1.40 < 50% of $3 ($1.50) — should NOT fire
+                child._record_spend(1.40, "gpt-4o", {"input": 100, "output": 50})
+
+        assert len(fired) == 0

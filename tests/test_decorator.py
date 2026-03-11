@@ -222,3 +222,35 @@ def test_no_params_decorator() -> None:
         run()
 
     assert results[0] > 0.0
+
+
+class TestWithBudgetName:
+    def test_with_budget_accepts_name(self) -> None:
+        """with_budget should pass name to Budget, enabling named budgets."""
+        called = []
+
+        @with_budget(max_usd=5.00, name="outer")
+        def run() -> None:
+            from shekel import _context
+
+            b = _context.get_active_budget()
+            assert b is not None
+            assert b.name == "outer"
+            called.append(True)
+
+        run()
+        assert called
+
+    def test_with_budget_name_enables_nesting(self) -> None:
+        """Named with_budget decorator can serve as a named parent for nested budgets."""
+        from shekel import budget
+
+        names_seen: list[str] = []
+
+        @with_budget(max_usd=10.00, name="workflow")
+        def run_workflow() -> None:
+            with budget(max_usd=3.00, name="step") as child:
+                names_seen.append(child.full_name)
+
+        run_workflow()
+        assert names_seen == ["workflow.step"]

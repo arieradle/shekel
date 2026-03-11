@@ -7,6 +7,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.4] - 2026-03-11
+
+### Added
+- **🔭 Langfuse Integration** — Full LLM observability with zero configuration
+  - **Feature #1: Real-Time Cost Streaming**
+    - Automatic metadata updates after each LLM call
+    - Track: `shekel_spent`, `shekel_limit`, `shekel_utilization`, `shekel_last_model`
+    - Works with track-only mode (no limit)
+    - Supports custom trace names and tags
+  - **Feature #2: Nested Budget Mapping**
+    - Nested budgets automatically create span hierarchy in Langfuse
+    - Parent budget → trace, child budgets → child spans
+    - Perfect waterfall view for multi-stage workflows
+    - Each span has its own budget metadata
+  - **Feature #3: Circuit Break Events**
+    - WARNING events created when budget limits exceeded
+    - Event metadata: spent, limit, overage, model, tokens, parent_remaining
+    - Nested budget violations create events on child spans
+    - Easy filtering and alerting in Langfuse UI
+  - **Feature #4: Fallback Annotations**
+    - INFO events created when fallback model activates
+    - Event metadata: from_model, to_model, switched_at, costs, savings
+    - Trace/span metadata updated to show fallback is active
+    - Fallback info persists across subsequent cost updates
+- **Adapter Pattern Architecture**
+  - `ObservabilityAdapter` base class for integrations
+  - `AdapterRegistry` for managing multiple adapters
+    - Thread-safe registration and event broadcasting
+    - Error isolation (one adapter failure doesn't break others)
+  - `AsyncEventQueue` for non-blocking event delivery
+    - Background worker thread processes events asynchronously
+    - Queue drops old events if full (no blocking)
+    - Graceful shutdown with timeout
+- **Optional Dependency Management**
+  - New `shekel[langfuse]` extra for Langfuse integration
+  - Graceful import handling (works even if langfuse not installed)
+- **Documentation**
+  - Comprehensive Langfuse integration guide (`docs/langfuse-integration.md`)
+  - Complete demo examples (`examples/langfuse/`)
+  - Updated README with Langfuse quick start
+
+### Technical
+- Core event emission in `_patch.py::_record()` and `_budget.py::_check_limit()`
+- Type-safe implementation with guards for Python 3.9+ compatibility
+- All 245 tests passing (44 new integration tests)
+- Zero performance impact: <1ms overhead per LLM call
+
 ## [0.2.3] - 2026-03-11
 
 ### Added
