@@ -17,12 +17,12 @@ from __future__ import annotations
 from collections.abc import Generator
 from typing import Any
 
-from shekel.providers.base import ProviderAdapter, ADAPTER_REGISTRY
-
+from shekel.providers.base import ADAPTER_REGISTRY, ProviderAdapter
 
 # ---------------------------------------------------------------------------
 # Sync wrapper (called instead of the original SDK method)
 # ---------------------------------------------------------------------------
+
 
 def _cohere_sync_wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
     from shekel import _context, _patch
@@ -69,6 +69,7 @@ def _wrap_cohere_stream(stream: Any) -> Generator[Any, None, None]:
 # Async wrapper (optional — omit if provider has no async SDK)
 # ---------------------------------------------------------------------------
 
+
 async def _cohere_async_wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
     from shekel import _context, _patch
 
@@ -92,6 +93,7 @@ async def _cohere_async_wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
 # ProviderAdapter implementation
 # ---------------------------------------------------------------------------
 
+
 class CohereAdapter(ProviderAdapter):
     """Shekel adapter for the Cohere SDK.
 
@@ -105,8 +107,10 @@ class CohereAdapter(ProviderAdapter):
 
     def install_patches(self) -> None:
         from shekel import _patch
+
         try:
             import cohere.resources.chat as _cohere_chat  # adjust import path
+
             if "cohere_sync" not in _patch._originals:
                 _patch._originals["cohere_sync"] = _cohere_chat.Chat.create
                 _cohere_chat.Chat.create = _cohere_sync_wrapper  # type: ignore[method-assign]
@@ -119,8 +123,10 @@ class CohereAdapter(ProviderAdapter):
 
     def remove_patches(self) -> None:
         from shekel import _patch
+
         try:
             import cohere.resources.chat as _cohere_chat
+
             if "cohere_sync" in _patch._originals:
                 _cohere_chat.Chat.create = _patch._originals.pop("cohere_sync")  # type: ignore[method-assign]
             if "cohere_async" in _patch._originals:

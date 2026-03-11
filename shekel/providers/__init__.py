@@ -7,9 +7,9 @@ Third-party adapters can register themselves via:
     ADAPTER_REGISTRY.register(MyProviderAdapter())
 """
 
+from shekel.providers.anthropic import AnthropicAdapter
 from shekel.providers.base import ADAPTER_REGISTRY, ProviderAdapter, ProviderRegistry
 from shekel.providers.openai import OpenAIAdapter
-from shekel.providers.anthropic import AnthropicAdapter
 
 ADAPTER_REGISTRY.register(OpenAIAdapter())
 ADAPTER_REGISTRY.register(AnthropicAdapter())

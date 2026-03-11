@@ -1,9 +1,8 @@
 """TDD tests for ProviderAdapter interface and ProviderRegistry."""
 
+from unittest.mock import MagicMock
+
 import pytest
-from abc import ABC
-from unittest.mock import MagicMock, patch
-from tests.providers.conftest import ProviderTestBase
 
 
 class TestProviderAdapterInterface:
@@ -12,6 +11,7 @@ class TestProviderAdapterInterface:
     def test_is_abstract(self):
         """ProviderAdapter cannot be instantiated directly."""
         from shekel.providers.base import ProviderAdapter
+
         with pytest.raises(TypeError):
             ProviderAdapter()  # type: ignore
 
@@ -20,11 +20,20 @@ class TestProviderAdapterInterface:
         from shekel.providers.base import ProviderAdapter
 
         class NoName(ProviderAdapter):
-            def install_patches(self): pass
-            def remove_patches(self): pass
-            def extract_tokens(self, r): return 0, 0, "x"
-            def detect_streaming(self, k, r): return False
-            def wrap_stream(self, s): return iter([])
+            def install_patches(self):
+                pass
+
+            def remove_patches(self):
+                pass
+
+            def extract_tokens(self, r):
+                return 0, 0, "x"
+
+            def detect_streaming(self, k, r):
+                return False
+
+            def wrap_stream(self, s):
+                return iter([])
 
         with pytest.raises(TypeError):
             NoName()
@@ -35,11 +44,20 @@ class TestProviderAdapterInterface:
 
         class NoInstall(ProviderAdapter):
             @property
-            def name(self): return "test"
-            def remove_patches(self): pass
-            def extract_tokens(self, r): return 0, 0, "x"
-            def detect_streaming(self, k, r): return False
-            def wrap_stream(self, s): return iter([])
+            def name(self):
+                return "test"
+
+            def remove_patches(self):
+                pass
+
+            def extract_tokens(self, r):
+                return 0, 0, "x"
+
+            def detect_streaming(self, k, r):
+                return False
+
+            def wrap_stream(self, s):
+                return iter([])
 
         with pytest.raises(TypeError):
             NoInstall()
@@ -50,11 +68,20 @@ class TestProviderAdapterInterface:
 
         class NoRemove(ProviderAdapter):
             @property
-            def name(self): return "test"
-            def install_patches(self): pass
-            def extract_tokens(self, r): return 0, 0, "x"
-            def detect_streaming(self, k, r): return False
-            def wrap_stream(self, s): return iter([])
+            def name(self):
+                return "test"
+
+            def install_patches(self):
+                pass
+
+            def extract_tokens(self, r):
+                return 0, 0, "x"
+
+            def detect_streaming(self, k, r):
+                return False
+
+            def wrap_stream(self, s):
+                return iter([])
 
         with pytest.raises(TypeError):
             NoRemove()
@@ -65,11 +92,20 @@ class TestProviderAdapterInterface:
 
         class NoExtract(ProviderAdapter):
             @property
-            def name(self): return "test"
-            def install_patches(self): pass
-            def remove_patches(self): pass
-            def detect_streaming(self, k, r): return False
-            def wrap_stream(self, s): return iter([])
+            def name(self):
+                return "test"
+
+            def install_patches(self):
+                pass
+
+            def remove_patches(self):
+                pass
+
+            def detect_streaming(self, k, r):
+                return False
+
+            def wrap_stream(self, s):
+                return iter([])
 
         with pytest.raises(TypeError):
             NoExtract()
@@ -80,11 +116,20 @@ class TestProviderAdapterInterface:
 
         class NoDetect(ProviderAdapter):
             @property
-            def name(self): return "test"
-            def install_patches(self): pass
-            def remove_patches(self): pass
-            def extract_tokens(self, r): return 0, 0, "x"
-            def wrap_stream(self, s): return iter([])
+            def name(self):
+                return "test"
+
+            def install_patches(self):
+                pass
+
+            def remove_patches(self):
+                pass
+
+            def extract_tokens(self, r):
+                return 0, 0, "x"
+
+            def wrap_stream(self, s):
+                return iter([])
 
         with pytest.raises(TypeError):
             NoDetect()
@@ -95,11 +140,20 @@ class TestProviderAdapterInterface:
 
         class NoWrap(ProviderAdapter):
             @property
-            def name(self): return "test"
-            def install_patches(self): pass
-            def remove_patches(self): pass
-            def extract_tokens(self, r): return 0, 0, "x"
-            def detect_streaming(self, k, r): return False
+            def name(self):
+                return "test"
+
+            def install_patches(self):
+                pass
+
+            def remove_patches(self):
+                pass
+
+            def extract_tokens(self, r):
+                return 0, 0, "x"
+
+            def detect_streaming(self, k, r):
+                return False
 
         with pytest.raises(TypeError):
             NoWrap()
@@ -110,12 +164,23 @@ class TestProviderAdapterInterface:
 
         class FullAdapter(ProviderAdapter):
             @property
-            def name(self): return "test"
-            def install_patches(self): pass
-            def remove_patches(self): pass
-            def extract_tokens(self, r): return 0, 0, "unknown"
-            def detect_streaming(self, k, r): return False
-            def wrap_stream(self, s): return iter([])
+            def name(self):
+                return "test"
+
+            def install_patches(self):
+                pass
+
+            def remove_patches(self):
+                pass
+
+            def extract_tokens(self, r):
+                return 0, 0, "unknown"
+
+            def detect_streaming(self, k, r):
+                return False
+
+            def wrap_stream(self, s):
+                return iter([])
 
         adapter = FullAdapter()
         assert adapter.name == "test"
@@ -127,6 +192,7 @@ class TestProviderRegistry:
     def setup_method(self):
         """Create fresh registry for each test."""
         from shekel.providers.base import ProviderRegistry
+
         self.registry = ProviderRegistry()
         self._make_adapter = self._build_adapter
 
@@ -135,12 +201,23 @@ class TestProviderRegistry:
 
         class TestAdapter(ProviderAdapter):
             @property
-            def name(self): return name
-            def install_patches(self): pass
-            def remove_patches(self): pass
-            def extract_tokens(self, r): return 0, 0, "unknown"
-            def detect_streaming(self, k, r): return False
-            def wrap_stream(self, s): return iter([])
+            def name(self):
+                return name
+
+            def install_patches(self):
+                pass
+
+            def remove_patches(self):
+                pass
+
+            def extract_tokens(self, r):
+                return 0, 0, "unknown"
+
+            def detect_streaming(self, k, r):
+                return False
+
+            def wrap_stream(self, s):
+                return iter([])
 
         return TestAdapter()
 
@@ -192,14 +269,17 @@ class TestAdapterRegistrySingleton:
 
     def test_adapter_registry_is_importable(self):
         from shekel.providers import ADAPTER_REGISTRY
+
         assert ADAPTER_REGISTRY is not None
 
     def test_openai_adapter_registered(self):
         from shekel.providers import ADAPTER_REGISTRY
+
         openai_adapter = ADAPTER_REGISTRY.get_by_name("openai")
         assert openai_adapter is not None
 
     def test_anthropic_adapter_registered(self):
         from shekel.providers import ADAPTER_REGISTRY
+
         anthropic_adapter = ADAPTER_REGISTRY.get_by_name("anthropic")
         assert anthropic_adapter is not None

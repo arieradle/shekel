@@ -90,7 +90,9 @@ class AnthropicAdapter(ProviderAdapter):
 
     def validate_fallback(self, fallback_model: str) -> None:
         """Validate that fallback model is an Anthropic model."""
-        is_openai = any(fallback_model.startswith(p) for p in ("gpt-", "o1", "o2", "o3", "o4", "text-"))
+        is_openai = any(
+            fallback_model.startswith(p) for p in ("gpt-", "o1", "o2", "o3", "o4", "text-")
+        )
         if is_openai:
             raise ValueError(
                 f"shekel: fallback model '{fallback_model}' appears to be an OpenAI model "

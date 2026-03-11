@@ -1,20 +1,24 @@
 """TDD tests for OpenAIAdapter."""
 
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import MagicMock, patch, call
-from tests.providers.conftest import ProviderTestBase, MockOpenAIChunk, MockUsage
+
+from tests.providers.conftest import MockOpenAIChunk, MockUsage, ProviderTestBase
 
 
 class TestOpenAIAdapterBasic(ProviderTestBase):
 
     def test_name_is_openai(self):
         from shekel.providers.openai import OpenAIAdapter
+
         adapter = OpenAIAdapter()
         assert adapter.name == "openai"
 
     def test_implements_provider_adapter(self):
         from shekel.providers.base import ProviderAdapter
         from shekel.providers.openai import OpenAIAdapter
+
         adapter = OpenAIAdapter()
         assert isinstance(adapter, ProviderAdapter)
 
@@ -23,6 +27,7 @@ class TestOpenAITokenExtraction(ProviderTestBase):
 
     def test_extract_tokens_from_valid_response(self):
         from shekel.providers.openai import OpenAIAdapter
+
         adapter = OpenAIAdapter()
         response = self.make_openai_response("gpt-4o", 100, 50)
         input_tok, output_tok, model = adapter.extract_tokens(response)
@@ -32,6 +37,7 @@ class TestOpenAITokenExtraction(ProviderTestBase):
 
     def test_extract_tokens_handles_none_usage(self):
         from shekel.providers.openai import OpenAIAdapter
+
         adapter = OpenAIAdapter()
         response = MagicMock()
         response.usage = None
@@ -43,6 +49,7 @@ class TestOpenAITokenExtraction(ProviderTestBase):
 
     def test_extract_tokens_handles_missing_usage_attribute(self):
         from shekel.providers.openai import OpenAIAdapter
+
         adapter = OpenAIAdapter()
         response = MagicMock(spec=[])  # No attributes
         input_tok, output_tok, model = adapter.extract_tokens(response)
@@ -53,6 +60,7 @@ class TestOpenAITokenExtraction(ProviderTestBase):
     def test_extract_tokens_uses_prompt_tokens_field(self):
         """OpenAI uses 'prompt_tokens', not 'input_tokens'."""
         from shekel.providers.openai import OpenAIAdapter
+
         adapter = OpenAIAdapter()
         response = self.make_openai_response("gpt-4o-mini", 200, 80)
         input_tok, output_tok, model = adapter.extract_tokens(response)
@@ -61,6 +69,7 @@ class TestOpenAITokenExtraction(ProviderTestBase):
 
     def test_extract_tokens_handles_zero_tokens(self):
         from shekel.providers.openai import OpenAIAdapter
+
         adapter = OpenAIAdapter()
         response = self.make_openai_response("gpt-4o", 0, 0)
         input_tok, output_tok, model = adapter.extract_tokens(response)
@@ -72,22 +81,26 @@ class TestOpenAIStreamDetection(ProviderTestBase):
 
     def test_detect_streaming_true_when_stream_kwarg_set(self):
         from shekel.providers.openai import OpenAIAdapter
+
         adapter = OpenAIAdapter()
         assert adapter.detect_streaming({"stream": True}, None) is True
 
     def test_detect_streaming_false_when_no_kwarg(self):
         from shekel.providers.openai import OpenAIAdapter
+
         adapter = OpenAIAdapter()
         assert adapter.detect_streaming({}, None) is False
 
     def test_detect_streaming_false_when_stream_false(self):
         from shekel.providers.openai import OpenAIAdapter
+
         adapter = OpenAIAdapter()
         assert adapter.detect_streaming({"stream": False}, None) is False
 
     def test_detect_streaming_ignores_response(self):
         """OpenAI detects streaming from kwargs, not response."""
         from shekel.providers.openai import OpenAIAdapter
+
         adapter = OpenAIAdapter()
         response = MagicMock()
         assert adapter.detect_streaming({"stream": True}, response) is True
@@ -98,6 +111,7 @@ class TestOpenAIStreamWrapping(ProviderTestBase):
 
     def test_wrap_stream_yields_all_chunks(self):
         from shekel.providers.openai import OpenAIAdapter
+
         adapter = OpenAIAdapter()
         stream = self.make_openai_stream("gpt-4o", 100, 50)
         chunks = list(adapter.wrap_stream(stream))
@@ -105,6 +119,7 @@ class TestOpenAIStreamWrapping(ProviderTestBase):
 
     def test_wrap_stream_collects_tokens_from_final_chunk(self):
         from shekel.providers.openai import OpenAIAdapter
+
         adapter = OpenAIAdapter()
         stream = self.make_openai_stream("gpt-4o", 100, 50)
         gen = adapter.wrap_stream(stream)
@@ -118,6 +133,7 @@ class TestOpenAIStreamWrapping(ProviderTestBase):
 
     def test_wrap_stream_returns_unknown_if_no_usage_chunk(self):
         from shekel.providers.openai import OpenAIAdapter
+
         adapter = OpenAIAdapter()
         # Stream with no usage in any chunk
         chunks = [MockOpenAIChunk(model="gpt-4o", usage=None) for _ in range(3)]
@@ -132,16 +148,14 @@ class TestOpenAIStreamWrapping(ProviderTestBase):
 
     def test_wrap_stream_collects_tokens_even_on_exception(self):
         from shekel.providers.openai import OpenAIAdapter
+
         adapter = OpenAIAdapter()
 
         def failing_stream():
             yield MockOpenAIChunk(
-                model="gpt-4o",
-                usage=MockUsage(prompt_tokens=100, completion_tokens=50)
+                model="gpt-4o", usage=MockUsage(prompt_tokens=100, completion_tokens=50)
             )
             raise ValueError("Stream error")
-
-        collected = []
 
         def collect_tokens():
             gen = adapter.wrap_stream(failing_stream())
@@ -159,6 +173,7 @@ class TestOpenAIFallbackValidation(ProviderTestBase):
 
     def test_validate_fallback_accepts_openai_models(self):
         from shekel.providers.openai import OpenAIAdapter
+
         adapter = OpenAIAdapter()
         # Should not raise
         adapter.validate_fallback("gpt-4o-mini")
@@ -167,12 +182,14 @@ class TestOpenAIFallbackValidation(ProviderTestBase):
 
     def test_validate_fallback_rejects_anthropic_models(self):
         from shekel.providers.openai import OpenAIAdapter
+
         adapter = OpenAIAdapter()
         with pytest.raises(ValueError, match="Anthropic"):
             adapter.validate_fallback("claude-3-haiku-20240307")
 
     def test_validate_fallback_rejects_claude_prefix(self):
         from shekel.providers.openai import OpenAIAdapter
+
         adapter = OpenAIAdapter()
         with pytest.raises(ValueError):
             adapter.validate_fallback("claude-3-opus-20240229")
@@ -181,8 +198,10 @@ class TestOpenAIFallbackValidation(ProviderTestBase):
 class TestOpenAIPatching(ProviderTestBase):
 
     def test_install_patches_when_openai_available(self):
-        from shekel.providers.openai import OpenAIAdapter
         import openai.resources.chat.completions as oai
+
+        from shekel.providers.openai import OpenAIAdapter
+
         adapter = OpenAIAdapter()
         original_sync = oai.Completions.create
         adapter.install_patches()
@@ -191,8 +210,10 @@ class TestOpenAIPatching(ProviderTestBase):
         adapter.remove_patches()
 
     def test_remove_patches_restores_originals(self):
-        from shekel.providers.openai import OpenAIAdapter
         import openai.resources.chat.completions as oai
+
+        from shekel.providers.openai import OpenAIAdapter
+
         adapter = OpenAIAdapter()
         original_sync = oai.Completions.create
         adapter.install_patches()
@@ -201,6 +222,7 @@ class TestOpenAIPatching(ProviderTestBase):
 
     def test_install_patches_safe_without_openai(self):
         from shekel.providers.openai import OpenAIAdapter
+
         adapter = OpenAIAdapter()
         with patch.dict("sys.modules", {"openai": None, "openai.resources.chat.completions": None}):
             # Should not raise even without the SDK
