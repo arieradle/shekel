@@ -78,7 +78,6 @@ class TestGeminiRealIntegration:
                 if response.status_code != 200:
                     pytest.skip(f"Gemini API error: {response.status_code}")
 
-                data = response.json()
                 # Simulate token tracking (Gemini doesn't always return usage)
                 from shekel._patch import _record
 
