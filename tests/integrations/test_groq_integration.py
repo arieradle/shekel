@@ -69,9 +69,7 @@ class TestGroqRealIntegration:
                     },
                     json={
                         "model": "mixtral-8x7b-32768",
-                        "messages": [
-                            {"role": "user", "content": "Say 'hello' in one word."}
-                        ],
+                        "messages": [{"role": "user", "content": "Say 'hello' in one word."}],
                         "max_tokens": 10,
                     },
                     timeout=30,
@@ -99,9 +97,7 @@ class TestGroqRealIntegration:
         # Budget should have tracked something
         assert b.spent >= 0
 
-    def test_budget_enforcement_with_groq(
-        self, groq_api_key: str, groq_available: bool
-    ) -> None:
+    def test_budget_enforcement_with_groq(self, groq_api_key: str, groq_available: bool) -> None:
         """Test budget enforcement with real Groq API."""
         if not groq_available or not requests:
             pytest.skip("Groq API not available")
@@ -119,9 +115,7 @@ class TestGroqRealIntegration:
         # Should have exceeded
         assert exceeded or True  # May or may not exceed depending on pricing
 
-    def test_groq_multiple_models(
-        self, groq_api_key: str, groq_available: bool
-    ) -> None:
+    def test_groq_multiple_models(self, groq_api_key: str, groq_available: bool) -> None:
         """Test Groq integration with different models."""
         if not groq_available or not requests:
             pytest.skip("Groq API not available")
@@ -142,9 +136,7 @@ class TestGroqRealIntegration:
                         },
                         json={
                             "model": model,
-                            "messages": [
-                                {"role": "user", "content": "Say 'test'."}
-                            ],
+                            "messages": [{"role": "user", "content": "Say 'test'."}],
                             "max_tokens": 5,
                         },
                         timeout=30,
