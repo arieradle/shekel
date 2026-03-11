@@ -402,3 +402,368 @@ class TestOllamaErrorHandling:
             _record(input_tokens=100, output_tokens=50, model="ollama:custom-model:latest")
 
         assert b.spent >= 0
+
+    def test_zero_input_tokens(self) -> None:
+        """Handling zero input tokens."""
+        with budget(max_usd=5.00) as b:
+            from shekel._patch import _record
+
+            _record(input_tokens=0, output_tokens=100, model="gpt-4o-mini")
+
+        assert b.spent > 0
+
+    def test_zero_output_tokens(self) -> None:
+        """Handling zero output tokens."""
+        with budget(max_usd=5.00) as b:
+            from shekel._patch import _record
+
+            _record(input_tokens=100, output_tokens=0, model="gpt-4o-mini")
+
+        assert b.spent > 0
+
+    def test_very_large_token_counts(self) -> None:
+        """Handling very large token counts."""
+        with budget(max_usd=100.00) as b:
+            from shekel._patch import _record
+
+            _record(input_tokens=1000000, output_tokens=500000, model="gpt-4o-mini")
+
+        assert b.spent > 0
+
+
+class TestOllamaBudgetWarnings:
+    """Test budget warning callbacks."""
+
+    def test_warn_at_threshold_with_ollama(self) -> None:
+        """Budget warns at specified threshold."""
+        warnings_triggered = []
+
+        def on_warn(spent: float, limit: float) -> None:
+            warnings_triggered.append((spent, limit))
+
+        try:
+            with budget(
+                max_usd=0.10,
+                warn_at=0.5,
+                on_exceed=on_warn,
+                fallback="gpt-4o-mini",
+                hard_cap=1.0,
+                name="warn_test",
+            ) as b:
+                from shekel._patch import _record
+
+                # Spend enough to trigger warning but with fallback available
+                _record(input_tokens=20000, output_tokens=10000, model="gpt-4o")
+        except BudgetExceededError:
+            pass  # Expected if fallback still exceeds
+
+        # Should have triggered warning
+        assert len(warnings_triggered) > 0
+
+    def test_no_warning_below_threshold(self) -> None:
+        """No warning when below threshold."""
+        warnings_triggered = []
+
+        def on_warn(spent: float, limit: float) -> None:
+            warnings_triggered.append((spent, limit))
+
+        with budget(max_usd=10.00, warn_at=0.9, on_exceed=on_warn):
+            from shekel._patch import _record
+
+            # Spend small amount
+            _record(input_tokens=100, output_tokens=50, model="gpt-4o-mini")
+
+        # Should not have triggered
+        assert len(warnings_triggered) == 0
+
+
+class TestOllamaMultipleConcurrentModels:
+    """Test multiple models running concurrently."""
+
+    def test_budget_with_multiple_different_models(self) -> None:
+        """Test budget tracks multiple different models."""
+        with budget(max_usd=10.00, name="multi_model") as b:
+            from shekel._patch import _record
+
+            _record(input_tokens=100, output_tokens=50, model="gpt-4o-mini")
+            _record(input_tokens=100, output_tokens=50, model="gpt-4o")
+            _record(input_tokens=100, output_tokens=50, model="gpt-4o-mini")
+
+        # All three calls tracked
+        assert b.spent > 0
+
+    def test_concurrent_model_calls(self) -> None:
+        """Test concurrent calls to different models."""
+        import concurrent.futures
+
+        def call_model(model_name: str):
+            with budget(max_usd=2.00):
+                from shekel._patch import _record
+
+                _record(input_tokens=100, output_tokens=50, model=model_name)
+
+        models = ["gpt-4o-mini", "gpt-4o", "gpt-4o-mini"]
+        with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+            futures = [executor.submit(call_model, m) for m in models]
+            results = [f.result(timeout=5) for f in futures]
+
+        assert all(r is None for r in results)
+
+
+class TestOllamaNestedBudgetAdvanced:
+    """Advanced nested budget scenarios."""
+
+    def test_three_level_budget_nesting(self) -> None:
+        """Test three levels of budget nesting."""
+        with budget(max_usd=20.00, name="level1") as level1:
+            with budget(max_usd=15.00, name="level2") as level2:
+                with budget(max_usd=10.00, name="level3") as level3:
+                    from shekel._patch import _record
+
+                    _record(input_tokens=100, output_tokens=50, model="gpt-4o-mini")
+
+        assert level1.spent > 0
+        assert level2.spent > 0
+        assert level3.spent > 0
+        assert len(level1.children) == 1
+        assert len(level2.children) == 1
+
+    def test_sibling_budgets_accumulate_properly(self) -> None:
+        """Test sibling budgets accumulate correctly."""
+        with budget(max_usd=20.00, name="parent") as parent:
+            with budget(max_usd=8.00, name="sibling1") as s1:
+                from shekel._patch import _record
+
+                _record(input_tokens=100, output_tokens=50, model="gpt-4o-mini")
+
+            with budget(max_usd=8.00, name="sibling2") as s2:
+                from shekel._patch import _record
+
+                _record(input_tokens=100, output_tokens=50, model="gpt-4o-mini")
+
+            with budget(max_usd=8.00, name="sibling3") as s3:
+                from shekel._patch import _record
+
+                _record(input_tokens=100, output_tokens=50, model="gpt-4o-mini")
+
+        assert len(parent.children) == 3
+        assert all(child.spent > 0 for child in parent.children)
+
+    def test_auto_capping_in_deep_nesting(self) -> None:
+        """Test auto-capping works in deep nesting."""
+        with budget(max_usd=1.00, name="strict_parent") as parent:
+            # Child wants $5 but parent only has $1
+            with budget(max_usd=5.00, name="greedy_child") as child:
+                assert child.limit <= 1.00  # Should be auto-capped
+
+    def test_budget_tree_with_many_children(self) -> None:
+        """Test budget tree with many children."""
+        with budget(max_usd=50.00, name="parent") as parent:
+            for i in range(5):
+                with budget(max_usd=8.00, name=f"child_{i}"):
+                    from shekel._patch import _record
+
+                    _record(input_tokens=50, output_tokens=25, model="gpt-4o-mini")
+
+        tree = parent.tree()
+        assert "parent" in tree
+        for i in range(5):
+            assert f"child_{i}" in tree
+
+
+class TestOllamaMixedProviders:
+    """Test mixing Ollama with other providers."""
+
+    def test_budget_with_mixed_openai_models(self) -> None:
+        """Test budget with multiple OpenAI models."""
+        with budget(max_usd=5.00, name="mixed") as b:
+            from shekel._patch import _record
+
+            _record(input_tokens=100, output_tokens=50, model="gpt-4o")
+            _record(input_tokens=100, output_tokens=50, model="gpt-4o-mini")
+            _record(input_tokens=100, output_tokens=50, model="gpt-3.5-turbo")
+
+        assert b.spent > 0
+
+    def test_budget_with_anthropic_models(self) -> None:
+        """Test budget with Anthropic models."""
+        with budget(max_usd=5.00, name="anthropic") as b:
+            from shekel._patch import _record
+
+            _record(input_tokens=100, output_tokens=50, model="claude-3-5-sonnet-20241022")
+            _record(input_tokens=100, output_tokens=50, model="claude-3-haiku-20240307")
+
+        assert b.spent > 0
+
+
+class TestOllamaBudgetPersistence:
+    """Test budget persistence and accumulation patterns."""
+
+    def test_budget_reuse_multiple_times(self) -> None:
+        """Test reusing budget across multiple sessions."""
+        b = budget(max_usd=5.00, name="reusable")
+
+        spend_1 = 0
+        spend_2 = 0
+        spend_3 = 0
+
+        with b:
+            from shekel._patch import _record
+
+            _record(input_tokens=100, output_tokens=50, model="gpt-4o-mini")
+            spend_1 = b.spent
+
+        with b:
+            from shekel._patch import _record
+
+            _record(input_tokens=100, output_tokens=50, model="gpt-4o-mini")
+            spend_2 = b.spent
+
+        with b:
+            from shekel._patch import _record
+
+            _record(input_tokens=100, output_tokens=50, model="gpt-4o-mini")
+            spend_3 = b.spent
+
+        # Each session adds to total
+        assert spend_2 > spend_1
+        assert spend_3 > spend_2
+
+    def test_named_budget_tracking_across_sessions(self) -> None:
+        """Test named budget accumulation across sessions."""
+        named_b = budget(max_usd=10.00, name="session_budget")
+
+        session_1_cost = 0
+        with named_b:
+            from shekel._patch import _record
+
+            _record(input_tokens=200, output_tokens=100, model="gpt-4o-mini")
+            session_1_cost = named_b.spent
+
+        session_2_cost = 0
+        with named_b:
+            from shekel._patch import _record
+
+            _record(input_tokens=300, output_tokens=150, model="gpt-4o-mini")
+            session_2_cost = named_b.spent
+
+        assert session_2_cost > session_1_cost
+
+
+class TestOllamaEdgeCases:
+    """Test edge cases and boundary conditions."""
+
+    def test_budget_slightly_exceeded(self) -> None:
+        """Test when spending slightly exceeds limit."""
+        exceeded = False
+        with budget(max_usd=0.001, name="exceeded") as b:
+            from shekel._patch import _record
+
+            try:
+                # Large call that will exceed tiny budget
+                _record(input_tokens=2000, output_tokens=1000, model="gpt-4o")
+            except BudgetExceededError:
+                exceeded = True
+
+        # Should have exceeded
+        assert exceeded or b.spent > b.limit
+
+    def test_budget_with_none_limit_unlimited(self) -> None:
+        """Test track-only mode with no limit."""
+        with budget(name="unlimited") as b:
+            from shekel._patch import _record
+
+            # No limit, should track anything
+            _record(input_tokens=100000, output_tokens=50000, model="gpt-4o")
+
+        assert b.spent > 0
+        assert b.limit is None
+
+    def test_budget_summary_with_no_calls(self) -> None:
+        """Test summary when no calls were made."""
+        with budget(max_usd=5.00) as b:
+            pass  # No calls
+
+        summary = b.summary()
+        assert "Summary" in summary
+
+    def test_fallback_chain_scenario(self) -> None:
+        """Test fallback with very low hard cap."""
+        with budget(
+            max_usd=0.001, fallback="gpt-4o-mini", hard_cap=0.005, name="fallback_chain"
+        ) as b:
+            from shekel._patch import _record
+
+            try:
+                _record(input_tokens=1000, output_tokens=500, model="gpt-4o")
+            except BudgetExceededError:
+                pass  # Expected to hit hard cap
+
+        # Should have switched
+        assert b.model_switched
+
+    def test_budget_properties_accuracy(self) -> None:
+        """Test all budget properties are accurate."""
+        with budget(max_usd=5.00, name="props") as b:
+            from shekel._patch import _record
+
+            _record(input_tokens=100, output_tokens=50, model="gpt-4o-mini")
+
+        assert b.name == "props"
+        assert b.limit == 5.00
+        assert b.spent > 0
+        assert b.remaining is not None
+        assert b.remaining < b.limit
+
+
+class TestOllamaRequestTracking:
+    """Test request tracking with mock server."""
+
+    def test_mock_server_logs_requests(self) -> None:
+        """Test that mock server logs API requests."""
+        import time
+
+        server = OllamaMockServer("127.0.0.1", 11436)
+        try:
+            server.start()
+            time.sleep(0.1)
+
+            if requests:
+                # Make a request
+                requests.post(
+                    f"{server.get_url()}/api/chat",
+                    json={"model": "test", "messages": [{"role": "user", "content": "hi"}]},
+                    timeout=2,
+                )
+
+                # Check it was logged
+                logs = server.get_request_log()
+                assert len(logs) > 0
+        finally:
+            server.stop()
+
+    def test_mock_server_response_registration(self) -> None:
+        """Test custom response registration."""
+        import time
+
+        server = OllamaMockServer("127.0.0.1", 11437)
+        try:
+            server.start()
+            time.sleep(0.1)
+
+            custom_response = create_mock_ollama_response(
+                "custom-model", "Custom response text", 100, 75
+            )
+            server.register_response("chat", "custom-model", custom_response)
+
+            if requests:
+                resp = requests.post(
+                    f"{server.get_url()}/api/chat",
+                    json={"model": "custom-model", "messages": []},
+                    timeout=2,
+                )
+                data = resp.json()
+                content = data.get("message", {}).get("content", "").lower()
+                assert "custom response" in content
+        finally:
+            server.stop()
