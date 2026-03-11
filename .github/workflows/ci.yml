@@ -37,6 +37,8 @@ jobs:
         run: mypy shekel/
 
       - name: Test (pytest)
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
         run: pytest tests/ -v --cov=shekel --cov-report=xml --cov-fail-under=90 --ignore=tests/performance
 
       - name: Upload coverage
