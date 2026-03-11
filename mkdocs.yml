@@ -114,6 +114,7 @@ nav:
     - Streaming: usage/streaming.md
     - Decorators: usage/decorators.md
   - Integrations:
+    - Langfuse: integrations/langfuse.md
     - LangGraph: integrations/langgraph.md
     - CrewAI: integrations/crewai.md
     - OpenAI: integrations/openai.md
@@ -122,6 +123,7 @@ nav:
     - CLI Tools: cli.md
     - API Reference: api-reference.md
     - Supported Models: models.md
+    - Changelog: changelog.md
   - Advanced:
     - How It Works: how-it-works.md
     - Extending Shekel: extending.md
