@@ -17,8 +17,9 @@ black .                  # format
 isort .                  # sort imports
 ruff check .             # lint
 mypy shekel/             # type check
-pytest tests/ -v         # run tests
+pytest tests/ -v         # run unit tests (excludes performance tests)
 pytest tests/ --cov=shekel --cov-report=term-missing  # with coverage
+pytest tests/performance/ --benchmark-only -v  # run performance tests
 ```
 
 ## Adding a model
