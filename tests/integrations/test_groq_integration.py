@@ -26,27 +26,11 @@ class TestGroqRealIntegration:
     @pytest.fixture
     def groq_available(self, groq_api_key: str | None) -> bool:
         """Check if Groq API is available and accessible."""
-        if not groq_api_key or not requests:
-            return False
-
-        try:
-            # Try a simple API call to verify key works
-            response = requests.post(
-                "https://api.groq.com/openai/v1/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {groq_api_key}",
-                    "Content-Type": "application/json",
-                },
-                json={
-                    "model": "mixtral-8x7b-32768",
-                    "messages": [{"role": "user", "content": "say hi"}],
-                    "max_tokens": 10,
-                },
-                timeout=5,
-            )
-            return response.status_code == 200
-        except Exception:
-            return False
+        # If API key is set, assume it's valid and tests should run
+        # (actual API call failures will be caught in individual tests)
+        if groq_api_key and requests:
+            return True
+        return False
 
     def test_groq_available_skip(self, groq_available: bool) -> None:
         """Skip real Groq tests if API not available."""
