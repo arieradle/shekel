@@ -164,3 +164,47 @@ class TestAsyncEventQueue:
 
         # Good adapter should still receive event
         assert len(adapter.events) == 1
+
+    def test_shutdown_logs_warning_when_worker_times_out(self) -> None:
+        """shutdown() logs a warning when the worker thread doesn't stop in time."""
+        from unittest.mock import patch
+
+        import shekel.integrations.async_queue as aq_module
+        from shekel.integrations.async_queue import AsyncEventQueue
+
+        blocking = threading.Event()
+
+        class BlockingAdapter(ObservabilityAdapter):
+            def on_cost_update(self, budget_data: dict[str, Any]) -> None:
+                blocking.wait()  # blocks until released
+
+        q = AsyncEventQueue(max_size=10)
+        AdapterRegistry.register(BlockingAdapter())
+        q.enqueue("on_cost_update", {"spent": 1.0})
+        time.sleep(0.05)  # let worker pick up the event and block inside adapter
+
+        try:
+            with patch.object(aq_module.logger, "warning") as mock_warn:
+                q.shutdown(timeout=0.01)  # worker is stuck → times out
+                assert mock_warn.called
+                assert "did not finish" in mock_warn.call_args[0][0]
+        finally:
+            blocking.set()  # release the worker
+            q._worker_thread.join(timeout=1.0)
+
+    def test_worker_logs_error_on_unexpected_exception(self) -> None:
+        """Worker logs an error and continues when emit_event raises unexpectedly."""
+        from unittest.mock import patch
+
+        import shekel.integrations.async_queue as aq_module
+        from shekel.integrations.async_queue import AsyncEventQueue
+
+        q = AsyncEventQueue(max_size=10)
+
+        with patch.object(AdapterRegistry, "emit_event", side_effect=RuntimeError("unexpected!")):
+            with patch.object(aq_module.logger, "error") as mock_error:
+                q.enqueue("on_cost_update", {"spent": 1.0})
+                time.sleep(0.15)  # let worker process and hit the exception
+                assert mock_error.called
+
+        q.shutdown()
