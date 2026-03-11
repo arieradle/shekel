@@ -38,12 +38,14 @@ def remove_patches() -> None:
 def _install_patches() -> None:
     # Lazy import to avoid circular dependency with shekel.providers
     from shekel.providers import ADAPTER_REGISTRY
+
     ADAPTER_REGISTRY.install_all()
 
 
 def _restore_patches() -> None:
     # Lazy import to avoid circular dependency with shekel.providers
     from shekel.providers import ADAPTER_REGISTRY
+
     ADAPTER_REGISTRY.remove_all()
 
 

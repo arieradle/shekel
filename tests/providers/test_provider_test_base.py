@@ -1,6 +1,5 @@
 """Tests for ProviderTestBase - test fixture infrastructure."""
 
-
 from tests.providers.conftest import ProviderTestBase
 
 
