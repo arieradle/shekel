@@ -42,26 +42,31 @@ with budget(max_usd=1.00):
 
 ### Patching Implementation
 
-From `shekel/_patch.py`:
+Shekel uses a pluggable `ProviderAdapter` pattern — each provider registers itself in `ADAPTER_REGISTRY`. `shekel/_patch.py` delegates all patching to the registry:
 
 ```python
+# shekel/_patch.py
 def _install_patches():
-    # Save originals
-    _originals["openai_sync"] = Completions.create
-    _originals["openai_async"] = AsyncCompletions.create
-    
-    # Install wrappers
-    Completions.create = _openai_sync_wrapper
-    AsyncCompletions.create = _openai_async_wrapper
-    
-    # Same for Anthropic...
+    from shekel.providers import ADAPTER_REGISTRY
+    ADAPTER_REGISTRY.install_all()   # calls install_patches() on each adapter
 
 def _restore_patches():
-    # Restore originals
-    Completions.create = _originals["openai_sync"]
-    AsyncCompletions.create = _originals["openai_async"]
-    # Same for Anthropic...
+    from shekel.providers import ADAPTER_REGISTRY
+    ADAPTER_REGISTRY.remove_all()    # restores originals for each adapter
 ```
+
+Each adapter (e.g. `OpenAIAdapter`) handles its own SDK:
+
+```python
+# shekel/providers/openai.py
+def install_patches(self) -> None:
+    from shekel import _patch
+    import openai.resources.chat.completions as oai
+    _patch._originals["openai_sync"] = oai.Completions.create
+    oai.Completions.create = _patch._openai_sync_wrapper
+```
+
+To add a new provider, implement `ProviderAdapter` and register it — see [Extending Shekel](extending.md).
 
 ## ContextVar Isolation
 
