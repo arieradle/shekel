@@ -7,7 +7,60 @@ on:
     branches: [main]
 
 jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      docs-only: ${{ steps.check.outputs.docs-only }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect file changes
+        id: check
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            # PR: compare with merge base
+            BASE=$(git merge-base origin/${{ github.base_ref }} HEAD)
+            CHANGED=$(git diff --name-only $BASE HEAD)
+          else
+            # Push: compare with previous commit
+            if [ "${{ github.event.before }}" != "0000000000000000000000000000000000000000" ]; then
+              CHANGED=$(git diff --name-only ${{ github.event.before }} HEAD)
+            else
+              CHANGED=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo "")
+            fi
+          fi
+
+          # Check if any non-markdown files changed
+          NON_MD=$(echo "$CHANGED" | grep -v '\.md$' | grep -v '^docs/' | grep -v 'mkdocs.yml' | wc -l)
+
+          if [ "$NON_MD" -eq 0 ] && [ ! -z "$CHANGED" ]; then
+            echo "docs-only=true" >> $GITHUB_OUTPUT
+          else
+            echo "docs-only=false" >> $GITHUB_OUTPUT
+          fi
+
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -e ".[all,dev]"
+
+      - name: Check mkdocs integrity
+        run: mkdocs build --strict --no-directory-urls
+        continue-on-error: false
+
   test:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.docs-only == 'false'
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -47,6 +100,8 @@ jobs:
           fail_ci_if_error: false
 
   integration-tests:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.docs-only == 'false'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -72,6 +127,8 @@ jobs:
           fail_ci_if_error: false
 
   performance:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.docs-only == 'false'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
