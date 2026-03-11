@@ -1,6 +1,6 @@
 ---
-title: Shekel - LLM Cost Tracking and Budget Enforcement for Python
-description: Zero-config LLM cost tracking and budget enforcement for Python. Track spending and enforce budget limits on OpenAI, Anthropic, and other LLM APIs. Works with LangGraph, CrewAI, and all major frameworks.
+title: Shekel – LLM Budget Control for AI Agents
+description: Open-source Python library for LLM budget control, token budgeting, and AI agent cost governance for OpenAI, Anthropic, LangChain, LangGraph, and modern LLMOps systems.
 ---
 
 # Shekel
