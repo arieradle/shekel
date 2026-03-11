@@ -148,20 +148,23 @@ def _record(input_tokens: int, output_tokens: int, model: str) -> None:
     except Exception:
         cost = 0.0
     budget._record_spend(cost, model, {"input": input_tokens, "output": output_tokens})
-    
+
     # Emit cost update event to registered adapters
     try:
         from shekel.integrations import AdapterRegistry
-        
-        AdapterRegistry.emit_event("on_cost_update", {
-            "spent": budget.spent,
-            "limit": budget.limit,
-            "name": budget.name,
-            "full_name": budget.full_name,
-            "depth": budget._depth,
-            "model": model,
-            "call_cost": cost,
-        })
+
+        AdapterRegistry.emit_event(
+            "on_cost_update",
+            {
+                "spent": budget.spent,
+                "limit": budget.limit,
+                "name": budget.name,
+                "full_name": budget.full_name,
+                "depth": budget._depth,
+                "model": model,
+                "call_cost": cost,
+            },
+        )
     except Exception:
         # Don't break LLM calls if adapter system fails
         pass

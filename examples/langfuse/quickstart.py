@@ -35,8 +35,7 @@ client = OpenAI()
 
 with budget(max_usd=1.00, name="user-query") as b:
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[{"role": "user", "content": "Hello!"}]
+        model="gpt-4o-mini", messages=[{"role": "user", "content": "Hello!"}]
     )
     print(f"Response: {response.choices[0].message.content}")
     print(f"Cost: ${b.spent:.4f}")

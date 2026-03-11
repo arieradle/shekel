@@ -19,15 +19,17 @@ class TestCircuitBreakEvents:
         adapter = LangfuseAdapter(client=mock_client)
 
         # Simulate budget exceeded
-        adapter.on_budget_exceeded({
-            "budget_name": "main",
-            "spent": 5.50,
-            "limit": 5.00,
-            "overage": 0.50,
-            "model": "gpt-4o",
-            "tokens": {"input": 1000, "output": 500},
-            "parent_remaining": None,
-        })
+        adapter.on_budget_exceeded(
+            {
+                "budget_name": "main",
+                "spent": 5.50,
+                "limit": 5.00,
+                "overage": 0.50,
+                "model": "gpt-4o",
+                "tokens": {"input": 1000, "output": 500},
+                "parent_remaining": None,
+            }
+        )
 
         # Should have created trace (if not exists)
         assert mock_client.trace.call_count >= 1
@@ -49,15 +51,17 @@ class TestCircuitBreakEvents:
 
         adapter = LangfuseAdapter(client=mock_client)
 
-        adapter.on_budget_exceeded({
-            "budget_name": "api-calls",
-            "spent": 10.75,
-            "limit": 10.00,
-            "overage": 0.75,
-            "model": "gpt-4o",
-            "tokens": {"input": 2000, "output": 1000},
-            "parent_remaining": 5.00,
-        })
+        adapter.on_budget_exceeded(
+            {
+                "budget_name": "api-calls",
+                "spent": 10.75,
+                "limit": 10.00,
+                "overage": 0.75,
+                "model": "gpt-4o",
+                "tokens": {"input": 2000, "output": 1000},
+                "parent_remaining": 5.00,
+            }
+        )
 
         event_args = mock_trace.event.call_args[1]
         metadata = event_args["metadata"]
@@ -81,15 +85,17 @@ class TestCircuitBreakEvents:
 
         adapter = LangfuseAdapter(client=mock_client)
 
-        adapter.on_budget_exceeded({
-            "budget_name": "main",
-            "spent": 5.50,
-            "limit": 5.00,
-            "overage": 0.50,
-            "model": "gpt-4o",
-            "tokens": {"input": 1000, "output": 500},
-            "parent_remaining": None,
-        })
+        adapter.on_budget_exceeded(
+            {
+                "budget_name": "main",
+                "spent": 5.50,
+                "limit": 5.00,
+                "overage": 0.50,
+                "model": "gpt-4o",
+                "tokens": {"input": 1000, "output": 500},
+                "parent_remaining": None,
+            }
+        )
 
         event_args = mock_trace.event.call_args[1]
         assert event_args["level"] == "WARNING"
@@ -109,26 +115,30 @@ class TestCircuitBreakEvents:
         adapter = LangfuseAdapter(client=mock_client)
 
         # First, create nested budget with cost update
-        adapter.on_cost_update({
-            "spent": 1.00,
-            "limit": 2.00,
-            "name": "child",
-            "full_name": "parent.child",
-            "depth": 1,
-            "model": "gpt-4o",
-            "call_cost": 1.00,
-        })
+        adapter.on_cost_update(
+            {
+                "spent": 1.00,
+                "limit": 2.00,
+                "name": "child",
+                "full_name": "parent.child",
+                "depth": 1,
+                "model": "gpt-4o",
+                "call_cost": 1.00,
+            }
+        )
 
         # Then exceed nested budget
-        adapter.on_budget_exceeded({
-            "budget_name": "parent.child",
-            "spent": 2.50,
-            "limit": 2.00,
-            "overage": 0.50,
-            "model": "gpt-4o",
-            "tokens": {"input": 1000, "output": 500},
-            "parent_remaining": 8.00,
-        })
+        adapter.on_budget_exceeded(
+            {
+                "budget_name": "parent.child",
+                "spent": 2.50,
+                "limit": 2.00,
+                "overage": 0.50,
+                "model": "gpt-4o",
+                "tokens": {"input": 1000, "output": 500},
+                "parent_remaining": 8.00,
+            }
+        )
 
         # Should create event on the span, not trace
         mock_span.event.assert_called_once()
@@ -147,15 +157,17 @@ class TestCircuitBreakEvents:
 
         adapter = LangfuseAdapter(client=mock_client)
 
-        adapter.on_budget_exceeded({
-            "budget_name": "main",
-            "spent": 5.50,
-            "limit": 5.00,
-            "overage": 0.50,
-            "model": "gpt-4o",
-            "tokens": {"input": 1000, "output": 500},
-            "parent_remaining": 15.50,  # Parent has $15.50 left
-        })
+        adapter.on_budget_exceeded(
+            {
+                "budget_name": "main",
+                "spent": 5.50,
+                "limit": 5.00,
+                "overage": 0.50,
+                "model": "gpt-4o",
+                "tokens": {"input": 1000, "output": 500},
+                "parent_remaining": 15.50,  # Parent has $15.50 left
+            }
+        )
 
         event_args = mock_trace.event.call_args[1]
         metadata = event_args["metadata"]
@@ -174,26 +186,30 @@ class TestCircuitBreakEvents:
         adapter = LangfuseAdapter(client=mock_client)
 
         # First violation
-        adapter.on_budget_exceeded({
-            "budget_name": "phase1",
-            "spent": 5.50,
-            "limit": 5.00,
-            "overage": 0.50,
-            "model": "gpt-4o",
-            "tokens": {"input": 1000, "output": 500},
-            "parent_remaining": None,
-        })
+        adapter.on_budget_exceeded(
+            {
+                "budget_name": "phase1",
+                "spent": 5.50,
+                "limit": 5.00,
+                "overage": 0.50,
+                "model": "gpt-4o",
+                "tokens": {"input": 1000, "output": 500},
+                "parent_remaining": None,
+            }
+        )
 
         # Second violation
-        adapter.on_budget_exceeded({
-            "budget_name": "phase2",
-            "spent": 3.20,
-            "limit": 3.00,
-            "overage": 0.20,
-            "model": "gpt-4o-mini",
-            "tokens": {"input": 500, "output": 250},
-            "parent_remaining": None,
-        })
+        adapter.on_budget_exceeded(
+            {
+                "budget_name": "phase2",
+                "spent": 3.20,
+                "limit": 3.00,
+                "overage": 0.20,
+                "model": "gpt-4o-mini",
+                "tokens": {"input": 500, "output": 250},
+                "parent_remaining": None,
+            }
+        )
 
         # Should have created two events
         assert mock_trace.event.call_count == 2
@@ -212,15 +228,17 @@ class TestCircuitBreakEvents:
         adapter = LangfuseAdapter(client=mock_client)
 
         # Should not raise even if Langfuse fails
-        adapter.on_budget_exceeded({
-            "budget_name": "main",
-            "spent": 5.50,
-            "limit": 5.00,
-            "overage": 0.50,
-            "model": "gpt-4o",
-            "tokens": {"input": 1000, "output": 500},
-            "parent_remaining": None,
-        })
+        adapter.on_budget_exceeded(
+            {
+                "budget_name": "main",
+                "spent": 5.50,
+                "limit": 5.00,
+                "overage": 0.50,
+                "model": "gpt-4o",
+                "tokens": {"input": 1000, "output": 500},
+                "parent_remaining": None,
+            }
+        )
 
     def test_event_includes_token_counts(self) -> None:
         """Event metadata should include token counts for debugging."""
@@ -234,19 +252,21 @@ class TestCircuitBreakEvents:
 
         adapter = LangfuseAdapter(client=mock_client)
 
-        adapter.on_budget_exceeded({
-            "budget_name": "main",
-            "spent": 5.50,
-            "limit": 5.00,
-            "overage": 0.50,
-            "model": "gpt-4o",
-            "tokens": {"input": 2500, "output": 1500},
-            "parent_remaining": None,
-        })
+        adapter.on_budget_exceeded(
+            {
+                "budget_name": "main",
+                "spent": 5.50,
+                "limit": 5.00,
+                "overage": 0.50,
+                "model": "gpt-4o",
+                "tokens": {"input": 2500, "output": 1500},
+                "parent_remaining": None,
+            }
+        )
 
         event_args = mock_trace.event.call_args[1]
         metadata = event_args["metadata"]
-        
+
         assert "tokens" in metadata
         assert metadata["tokens"]["input"] == 2500
         assert metadata["tokens"]["output"] == 1500

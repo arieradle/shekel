@@ -21,26 +21,30 @@ class TestNestedBudgetMapping:
         adapter = LangfuseAdapter(client=mock_client)
 
         # Parent budget
-        adapter.on_cost_update({
-            "spent": 0.10,
-            "limit": 10.00,
-            "name": "parent",
-            "full_name": "parent",
-            "depth": 0,
-            "model": "gpt-4o-mini",
-            "call_cost": 0.10,
-        })
+        adapter.on_cost_update(
+            {
+                "spent": 0.10,
+                "limit": 10.00,
+                "name": "parent",
+                "full_name": "parent",
+                "depth": 0,
+                "model": "gpt-4o-mini",
+                "call_cost": 0.10,
+            }
+        )
 
         # Child budget (depth=1)
-        adapter.on_cost_update({
-            "spent": 0.05,
-            "limit": 2.00,
-            "name": "child",
-            "full_name": "parent.child",
-            "depth": 1,
-            "model": "gpt-4o-mini",
-            "call_cost": 0.05,
-        })
+        adapter.on_cost_update(
+            {
+                "spent": 0.05,
+                "limit": 2.00,
+                "name": "child",
+                "full_name": "parent.child",
+                "depth": 1,
+                "model": "gpt-4o-mini",
+                "call_cost": 0.05,
+            }
+        )
 
         # Should have created a span for the child
         mock_trace.span.assert_called_once()
@@ -57,7 +61,7 @@ class TestNestedBudgetMapping:
         mock_trace = MagicMock()
         mock_span1 = MagicMock()
         mock_span2 = MagicMock()
-        
+
         mock_client.trace.return_value = mock_trace
         mock_trace.span.return_value = mock_span1
         mock_span1.span.return_value = mock_span2
@@ -65,44 +69,50 @@ class TestNestedBudgetMapping:
         adapter = LangfuseAdapter(client=mock_client)
 
         # Level 0: parent
-        adapter.on_cost_update({
-            "spent": 0.10,
-            "limit": 10.00,
-            "name": "parent",
-            "full_name": "parent",
-            "depth": 0,
-            "model": "gpt-4o-mini",
-            "call_cost": 0.10,
-        })
+        adapter.on_cost_update(
+            {
+                "spent": 0.10,
+                "limit": 10.00,
+                "name": "parent",
+                "full_name": "parent",
+                "depth": 0,
+                "model": "gpt-4o-mini",
+                "call_cost": 0.10,
+            }
+        )
 
         # Level 1: child
-        adapter.on_cost_update({
-            "spent": 0.05,
-            "limit": 2.00,
-            "name": "child",
-            "full_name": "parent.child",
-            "depth": 1,
-            "model": "gpt-4o-mini",
-            "call_cost": 0.05,
-        })
+        adapter.on_cost_update(
+            {
+                "spent": 0.05,
+                "limit": 2.00,
+                "name": "child",
+                "full_name": "parent.child",
+                "depth": 1,
+                "model": "gpt-4o-mini",
+                "call_cost": 0.05,
+            }
+        )
 
         # Level 2: grandchild
-        adapter.on_cost_update({
-            "spent": 0.02,
-            "limit": 0.50,
-            "name": "grandchild",
-            "full_name": "parent.child.grandchild",
-            "depth": 2,
-            "model": "gpt-4o-mini",
-            "call_cost": 0.02,
-        })
+        adapter.on_cost_update(
+            {
+                "spent": 0.02,
+                "limit": 0.50,
+                "name": "grandchild",
+                "full_name": "parent.child.grandchild",
+                "depth": 2,
+                "model": "gpt-4o-mini",
+                "call_cost": 0.02,
+            }
+        )
 
         # Trace should have been created once
         assert mock_client.trace.call_count == 1
-        
+
         # Should have created span for child under trace
         assert mock_trace.span.call_count == 1
-        
+
         # Should have created span for grandchild under child span
         assert mock_span1.span.call_count == 1
 
@@ -116,44 +126,50 @@ class TestNestedBudgetMapping:
         mock_trace = MagicMock()
         mock_span1 = MagicMock()
         mock_span2 = MagicMock()
-        
+
         mock_client.trace.return_value = mock_trace
         mock_trace.span.side_effect = [mock_span1, mock_span2]
 
         adapter = LangfuseAdapter(client=mock_client)
 
         # Parent
-        adapter.on_cost_update({
-            "spent": 0.10,
-            "limit": 10.00,
-            "name": "parent",
-            "full_name": "parent",
-            "depth": 0,
-            "model": "gpt-4o-mini",
-            "call_cost": 0.10,
-        })
+        adapter.on_cost_update(
+            {
+                "spent": 0.10,
+                "limit": 10.00,
+                "name": "parent",
+                "full_name": "parent",
+                "depth": 0,
+                "model": "gpt-4o-mini",
+                "call_cost": 0.10,
+            }
+        )
 
         # First child
-        adapter.on_cost_update({
-            "spent": 0.05,
-            "limit": 2.00,
-            "name": "child1",
-            "full_name": "parent.child1",
-            "depth": 1,
-            "model": "gpt-4o-mini",
-            "call_cost": 0.05,
-        })
+        adapter.on_cost_update(
+            {
+                "spent": 0.05,
+                "limit": 2.00,
+                "name": "child1",
+                "full_name": "parent.child1",
+                "depth": 1,
+                "model": "gpt-4o-mini",
+                "call_cost": 0.05,
+            }
+        )
 
         # Second child (sibling)
-        adapter.on_cost_update({
-            "spent": 0.03,
-            "limit": 1.00,
-            "name": "child2",
-            "full_name": "parent.child2",
-            "depth": 1,
-            "model": "gpt-4o-mini",
-            "call_cost": 0.03,
-        })
+        adapter.on_cost_update(
+            {
+                "spent": 0.03,
+                "limit": 1.00,
+                "name": "child2",
+                "full_name": "parent.child2",
+                "depth": 1,
+                "model": "gpt-4o-mini",
+                "call_cost": 0.03,
+            }
+        )
 
         # Should have created 2 sibling spans
         assert mock_trace.span.call_count == 2
@@ -167,39 +183,43 @@ class TestNestedBudgetMapping:
         mock_client = MagicMock()
         mock_trace = MagicMock()
         mock_span = MagicMock()
-        
+
         mock_client.trace.return_value = mock_trace
         mock_trace.span.return_value = mock_span
 
         adapter = LangfuseAdapter(client=mock_client)
 
         # Parent
-        adapter.on_cost_update({
-            "spent": 0.10,
-            "limit": 10.00,
-            "name": "parent",
-            "full_name": "parent",
-            "depth": 0,
-            "model": "gpt-4o-mini",
-            "call_cost": 0.10,
-        })
+        adapter.on_cost_update(
+            {
+                "spent": 0.10,
+                "limit": 10.00,
+                "name": "parent",
+                "full_name": "parent",
+                "depth": 0,
+                "model": "gpt-4o-mini",
+                "call_cost": 0.10,
+            }
+        )
 
         # Child with its own budget
-        adapter.on_cost_update({
-            "spent": 0.05,
-            "limit": 2.00,
-            "name": "child",
-            "full_name": "parent.child",
-            "depth": 1,
-            "model": "gpt-4o",
-            "call_cost": 0.05,
-        })
+        adapter.on_cost_update(
+            {
+                "spent": 0.05,
+                "limit": 2.00,
+                "name": "child",
+                "full_name": "parent.child",
+                "depth": 1,
+                "model": "gpt-4o",
+                "call_cost": 0.05,
+            }
+        )
 
         # Child span should have been updated with metadata
         mock_span.update.assert_called()
         update_args = mock_span.update.call_args[1]
         metadata = update_args["metadata"]
-        
+
         assert metadata["shekel_spent"] == 0.05
         assert metadata["shekel_limit"] == 2.00
         assert metadata["shekel_budget_name"] == "parent.child"
@@ -214,48 +234,54 @@ class TestNestedBudgetMapping:
         mock_client = MagicMock()
         mock_trace = MagicMock()
         mock_span = MagicMock()
-        
+
         mock_client.trace.return_value = mock_trace
         mock_trace.span.return_value = mock_span
 
         adapter = LangfuseAdapter(client=mock_client)
 
         # Parent (depth=0)
-        adapter.on_cost_update({
-            "spent": 0.10,
-            "limit": 10.00,
-            "name": "parent",
-            "full_name": "parent",
-            "depth": 0,
-            "model": "gpt-4o-mini",
-            "call_cost": 0.10,
-        })
+        adapter.on_cost_update(
+            {
+                "spent": 0.10,
+                "limit": 10.00,
+                "name": "parent",
+                "full_name": "parent",
+                "depth": 0,
+                "model": "gpt-4o-mini",
+                "call_cost": 0.10,
+            }
+        )
 
         # Child (depth=1)
-        adapter.on_cost_update({
-            "spent": 0.05,
-            "limit": 2.00,
-            "name": "child",
-            "full_name": "parent.child",
-            "depth": 1,
-            "model": "gpt-4o",
-            "call_cost": 0.05,
-        })
+        adapter.on_cost_update(
+            {
+                "spent": 0.05,
+                "limit": 2.00,
+                "name": "child",
+                "full_name": "parent.child",
+                "depth": 1,
+                "model": "gpt-4o",
+                "call_cost": 0.05,
+            }
+        )
 
         # Back to parent (depth=0) with new spend
-        adapter.on_cost_update({
-            "spent": 0.20,  # Parent accumulated more
-            "limit": 10.00,
-            "name": "parent",
-            "full_name": "parent",
-            "depth": 0,
-            "model": "gpt-4o-mini",
-            "call_cost": 0.10,
-        })
+        adapter.on_cost_update(
+            {
+                "spent": 0.20,  # Parent accumulated more
+                "limit": 10.00,
+                "name": "parent",
+                "full_name": "parent",
+                "depth": 0,
+                "model": "gpt-4o-mini",
+                "call_cost": 0.10,
+            }
+        )
 
         # Trace (parent) should have been updated twice
         assert mock_trace.update.call_count == 2
-        
+
         # Latest update should show accumulated parent spend
         last_update = mock_trace.update.call_args_list[-1]
         metadata = last_update[1]["metadata"]
@@ -274,28 +300,32 @@ class TestNestedBudgetMapping:
         adapter = LangfuseAdapter(client=mock_client)
 
         # Multiple depth=0 updates (no nesting)
-        adapter.on_cost_update({
-            "spent": 0.10,
-            "limit": 10.00,
-            "name": "main",
-            "full_name": "main",
-            "depth": 0,
-            "model": "gpt-4o-mini",
-            "call_cost": 0.10,
-        })
+        adapter.on_cost_update(
+            {
+                "spent": 0.10,
+                "limit": 10.00,
+                "name": "main",
+                "full_name": "main",
+                "depth": 0,
+                "model": "gpt-4o-mini",
+                "call_cost": 0.10,
+            }
+        )
 
-        adapter.on_cost_update({
-            "spent": 0.20,
-            "limit": 10.00,
-            "name": "main",
-            "full_name": "main",
-            "depth": 0,
-            "model": "gpt-4o-mini",
-            "call_cost": 0.10,
-        })
+        adapter.on_cost_update(
+            {
+                "spent": 0.20,
+                "limit": 10.00,
+                "name": "main",
+                "full_name": "main",
+                "depth": 0,
+                "model": "gpt-4o-mini",
+                "call_cost": 0.10,
+            }
+        )
 
         # Should never create spans (only trace)
         mock_trace.span.assert_not_called()
-        
+
         # Should update trace twice
         assert mock_trace.update.call_count == 2

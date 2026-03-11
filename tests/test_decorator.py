@@ -232,6 +232,7 @@ class TestWithBudgetName:
         @with_budget(max_usd=5.00, name="outer")
         def run() -> None:
             from shekel import _context
+
             b = _context.get_active_budget()
             assert b is not None
             assert b.name == "outer"

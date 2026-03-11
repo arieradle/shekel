@@ -18,18 +18,20 @@ class TestFallbackAnnotations:
 
         adapter = LangfuseAdapter(client=mock_client)
 
-        adapter.on_fallback_activated({
-            "from_model": "gpt-4o",
-            "to_model": "gpt-4o-mini",
-            "switched_at": 5.00,
-            "cost_primary": 5.00,
-            "cost_fallback": 0.00,
-            "savings": 0.00,
-        })
+        adapter.on_fallback_activated(
+            {
+                "from_model": "gpt-4o",
+                "to_model": "gpt-4o-mini",
+                "switched_at": 5.00,
+                "cost_primary": 5.00,
+                "cost_fallback": 0.00,
+                "savings": 0.00,
+            }
+        )
 
         # Should have created trace
         assert mock_client.trace.call_count >= 1
-        
+
         # Should have created event
         mock_trace.event.assert_called_once()
         event_args = mock_trace.event.call_args[1]
@@ -47,14 +49,16 @@ class TestFallbackAnnotations:
 
         adapter = LangfuseAdapter(client=mock_client)
 
-        adapter.on_fallback_activated({
-            "from_model": "gpt-4o",
-            "to_model": "gpt-4o-mini",
-            "switched_at": 5.00,
-            "cost_primary": 5.00,
-            "cost_fallback": 0.00,
-            "savings": 0.00,
-        })
+        adapter.on_fallback_activated(
+            {
+                "from_model": "gpt-4o",
+                "to_model": "gpt-4o-mini",
+                "switched_at": 5.00,
+                "cost_primary": 5.00,
+                "cost_fallback": 0.00,
+                "savings": 0.00,
+            }
+        )
 
         event_args = mock_trace.event.call_args[1]
         assert event_args["level"] == "INFO"
@@ -71,18 +75,20 @@ class TestFallbackAnnotations:
 
         adapter = LangfuseAdapter(client=mock_client)
 
-        adapter.on_fallback_activated({
-            "from_model": "claude-3-opus",
-            "to_model": "claude-3-haiku",
-            "switched_at": 10.00,
-            "cost_primary": 10.00,
-            "cost_fallback": 0.00,
-            "savings": 0.00,
-        })
+        adapter.on_fallback_activated(
+            {
+                "from_model": "claude-3-opus",
+                "to_model": "claude-3-haiku",
+                "switched_at": 10.00,
+                "cost_primary": 10.00,
+                "cost_fallback": 0.00,
+                "savings": 0.00,
+            }
+        )
 
         event_args = mock_trace.event.call_args[1]
         metadata = event_args["metadata"]
-        
+
         assert metadata["from_model"] == "claude-3-opus"
         assert metadata["to_model"] == "claude-3-haiku"
 
@@ -98,20 +104,22 @@ class TestFallbackAnnotations:
 
         adapter = LangfuseAdapter(client=mock_client)
 
-        adapter.on_fallback_activated({
-            "from_model": "gpt-4o",
-            "to_model": "gpt-4o-mini",
-            "switched_at": 5.00,
-            "cost_primary": 5.00,
-            "cost_fallback": 0.00,
-            "savings": 0.00,
-        })
+        adapter.on_fallback_activated(
+            {
+                "from_model": "gpt-4o",
+                "to_model": "gpt-4o-mini",
+                "switched_at": 5.00,
+                "cost_primary": 5.00,
+                "cost_fallback": 0.00,
+                "savings": 0.00,
+            }
+        )
 
         # Should have updated trace metadata
         mock_trace.update.assert_called()
         update_args = mock_trace.update.call_args[1]
         metadata = update_args["metadata"]
-        
+
         assert metadata["shekel_fallback_active"] is True
         assert metadata["shekel_fallback_model"] == "gpt-4o-mini"
 
@@ -127,18 +135,20 @@ class TestFallbackAnnotations:
 
         adapter = LangfuseAdapter(client=mock_client)
 
-        adapter.on_fallback_activated({
-            "from_model": "gpt-4o",
-            "to_model": "gpt-4o-mini",
-            "switched_at": 5.00,
-            "cost_primary": 5.00,
-            "cost_fallback": 1.50,
-            "savings": 0.00,  # Savings calculated later
-        })
+        adapter.on_fallback_activated(
+            {
+                "from_model": "gpt-4o",
+                "to_model": "gpt-4o-mini",
+                "switched_at": 5.00,
+                "cost_primary": 5.00,
+                "cost_fallback": 1.50,
+                "savings": 0.00,  # Savings calculated later
+            }
+        )
 
         event_args = mock_trace.event.call_args[1]
         metadata = event_args["metadata"]
-        
+
         assert metadata["cost_primary"] == 5.00
         assert metadata["cost_fallback"] == 1.50
         assert metadata["switched_at"] == 5.00
@@ -158,25 +168,29 @@ class TestFallbackAnnotations:
         adapter = LangfuseAdapter(client=mock_client)
 
         # First, create nested budget
-        adapter.on_cost_update({
-            "spent": 1.00,
-            "limit": 2.00,
-            "name": "child",
-            "full_name": "parent.child",
-            "depth": 1,
-            "model": "gpt-4o",
-            "call_cost": 1.00,
-        })
+        adapter.on_cost_update(
+            {
+                "spent": 1.00,
+                "limit": 2.00,
+                "name": "child",
+                "full_name": "parent.child",
+                "depth": 1,
+                "model": "gpt-4o",
+                "call_cost": 1.00,
+            }
+        )
 
         # Then activate fallback in nested budget
-        adapter.on_fallback_activated({
-            "from_model": "gpt-4o",
-            "to_model": "gpt-4o-mini",
-            "switched_at": 2.00,
-            "cost_primary": 2.00,
-            "cost_fallback": 0.00,
-            "savings": 0.00,
-        })
+        adapter.on_fallback_activated(
+            {
+                "from_model": "gpt-4o",
+                "to_model": "gpt-4o-mini",
+                "switched_at": 2.00,
+                "cost_primary": 2.00,
+                "cost_fallback": 0.00,
+                "savings": 0.00,
+            }
+        )
 
         # Should create event on span
         mock_span.event.assert_called_once()
@@ -195,14 +209,16 @@ class TestFallbackAnnotations:
 
         adapter = LangfuseAdapter(client=mock_client)
 
-        adapter.on_fallback_activated({
-            "from_model": "gpt-4o",
-            "to_model": "gpt-4o-mini",
-            "switched_at": 5.00,
-            "cost_primary": 5.00,
-            "cost_fallback": 1.50,
-            "savings": 3.50,  # Estimated savings
-        })
+        adapter.on_fallback_activated(
+            {
+                "from_model": "gpt-4o",
+                "to_model": "gpt-4o-mini",
+                "switched_at": 5.00,
+                "cost_primary": 5.00,
+                "cost_fallback": 1.50,
+                "savings": 3.50,  # Estimated savings
+            }
+        )
 
         event_args = mock_trace.event.call_args[1]
         metadata = event_args["metadata"]
@@ -222,14 +238,16 @@ class TestFallbackAnnotations:
         adapter = LangfuseAdapter(client=mock_client)
 
         # Should not raise
-        adapter.on_fallback_activated({
-            "from_model": "gpt-4o",
-            "to_model": "gpt-4o-mini",
-            "switched_at": 5.00,
-            "cost_primary": 5.00,
-            "cost_fallback": 0.00,
-            "savings": 0.00,
-        })
+        adapter.on_fallback_activated(
+            {
+                "from_model": "gpt-4o",
+                "to_model": "gpt-4o-mini",
+                "switched_at": 5.00,
+                "cost_primary": 5.00,
+                "cost_fallback": 0.00,
+                "savings": 0.00,
+            }
+        )
 
     def test_multiple_fallback_activations_create_multiple_events(self) -> None:
         """If fallback is activated multiple times, track each."""
@@ -244,24 +262,28 @@ class TestFallbackAnnotations:
         adapter = LangfuseAdapter(client=mock_client)
 
         # First fallback
-        adapter.on_fallback_activated({
-            "from_model": "gpt-4o",
-            "to_model": "gpt-4o-mini",
-            "switched_at": 5.00,
-            "cost_primary": 5.00,
-            "cost_fallback": 0.00,
-            "savings": 0.00,
-        })
+        adapter.on_fallback_activated(
+            {
+                "from_model": "gpt-4o",
+                "to_model": "gpt-4o-mini",
+                "switched_at": 5.00,
+                "cost_primary": 5.00,
+                "cost_fallback": 0.00,
+                "savings": 0.00,
+            }
+        )
 
         # Second fallback (different budget)
-        adapter.on_fallback_activated({
-            "from_model": "claude-3-opus",
-            "to_model": "claude-3-haiku",
-            "switched_at": 10.00,
-            "cost_primary": 10.00,
-            "cost_fallback": 0.00,
-            "savings": 0.00,
-        })
+        adapter.on_fallback_activated(
+            {
+                "from_model": "claude-3-opus",
+                "to_model": "claude-3-haiku",
+                "switched_at": 10.00,
+                "cost_primary": 10.00,
+                "cost_fallback": 0.00,
+                "savings": 0.00,
+            }
+        )
 
         # Should have created two events
         assert mock_trace.event.call_count == 2
@@ -279,25 +301,29 @@ class TestFallbackAnnotations:
         adapter = LangfuseAdapter(client=mock_client)
 
         # Activate fallback
-        adapter.on_fallback_activated({
-            "from_model": "gpt-4o",
-            "to_model": "gpt-4o-mini",
-            "switched_at": 5.00,
-            "cost_primary": 5.00,
-            "cost_fallback": 0.00,
-            "savings": 0.00,
-        })
+        adapter.on_fallback_activated(
+            {
+                "from_model": "gpt-4o",
+                "to_model": "gpt-4o-mini",
+                "switched_at": 5.00,
+                "cost_primary": 5.00,
+                "cost_fallback": 0.00,
+                "savings": 0.00,
+            }
+        )
 
         # Cost update after fallback
-        adapter.on_cost_update({
-            "spent": 6.00,
-            "limit": 5.00,
-            "name": "main",
-            "full_name": "main",
-            "depth": 0,
-            "model": "gpt-4o-mini",  # Now using fallback
-            "call_cost": 1.00,
-        })
+        adapter.on_cost_update(
+            {
+                "spent": 6.00,
+                "limit": 5.00,
+                "name": "main",
+                "full_name": "main",
+                "depth": 0,
+                "model": "gpt-4o-mini",  # Now using fallback
+                "call_cost": 1.00,
+            }
+        )
 
         # Latest update should still show fallback is active
         last_update = mock_trace.update.call_args_list[-1]

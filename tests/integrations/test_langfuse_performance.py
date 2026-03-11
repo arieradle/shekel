@@ -32,30 +32,34 @@ class TestLangfusePerformance:
 
         # Warm up
         for _ in range(10):
-            adapter.on_cost_update({
-                "spent": 1.0,
-                "limit": 10.0,
-                "name": "test",
-                "full_name": "test",
-                "depth": 0,
-                "model": "gpt-4o-mini",
-                "call_cost": 0.1,
-            })
+            adapter.on_cost_update(
+                {
+                    "spent": 1.0,
+                    "limit": 10.0,
+                    "name": "test",
+                    "full_name": "test",
+                    "depth": 0,
+                    "model": "gpt-4o-mini",
+                    "call_cost": 0.1,
+                }
+            )
 
         # Measure
         iterations = 1000
         start = time.perf_counter()
 
         for i in range(iterations):
-            adapter.on_cost_update({
-                "spent": float(i) * 0.01,
-                "limit": 10.0,
-                "name": "test",
-                "full_name": "test",
-                "depth": 0,
-                "model": "gpt-4o-mini",
-                "call_cost": 0.01,
-            })
+            adapter.on_cost_update(
+                {
+                    "spent": float(i) * 0.01,
+                    "limit": 10.0,
+                    "name": "test",
+                    "full_name": "test",
+                    "depth": 0,
+                    "model": "gpt-4o-mini",
+                    "call_cost": 0.01,
+                }
+            )
 
         elapsed = time.perf_counter() - start
         avg_per_call = (elapsed / iterations) * 1000  # Convert to ms
@@ -76,30 +80,34 @@ class TestLangfusePerformance:
 
         # Warm up
         for _ in range(10):
-            adapter.on_cost_update({
-                "spent": 1.0,
-                "limit": 10.0,
-                "name": "child",
-                "full_name": "parent.child",
-                "depth": 1,
-                "model": "gpt-4o-mini",
-                "call_cost": 0.1,
-            })
+            adapter.on_cost_update(
+                {
+                    "spent": 1.0,
+                    "limit": 10.0,
+                    "name": "child",
+                    "full_name": "parent.child",
+                    "depth": 1,
+                    "model": "gpt-4o-mini",
+                    "call_cost": 0.1,
+                }
+            )
 
         # Measure nested budget updates
         iterations = 1000
         start = time.perf_counter()
 
         for i in range(iterations):
-            adapter.on_cost_update({
-                "spent": float(i) * 0.01,
-                "limit": 10.0,
-                "name": "child",
-                "full_name": "parent.child",
-                "depth": 1,
-                "model": "gpt-4o-mini",
-                "call_cost": 0.01,
-            })
+            adapter.on_cost_update(
+                {
+                    "spent": float(i) * 0.01,
+                    "limit": 10.0,
+                    "name": "child",
+                    "full_name": "parent.child",
+                    "depth": 1,
+                    "model": "gpt-4o-mini",
+                    "call_cost": 0.01,
+                }
+            )
 
         elapsed = time.perf_counter() - start
         avg_per_call = (elapsed / iterations) * 1000
@@ -121,15 +129,17 @@ class TestLangfusePerformance:
         start = time.perf_counter()
 
         for i in range(iterations):
-            adapter.on_budget_exceeded({
-                "budget_name": "test",
-                "spent": 5.0 + i * 0.01,
-                "limit": 5.0,
-                "overage": i * 0.01,
-                "model": "gpt-4o",
-                "tokens": {"input": 1000, "output": 500},
-                "parent_remaining": None,
-            })
+            adapter.on_budget_exceeded(
+                {
+                    "budget_name": "test",
+                    "spent": 5.0 + i * 0.01,
+                    "limit": 5.0,
+                    "overage": i * 0.01,
+                    "model": "gpt-4o",
+                    "tokens": {"input": 1000, "output": 500},
+                    "parent_remaining": None,
+                }
+            )
 
         elapsed = time.perf_counter() - start
         avg_per_event = (elapsed / iterations) * 1000
@@ -147,15 +157,18 @@ class TestLangfusePerformance:
 
         for i in range(iterations):
             # Simulate what happens in _record() when no adapter is registered
-            AdapterRegistry.emit_event("on_cost_update", {
-                "spent": float(i) * 0.01,
-                "limit": 10.0,
-                "name": "test",
-                "full_name": "test",
-                "depth": 0,
-                "model": "gpt-4o-mini",
-                "call_cost": 0.01,
-            })
+            AdapterRegistry.emit_event(
+                "on_cost_update",
+                {
+                    "spent": float(i) * 0.01,
+                    "limit": 10.0,
+                    "name": "test",
+                    "full_name": "test",
+                    "depth": 0,
+                    "model": "gpt-4o-mini",
+                    "call_cost": 0.01,
+                },
+            )
 
         elapsed = time.perf_counter() - start
         avg_per_call = (elapsed / iterations) * 1000
@@ -181,15 +194,18 @@ class TestLangfusePerformance:
         start = time.perf_counter()
 
         for i in range(iterations):
-            AdapterRegistry.emit_event("on_cost_update", {
-                "spent": float(i) * 0.01,
-                "limit": 10.0,
-                "name": "test",
-                "full_name": "test",
-                "depth": 0,
-                "model": "gpt-4o-mini",
-                "call_cost": 0.01,
-            })
+            AdapterRegistry.emit_event(
+                "on_cost_update",
+                {
+                    "spent": float(i) * 0.01,
+                    "limit": 10.0,
+                    "name": "test",
+                    "full_name": "test",
+                    "depth": 0,
+                    "model": "gpt-4o-mini",
+                    "call_cost": 0.01,
+                },
+            )
 
         elapsed = time.perf_counter() - start
         avg_per_call = (elapsed / iterations) * 1000
@@ -205,11 +221,11 @@ if __name__ == "__main__":
 
     # Run tests
     test = TestLangfusePerformance()
-    
-    print("="*70)
+
+    print("=" * 70)
     print("Langfuse Integration Performance Tests")
-    print("="*70)
-    
+    print("=" * 70)
+
     tests = [
         ("Single adapter overhead", test.test_adapter_overhead_is_minimal),
         ("Nested budget overhead", test.test_nested_budget_overhead),
@@ -217,10 +233,10 @@ if __name__ == "__main__":
         ("No adapter overhead", test.test_no_overhead_when_no_adapter_registered),
         ("Multiple adapters overhead", test.test_multiple_adapters_overhead),
     ]
-    
+
     passed = 0
     failed = 0
-    
+
     for name, test_func in tests:
         test.setup_method()
         print(f"\n📊 {name}...")
@@ -234,13 +250,13 @@ if __name__ == "__main__":
         except Exception as e:
             print(f"❌ ERROR: {e}")
             failed += 1
-    
-    print("\n" + "="*70)
+
+    print("\n" + "=" * 70)
     print(f"Results: {passed} passed, {failed} failed")
-    print("="*70)
-    
+    print("=" * 70)
+
     if failed > 0:
         sys.exit(1)
-    
+
     print("\n✅ All performance tests passed!")
     print("🚀 Langfuse integration meets performance targets (<1ms overhead)")

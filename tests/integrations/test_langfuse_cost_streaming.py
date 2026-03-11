@@ -16,15 +16,17 @@ class TestRealTimeCostStreaming:
         adapter = LangfuseAdapter(client=mock_client, trace_name="test-trace")
 
         # Simulate first cost update
-        adapter.on_cost_update({
-            "spent": 0.05,
-            "limit": 5.00,
-            "name": "main",
-            "full_name": "main",
-            "depth": 0,
-            "model": "gpt-4o-mini",
-            "call_cost": 0.05,
-        })
+        adapter.on_cost_update(
+            {
+                "spent": 0.05,
+                "limit": 5.00,
+                "name": "main",
+                "full_name": "main",
+                "depth": 0,
+                "model": "gpt-4o-mini",
+                "call_cost": 0.05,
+            }
+        )
 
         # Should have created a trace
         mock_client.trace.assert_called_once()
@@ -43,20 +45,22 @@ class TestRealTimeCostStreaming:
 
         adapter = LangfuseAdapter(client=mock_client)
 
-        adapter.on_cost_update({
-            "spent": 0.05,
-            "limit": 5.00,
-            "name": "main",
-            "full_name": "main",
-            "depth": 0,
-            "model": "gpt-4o-mini",
-            "call_cost": 0.05,
-        })
+        adapter.on_cost_update(
+            {
+                "spent": 0.05,
+                "limit": 5.00,
+                "name": "main",
+                "full_name": "main",
+                "depth": 0,
+                "model": "gpt-4o-mini",
+                "call_cost": 0.05,
+            }
+        )
 
         # Should have updated metadata
         mock_trace.update.assert_called()
         update_args = mock_trace.update.call_args[1]
-        
+
         # Verify metadata contains cost info
         assert "metadata" in update_args
         metadata = update_args["metadata"]
@@ -75,19 +79,21 @@ class TestRealTimeCostStreaming:
 
         adapter = LangfuseAdapter(client=mock_client)
 
-        adapter.on_cost_update({
-            "spent": 2.50,
-            "limit": 5.00,
-            "name": "main",
-            "full_name": "main",
-            "depth": 0,
-            "model": "gpt-4o",
-            "call_cost": 2.50,
-        })
+        adapter.on_cost_update(
+            {
+                "spent": 2.50,
+                "limit": 5.00,
+                "name": "main",
+                "full_name": "main",
+                "depth": 0,
+                "model": "gpt-4o",
+                "call_cost": 2.50,
+            }
+        )
 
         update_args = mock_trace.update.call_args[1]
         metadata = update_args["metadata"]
-        
+
         # Should track utilization (2.50 / 5.00 = 50%)
         assert "shekel_utilization" in metadata
         assert metadata["shekel_utilization"] == 0.5
@@ -104,20 +110,22 @@ class TestRealTimeCostStreaming:
 
         adapter = LangfuseAdapter(client=mock_client)
 
-        adapter.on_cost_update({
-            "spent": 1.23,
-            "limit": None,  # Track-only mode
-            "name": "tracking",
-            "full_name": "tracking",
-            "depth": 0,
-            "model": "gpt-4o-mini",
-            "call_cost": 1.23,
-        })
+        adapter.on_cost_update(
+            {
+                "spent": 1.23,
+                "limit": None,  # Track-only mode
+                "name": "tracking",
+                "full_name": "tracking",
+                "depth": 0,
+                "model": "gpt-4o-mini",
+                "call_cost": 1.23,
+            }
+        )
 
         # Should still record cost, but no utilization
         update_args = mock_trace.update.call_args[1]
         metadata = update_args["metadata"]
-        
+
         assert "shekel_spent" in metadata
         assert metadata["shekel_spent"] == 1.23
         # Utilization should be None or not present
@@ -137,21 +145,23 @@ class TestRealTimeCostStreaming:
 
         adapter = LangfuseAdapter(client=mock_client)
 
-        adapter.on_cost_update({
-            "spent": 0.10,
-            "limit": 1.00,
-            "name": "child",
-            "full_name": "parent.child",
-            "depth": 1,
-            "model": "gpt-4o-mini",
-            "call_cost": 0.10,
-        })
+        adapter.on_cost_update(
+            {
+                "spent": 0.10,
+                "limit": 1.00,
+                "name": "child",
+                "full_name": "parent.child",
+                "depth": 1,
+                "model": "gpt-4o-mini",
+                "call_cost": 0.10,
+            }
+        )
 
         # Should have created a span with hierarchical name
         mock_trace.span.assert_called_once()
         span_args = mock_trace.span.call_args[1]
         assert span_args["name"] == "parent.child"
-        
+
         # Should have updated span metadata
         mock_span.update.assert_called()
         update_args = mock_span.update.call_args[1]
@@ -173,19 +183,21 @@ class TestRealTimeCostStreaming:
 
         adapter = LangfuseAdapter(client=mock_client)
 
-        adapter.on_cost_update({
-            "spent": 0.50,
-            "limit": 5.00,
-            "name": "main",
-            "full_name": "main",
-            "depth": 0,
-            "model": "gpt-4o",
-            "call_cost": 0.50,
-        })
+        adapter.on_cost_update(
+            {
+                "spent": 0.50,
+                "limit": 5.00,
+                "name": "main",
+                "full_name": "main",
+                "depth": 0,
+                "model": "gpt-4o",
+                "call_cost": 0.50,
+            }
+        )
 
         update_args = mock_trace.update.call_args[1]
         metadata = update_args["metadata"]
-        
+
         assert "shekel_last_model" in metadata
         assert metadata["shekel_last_model"] == "gpt-4o"
 
@@ -202,33 +214,37 @@ class TestRealTimeCostStreaming:
         adapter = LangfuseAdapter(client=mock_client)
 
         # First update
-        adapter.on_cost_update({
-            "spent": 0.05,
-            "limit": 5.00,
-            "name": "main",
-            "full_name": "main",
-            "depth": 0,
-            "model": "gpt-4o-mini",
-            "call_cost": 0.05,
-        })
+        adapter.on_cost_update(
+            {
+                "spent": 0.05,
+                "limit": 5.00,
+                "name": "main",
+                "full_name": "main",
+                "depth": 0,
+                "model": "gpt-4o-mini",
+                "call_cost": 0.05,
+            }
+        )
 
         # Second update (accumulated)
-        adapter.on_cost_update({
-            "spent": 0.10,  # Total spent now 0.10
-            "limit": 5.00,
-            "name": "main",
-            "full_name": "main",
-            "depth": 0,
-            "model": "gpt-4o-mini",
-            "call_cost": 0.05,
-        })
+        adapter.on_cost_update(
+            {
+                "spent": 0.10,  # Total spent now 0.10
+                "limit": 5.00,
+                "name": "main",
+                "full_name": "main",
+                "depth": 0,
+                "model": "gpt-4o-mini",
+                "call_cost": 0.05,
+            }
+        )
 
         # Trace should have been created once
         assert mock_client.trace.call_count == 1
-        
+
         # Update should have been called twice
         assert mock_trace.update.call_count == 2
-        
+
         # Last update should show accumulated cost
         last_call = mock_trace.update.call_args_list[-1]
         metadata = last_call[1]["metadata"]
@@ -244,20 +260,19 @@ class TestRealTimeCostStreaming:
         mock_trace = MagicMock()
         mock_client.trace.return_value = mock_trace
 
-        adapter = LangfuseAdapter(
-            client=mock_client,
-            tags=["production", "api-v2"]
-        )
+        adapter = LangfuseAdapter(client=mock_client, tags=["production", "api-v2"])
 
-        adapter.on_cost_update({
-            "spent": 0.05,
-            "limit": 5.00,
-            "name": "main",
-            "full_name": "main",
-            "depth": 0,
-            "model": "gpt-4o-mini",
-            "call_cost": 0.05,
-        })
+        adapter.on_cost_update(
+            {
+                "spent": 0.05,
+                "limit": 5.00,
+                "name": "main",
+                "full_name": "main",
+                "depth": 0,
+                "model": "gpt-4o-mini",
+                "call_cost": 0.05,
+            }
+        )
 
         # Should have applied tags
         call_args = mock_client.trace.call_args[1]
@@ -276,12 +291,14 @@ class TestRealTimeCostStreaming:
         adapter = LangfuseAdapter(client=mock_client)
 
         # Should not raise even if Langfuse fails
-        adapter.on_cost_update({
-            "spent": 0.05,
-            "limit": 5.00,
-            "name": "main",
-            "full_name": "main",
-            "depth": 0,
-            "model": "gpt-4o-mini",
-            "call_cost": 0.05,
-        })
+        adapter.on_cost_update(
+            {
+                "spent": 0.05,
+                "limit": 5.00,
+                "name": "main",
+                "full_name": "main",
+                "depth": 0,
+                "model": "gpt-4o-mini",
+                "call_cost": 0.05,
+            }
+        )

@@ -86,7 +86,9 @@ class TestCoreIntegration:
         adapter = CollectingAdapter()
         AdapterRegistry.register(adapter)
 
-        with budget(max_usd=0.001, fallback="gpt-4o-mini", hard_cap=10.0, name="fallback_test") as b:
+        with budget(
+            max_usd=0.001, fallback="gpt-4o-mini", hard_cap=10.0, name="fallback_test"
+        ) as b:
             from shekel._patch import _record
 
             # First call exceeds limit, triggers fallback
