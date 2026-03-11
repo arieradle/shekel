@@ -142,8 +142,50 @@ class LangfuseAdapter(ObservabilityAdapter):
                 - tokens: Token counts (dict)
                 - parent_remaining: Parent budget remaining (float or None)
         """
-        # TODO: Implement in Story 3.1
-        pass
+        try:
+            # Create trace if it doesn't exist
+            if self._trace is None:
+                self._trace = self.client.trace(
+                    name=self.trace_name,
+                    tags=self.tags if self.tags else None,
+                )
+            
+            # Determine which object to attach event to (trace or span)
+            # If budget_name contains '.', it's nested - find the appropriate span
+            budget_name = error_data["budget_name"]
+            
+            if "." in budget_name and len(self._span_stack) > 0:
+                # Nested budget - attach event to current span
+                target = self._span_stack[-1]
+            else:
+                # Top-level budget - attach event to trace
+                target = self._trace
+            
+            # Build event metadata
+            metadata = {
+                "budget_name": budget_name,
+                "spent": error_data["spent"],
+                "limit": error_data["limit"],
+                "overage": error_data["overage"],
+                "model": error_data["model"],
+                "tokens": error_data["tokens"],
+            }
+            
+            # Include parent remaining if available
+            if error_data.get("parent_remaining") is not None:
+                metadata["parent_remaining"] = error_data["parent_remaining"]
+            
+            # Create event
+            if target is not None:  # Type guard
+                target.event(
+                    name="budget_exceeded",
+                    level="WARNING",
+                    metadata=metadata,
+                )
+            
+        except Exception:
+            # Don't break Shekel if Langfuse fails
+            pass
 
     def on_fallback_activated(self, fallback_data: dict[str, Any]) -> None:
         """Called when fallback model is activated due to budget constraints.
