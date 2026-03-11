@@ -54,7 +54,20 @@
       "Bash(/home/elish/.local/bin/black --check .)",
       "Bash(/home/elish/.local/bin/black --check . 2>&1; echo \"BLACK EXIT: $?\")",
       "Bash(/home/elish/.local/bin/black --line-length 100 tests/integrations/test_adapter_pattern.py tests/integrations/test_langfuse_circuit_break.py tests/integrations/test_langfuse_cost_streaming.py tests/integrations/test_langfuse_fallback.py tests/integrations/test_langfuse_nested_mapping.py 2>&1)",
-      "Bash(~/.pyenv/versions/3.11.15/bin/pytest tests/ -v --cov=shekel --cov-report=term-missing --cov-fail-under=90 2>&1)"
+      "Bash(~/.pyenv/versions/3.11.15/bin/pytest tests/ -v --cov=shekel --cov-report=term-missing --cov-fail-under=90 2>&1)",
+      "Bash(npm list:*)",
+      "WebSearch",
+      "Bash(which npx:*)",
+      "Read(//usr/bin/**)",
+      "Bash(npm --version)",
+      "Bash(npm --version && npx --version)",
+      "Bash(npx bmad-method:*)",
+      "Bash(curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash 2>&1 | tail -5)",
+      "Bash(export NVM_DIR=\"$HOME/.nvm\" && . \"$NVM_DIR/nvm.sh\" && nvm install 22 2>&1 | tail -5 && node --version)",
+      "Read(//home/elish/.nvm/**)",
+      "Bash(source ~/.nvm/nvm.sh)",
+      "Bash(nvm install:*)",
+      "Bash(grep -r \"v0\\\\\\\\.2\\\\\\\\.[0-9]\" /mnt/c/Users/elish/code/shekel/docs/*.md /mnt/c/Users/elish/code/shekel/docs/**/*.md | grep -v \"CHANGELOG\\\\|changelog\" | head -20)"
     ]
   }
 }

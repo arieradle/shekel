@@ -55,7 +55,7 @@ Full LLM observability with zero configuration. See [Langfuse Integration Guide]
 
 ## [0.2.3] - 2026-03-11
 
-### 🌳 Nested Budgets
+### 🌳 Nested Budgets (v0.2.3)
 
 Hierarchical budget tracking for multi-stage AI workflows:
 

@@ -125,7 +125,7 @@ if b.model_switched:
     print(f"Switched to fallback at ${b.switched_at_usd:.4f}")
 ```
 
-### Pattern 4: Nested Budgets (v0.2.3)
+### Pattern 4: Nested Budgets
 
 Control costs for multi-stage workflows:
 
@@ -180,7 +180,7 @@ with session:
 print(f"Total session spend: ${session.spent:.4f}")
 ```
 
-**Note:** In v0.2.3, all budget variables accumulate by default (no `persistent=True` needed).
+**Note:** Budget variables accumulate by default (no `persistent=True` needed).
 
 ### Pattern 6: Decorator
 
@@ -217,23 +217,7 @@ async def process_items():
     print(f"Processed {len(items)} items for ${b.spent:.4f}")
 ```
 
-### Pattern 7: Async Support
-
-Full async/await support:
-
-```python
-async def process_items():
-    async with budget(max_usd=1.00) as b:
-        for item in items:
-            response = await client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[{"role": "user", "content": item}],
-            )
-            await process(response)
-    print(f"Processed {len(items)} items for ${b.spent:.4f}")
-```
-
-### Pattern 8: Streaming
+### Pattern 7: Streaming
 
 Budget tracking works with streaming:
 
@@ -334,7 +318,7 @@ shekel models --provider anthropic
 
 Now that you've seen the basics, dive deeper:
 
-- **[Nested Budgets](usage/nested-budgets.md)** - **NEW v0.2.3**: Multi-stage workflow budgets
+- **[Nested Budgets](usage/nested-budgets.md)** - Hierarchical tracking for multi-stage workflows
 - **[Budget Enforcement](usage/budget-enforcement.md)** - Learn about hard caps, warnings, and callbacks
 - **[Fallback Models](usage/fallback-models.md)** - Automatic model switching
 - **[Streaming](usage/streaming.md)** - Budget tracking for streaming responses

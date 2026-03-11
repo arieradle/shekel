@@ -1,6 +1,6 @@
 # Nested Budgets
 
-**New in v0.2.3** — Hierarchical budget tracking for multi-stage AI workflows.
+Hierarchical budget tracking for multi-stage AI workflows.
 
 ## Overview
 

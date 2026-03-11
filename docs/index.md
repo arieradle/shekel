@@ -59,11 +59,11 @@ I built shekel so you don't have to learn that lesson yourself.
         run_agent()
     ```
 
--   :material-tree:{ .lg .middle } **Nested Budgets** :octicons-sparkle-fill-16:{ .new }
+-   :material-tree:{ .lg .middle } **Nested Budgets**
 
     ---
 
-    **NEW in v0.2.3**: Hierarchical tracking for multi-stage workflows.
+    Hierarchical tracking for multi-stage workflows.
 
     ```python
     with budget(max_usd=10, name="workflow"):
@@ -73,11 +73,11 @@ I built shekel so you don't have to learn that lesson yourself.
             run_analysis()
     ```
 
--   :material-telescope:{ .lg .middle } **Langfuse Observability** :octicons-sparkle-fill-16:{ .new }
+-   :material-telescope:{ .lg .middle } **Langfuse Observability**
 
     ---
 
-    **NEW in v0.2.4**: Real-time cost tracking, budget visualization, and event logging in Langfuse.
+    Real-time cost tracking, budget visualization, and event logging in Langfuse.
 
     ```python
     from shekel.integrations.langfuse import LangfuseAdapter

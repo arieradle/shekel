@@ -1,6 +1,6 @@
 # Accumulating Budgets
 
-**Updated for v0.2.3** — Budget variables now always accumulate across multiple uses.
+Budget variables automatically accumulate across multiple uses.
 
 ## Overview
 
@@ -13,7 +13,7 @@ When you reuse the same budget variable across multiple `with` blocks, spending 
 
 ## How It Works
 
-In v0.2.3+, all budget variables naturally accumulate:
+All budget variables naturally accumulate:
 
 ```python
 from shekel import budget
@@ -46,33 +46,9 @@ print(f"Total session: ${session.spent:.4f}")  # $1.05
     with budget(max_usd=1.00): process_2()  # $0.35 (fresh, not $0.65)
     ```
 
-## Migration from v0.2.2
+## Note on the `persistent` Parameter
 
-### What Changed
-
-In v0.2.2, budgets reset on each entry unless you used `persistent=True`:
-
-```python
-# v0.2.2 behavior
-b = budget(max_usd=10.00)
-with b: work1()  # Spends $2
-with b: work2()  # Started at $0 again (spent $2 more)
-# b.spent == $2 (only the last run)
-```
-
-In v0.2.3+, budgets always accumulate:
-
-```python
-# v0.2.3+ behavior
-b = budget(max_usd=10.00)
-with b: work1()  # Spends $2
-with b: work2()  # Accumulates (spends $2 more)
-# b.spent == $4 (accumulated)
-```
-
-### The `persistent` Parameter
-
-The `persistent` parameter is **deprecated** in v0.2.3:
+The `persistent` parameter is **deprecated**:
 
 ```python
 # ⚠️  Deprecated (shows warning)

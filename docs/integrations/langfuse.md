@@ -1,6 +1,6 @@
 # Langfuse Integration Guide
 
-Shekel v0.2.4+ includes built-in integration with [Langfuse](https://langfuse.com), an open-source LLM observability platform. This integration provides real-time cost tracking, budget hierarchy visualization, and automatic event creation for budget violations and fallback activations.
+Shekel includes built-in integration with [Langfuse](https://langfuse.com), an open-source LLM observability platform. This integration provides real-time cost tracking, budget hierarchy visualization, and automatic event creation for budget violations and fallback activations.
 
 ## Quick Start
 
