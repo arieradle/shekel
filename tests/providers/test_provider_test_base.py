@@ -1,6 +1,6 @@
-from __future__ import annotations
-
 """Tests for ProviderTestBase - test fixture infrastructure."""
+
+from __future__ import annotations
 
 from tests.providers.conftest import ProviderTestBase
 

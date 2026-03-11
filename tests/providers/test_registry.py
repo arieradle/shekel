@@ -1,6 +1,6 @@
-from __future__ import annotations
-
 """TDD tests for ProviderAdapter interface and ProviderRegistry."""
+
+from __future__ import annotations
 
 from unittest.mock import MagicMock
 

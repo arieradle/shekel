@@ -1,6 +1,6 @@
-from __future__ import annotations
-
 """Test fixtures and utilities for provider adapter testing."""
+
+from __future__ import annotations
 
 from collections.abc import Generator
 from typing import Any, NamedTuple
