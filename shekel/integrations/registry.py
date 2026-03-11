@@ -69,6 +69,23 @@ class AdapterRegistry:
                 )
 
     @classmethod
+    def unregister(cls, adapter: ObservabilityAdapter) -> bool:
+        """Remove a specific adapter from the registry.
+
+        Args:
+            adapter: The adapter instance to remove.
+
+        Returns:
+            True if the adapter was found and removed, False if not registered.
+        """
+        with cls._lock:
+            try:
+                cls._adapters.remove(adapter)
+                return True
+            except ValueError:
+                return False
+
+    @classmethod
     def clear(cls) -> None:
         """Remove all registered adapters.
 

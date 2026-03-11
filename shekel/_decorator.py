@@ -16,10 +16,12 @@ def with_budget(
     on_fallback: Callable[[float, float, str], None] | None = None,
     persistent: bool = False,
     hard_cap: float | None = None,
+    name: str | None = None,
 ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     """Decorator that wraps a function in a budget context.
 
-    Accepts the same parameters as budget().
+    Accepts the same parameters as budget(), including ``name`` for use in
+    nested budget hierarchies.
 
     A fresh Budget object is created on each function call. If you need a shared
     session budget across multiple calls, use ``budget(persistent=True)`` as a
@@ -31,7 +33,7 @@ def with_budget(
         def run_agent():
             ...
 
-        @with_budget(max_usd=0.50)
+        @with_budget(max_usd=0.50, name="research")
         async def run_agent_async():
             ...
     """
@@ -50,6 +52,7 @@ def with_budget(
                     on_fallback=on_fallback,
                     persistent=persistent,
                     hard_cap=hard_cap,
+                    name=name,
                 )
                 async with b:
                     return await fn(*args, **kwargs)
@@ -69,6 +72,7 @@ def with_budget(
                     on_fallback=on_fallback,
                     persistent=persistent,
                     hard_cap=hard_cap,
+                    name=name,
                 )
                 with b:
                     return fn(*args, **kwargs)

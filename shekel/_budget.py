@@ -325,26 +325,28 @@ class Budget:
         self._check_limit()
 
     def _check_warn(self) -> None:
+        effective_limit = self._effective_limit
         if (
             self.warn_at is not None
-            and self.max_usd is not None
+            and effective_limit is not None
             and not self._warn_fired
-            and self._spent >= self.max_usd * self.warn_at
+            and self._spent >= effective_limit * self.warn_at
         ):
             self._warn_fired = True
             if self.on_exceed is not None:
-                self.on_exceed(self._spent, self.max_usd)
+                self.on_exceed(self._spent, effective_limit)
             else:
                 warnings.warn(
                     f"shekel: ${self._spent:.4f} spent — "
-                    f"{self.warn_at * 100:.0f}% of ${self.max_usd:.2f} budget reached.",
+                    f"{self.warn_at * 100:.0f}% of ${effective_limit:.2f} budget reached.",
                     stacklevel=4,
                 )
 
     def _check_limit(self) -> None:
-        if self.max_usd is None:
+        effective_limit = self._effective_limit
+        if effective_limit is None:
             return
-        if self._spent <= self.max_usd:
+        if self._spent <= effective_limit:
             return
 
         if self.fallback is not None and not self._using_fallback:
@@ -353,10 +355,10 @@ class Budget:
             self._switched_at_usd = self._spent
             self._emit_fallback_activated_event()
             if self.on_fallback is not None:
-                self.on_fallback(self._spent, self.max_usd, self.fallback)
+                self.on_fallback(self._spent, effective_limit, self.fallback)
             else:
                 warnings.warn(
-                    f"shekel: budget of ${self.max_usd:.2f} exceeded "
+                    f"shekel: budget of ${effective_limit:.2f} exceeded "
                     f"(${self._spent:.4f} spent). "
                     f"Switching to fallback model '{self.fallback}'.",
                     stacklevel=4,
@@ -365,12 +367,12 @@ class Budget:
 
         if self.fallback is not None and self._using_fallback:
             # Fallback is active — enforce the hard cap.
-            # Default hard cap = max_usd * 2 if not explicitly set (runaway protection).
+            # Default hard cap = effective_limit * 2 if not explicitly set (runaway protection).
             effective_hard_cap = self.hard_cap
-            if effective_hard_cap is None and self.max_usd is not None:
-                effective_hard_cap = self.max_usd * 2.0
+            if effective_hard_cap is None:
+                effective_hard_cap = effective_limit * 2.0
 
-            if effective_hard_cap is not None and self._spent > effective_hard_cap:
+            if self._spent > effective_hard_cap:
                 self._emit_budget_exceeded_event()
                 raise BudgetExceededError(
                     self._spent,
@@ -382,7 +384,7 @@ class Budget:
             # Under hard cap — warn once per entry into this branch
             warnings.warn(
                 f"shekel: fallback model '{self.fallback}' has exceeded the primary budget "
-                f"(${self._spent:.4f} spent, primary limit ${self.max_usd:.2f}). "
+                f"(${self._spent:.4f} spent, primary limit ${effective_limit:.2f}). "
                 f"Hard cap: ${effective_hard_cap:.2f}. "
                 f"Use hard_cap= to override.",
                 stacklevel=4,
@@ -391,7 +393,9 @@ class Budget:
 
         # No fallback — standard raise
         self._emit_budget_exceeded_event()
-        raise BudgetExceededError(self._spent, self.max_usd, self._last_model, self._last_tokens)
+        raise BudgetExceededError(
+            self._spent, effective_limit, self._last_model, self._last_tokens
+        )
     
     def _emit_fallback_activated_event(self) -> None:
         """Emit fallback activated event to adapters."""
@@ -414,16 +418,17 @@ class Budget:
         """Emit budget exceeded event to adapters."""
         try:
             from shekel.integrations import AdapterRegistry
-            
+
+            effective_limit = self._effective_limit or 0.0
             parent_remaining = None
             if self.parent is not None:
                 parent_remaining = self.parent.remaining
-            
+
             AdapterRegistry.emit_event("on_budget_exceeded", {
                 "budget_name": self.full_name,
                 "spent": self._spent,
-                "limit": self.max_usd or 0.0,
-                "overage": self._spent - (self.max_usd or 0.0),
+                "limit": effective_limit,
+                "overage": self._spent - effective_limit,
                 "model": self._last_model,
                 "tokens": self._last_tokens,
                 "parent_remaining": parent_remaining,
