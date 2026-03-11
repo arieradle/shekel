@@ -376,6 +376,293 @@ class TestGroqRealIntegration:
         except requests.exceptions.RequestException as e:
             pytest.skip(f"Could not test response format: {e}")
 
+    def test_groq_max_tokens_limit(self, groq_api_key: str, groq_available: bool) -> None:
+        """Test Groq API respects max_tokens limit."""
+        if not groq_available or not requests:
+            pytest.skip("Groq API not available")
+
+        try:
+            response = requests.post(
+                "https://api.groq.com/openai/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {groq_api_key}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": "llama-3.1-8b-instant",
+                    "messages": [{"role": "user", "content": "Write a long story about anything"}],
+                    "max_tokens": 10,
+                },
+                timeout=30,
+            )
+            if response.status_code != 200:
+                pytest.skip(f"Groq API error: {response.status_code}")
+
+            data = response.json()
+            completion_tokens = data.get("usage", {}).get("completion_tokens", 0)
+            assert completion_tokens <= 10
+        except requests.exceptions.RequestException as e:
+            pytest.skip(f"Could not test max_tokens: {e}")
+
+    def test_groq_top_p_sampling(self, groq_api_key: str, groq_available: bool) -> None:
+        """Test Groq API with top_p parameter."""
+        if not groq_available or not requests:
+            pytest.skip("Groq API not available")
+
+        for top_p in [0.5, 0.9, 1.0]:
+            try:
+                response = requests.post(
+                    "https://api.groq.com/openai/v1/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {groq_api_key}",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "model": "llama-3.1-8b-instant",
+                        "messages": [{"role": "user", "content": "Say hi"}],
+                        "top_p": top_p,
+                        "max_tokens": 5,
+                    },
+                    timeout=30,
+                )
+                if response.status_code != 200:
+                    pytest.skip(f"Groq API error with top_p={top_p}")
+            except requests.exceptions.RequestException as e:
+                pytest.skip(f"Could not test top_p: {e}")
+
+    def test_groq_multi_turn_conversation(self, groq_api_key: str, groq_available: bool) -> None:
+        """Test Groq API with multi-turn conversation."""
+        if not groq_available or not requests:
+            pytest.skip("Groq API not available")
+
+        try:
+            response = requests.post(
+                "https://api.groq.com/openai/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {groq_api_key}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": "llama-3.1-8b-instant",
+                    "messages": [
+                        {"role": "user", "content": "What is 2+2?"},
+                        {"role": "assistant", "content": "4"},
+                        {"role": "user", "content": "What about 3+3?"},
+                    ],
+                    "max_tokens": 10,
+                },
+                timeout=30,
+            )
+            if response.status_code != 200:
+                pytest.skip(f"Groq API error: {response.status_code}")
+
+            data = response.json()
+            assert "choices" in data
+            assert len(data["choices"]) > 0
+        except requests.exceptions.RequestException as e:
+            pytest.skip(f"Could not test multi-turn: {e}")
+
+    def test_groq_special_characters_handling(
+        self, groq_api_key: str, groq_available: bool
+    ) -> None:
+        """Test Groq API handles special characters."""
+        if not groq_available or not requests:
+            pytest.skip("Groq API not available")
+
+        special_prompt = "Test: émojis🎉 symbols!@#$%^&*() unicode: ñ café"
+
+        try:
+            response = requests.post(
+                "https://api.groq.com/openai/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {groq_api_key}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": "llama-3.1-8b-instant",
+                    "messages": [{"role": "user", "content": special_prompt}],
+                    "max_tokens": 5,
+                },
+                timeout=30,
+            )
+            if response.status_code != 200:
+                pytest.skip(f"Groq API error with special chars: {response.status_code}")
+        except requests.exceptions.RequestException as e:
+            pytest.skip(f"Could not test special characters: {e}")
+
+    def test_groq_numeric_content(self, groq_api_key: str, groq_available: bool) -> None:
+        """Test Groq API with numeric content."""
+        if not groq_available or not requests:
+            pytest.skip("Groq API not available")
+
+        try:
+            response = requests.post(
+                "https://api.groq.com/openai/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {groq_api_key}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": "llama-3.1-8b-instant",
+                    "messages": [{"role": "user", "content": "Calculate: 123456 * 789 / 456"}],
+                    "max_tokens": 10,
+                },
+                timeout=30,
+            )
+            if response.status_code != 200:
+                pytest.skip(f"Groq API error: {response.status_code}")
+        except requests.exceptions.RequestException as e:
+            pytest.skip(f"Could not test numeric content: {e}")
+
+    def test_groq_code_generation(self, groq_api_key: str, groq_available: bool) -> None:
+        """Test Groq API for code generation."""
+        if not groq_available or not requests:
+            pytest.skip("Groq API not available")
+
+        try:
+            response = requests.post(
+                "https://api.groq.com/openai/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {groq_api_key}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": "llama-3.1-8b-instant",
+                    "messages": [{"role": "user", "content": "Write Python code to print hello"}],
+                    "max_tokens": 30,
+                },
+                timeout=30,
+            )
+            if response.status_code != 200:
+                pytest.skip(f"Groq API error: {response.status_code}")
+
+            data = response.json()
+            content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+            assert any(word in content.lower() for word in ["python", "print", "def", "code"])
+        except requests.exceptions.RequestException as e:
+            pytest.skip(f"Could not test code generation: {e}")
+
+    def test_groq_json_mode_request(self, groq_api_key: str, groq_available: bool) -> None:
+        """Test Groq API with JSON requesting prompts."""
+        if not groq_available or not requests:
+            pytest.skip("Groq API not available")
+
+        try:
+            response = requests.post(
+                "https://api.groq.com/openai/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {groq_api_key}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": "llama-3.1-8b-instant",
+                    "messages": [
+                        {
+                            "role": "user",
+                            "content": 'Return JSON: {"name": "test", "value": 123}',
+                        }
+                    ],
+                    "max_tokens": 50,
+                },
+                timeout=30,
+            )
+            if response.status_code != 200:
+                pytest.skip(f"Groq API error: {response.status_code}")
+        except requests.exceptions.RequestException as e:
+            pytest.skip(f"Could not test JSON mode: {e}")
+
+    def test_groq_multiple_sequential_calls(self, groq_api_key: str, groq_available: bool) -> None:
+        """Test multiple sequential Groq API calls."""
+        if not groq_available or not requests:
+            pytest.skip("Groq API not available")
+
+        call_count = 0
+        try:
+            for i in range(3):
+                response = requests.post(
+                    "https://api.groq.com/openai/v1/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {groq_api_key}",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "model": "llama-3.1-8b-instant",
+                        "messages": [{"role": "user", "content": f"Request {i}"}],
+                        "max_tokens": 5,
+                    },
+                    timeout=30,
+                )
+                if response.status_code == 200:
+                    call_count += 1
+                else:
+                    pytest.skip(f"Groq API error on call {i}")
+        except requests.exceptions.RequestException as e:
+            pytest.skip(f"Could not complete sequential calls: {e}")
+
+        assert call_count > 0
+
+    def test_groq_streaming_off(self, groq_api_key: str, groq_available: bool) -> None:
+        """Test Groq API with streaming disabled."""
+        if not groq_available or not requests:
+            pytest.skip("Groq API not available")
+
+        try:
+            response = requests.post(
+                "https://api.groq.com/openai/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {groq_api_key}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": "llama-3.1-8b-instant",
+                    "messages": [{"role": "user", "content": "Say hello"}],
+                    "stream": False,
+                    "max_tokens": 5,
+                },
+                timeout=30,
+            )
+            if response.status_code != 200:
+                pytest.skip(f"Groq API error: {response.status_code}")
+
+            data = response.json()
+            assert "choices" in data
+        except requests.exceptions.RequestException as e:
+            pytest.skip(f"Could not test streaming: {e}")
+
+    def test_groq_deterministic_output(self, groq_api_key: str, groq_available: bool) -> None:
+        """Test Groq API deterministic output with temperature=0."""
+        if not groq_available or not requests:
+            pytest.skip("Groq API not available")
+
+        responses = []
+        try:
+            for _ in range(2):
+                response = requests.post(
+                    "https://api.groq.com/openai/v1/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {groq_api_key}",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "model": "llama-3.1-8b-instant",
+                        "messages": [{"role": "user", "content": "2+2="}],
+                        "temperature": 0.0,
+                        "max_tokens": 5,
+                    },
+                    timeout=30,
+                )
+                if response.status_code == 200:
+                    data = response.json()
+                    content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                    responses.append(content)
+                else:
+                    pytest.skip(f"Groq API error: {response.status_code}")
+        except requests.exceptions.RequestException as e:
+            pytest.skip(f"Could not test deterministic: {e}")
+
+        if len(responses) == 2:
+            assert responses[0] == responses[1]
+
 
 class TestGroqWithoutAPIKey:
     """Tests that work without Groq API key (graceful degradation)."""
