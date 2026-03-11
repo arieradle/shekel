@@ -9,6 +9,10 @@
          <lastmod>2026-03-11</lastmod>
     </url>
     <url>
+         <loc>https://arieradle.github.io/shekel/changelog/</loc>
+         <lastmod>2026-03-11</lastmod>
+    </url>
+    <url>
          <loc>https://arieradle.github.io/shekel/cli/</loc>
          <lastmod>2026-03-11</lastmod>
     </url>
@@ -29,10 +33,6 @@
          <lastmod>2026-03-11</lastmod>
     </url>
     <url>
-         <loc>https://arieradle.github.io/shekel/langfuse-integration/</loc>
-         <lastmod>2026-03-11</lastmod>
-    </url>
-    <url>
          <loc>https://arieradle.github.io/shekel/models/</loc>
          <lastmod>2026-03-11</lastmod>
     </url>
@@ -46,6 +46,10 @@
     </url>
     <url>
          <loc>https://arieradle.github.io/shekel/integrations/crewai/</loc>
+         <lastmod>2026-03-11</lastmod>
+    </url>
+    <url>
+         <loc>https://arieradle.github.io/shekel/integrations/langfuse/</loc>
          <lastmod>2026-03-11</lastmod>
     </url>
     <url>

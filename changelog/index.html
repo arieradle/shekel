@@ -12,13 +12,13 @@
         <meta name="author" content="Arie Radle">
       
       
-        <link rel="canonical" href="https://arieradle.github.io/shekel/installation/">
+        <link rel="canonical" href="https://arieradle.github.io/shekel/changelog/">
       
       
-        <link rel="prev" href="..">
+        <link rel="prev" href="../models/">
       
       
-        <link rel="next" href="../quickstart/">
+        <link rel="next" href="../how-it-works/">
       
       
         
@@ -29,7 +29,7 @@
     
     
       
-        <title>Installation - Shekel</title>
+        <title>Changelog - Shekel</title>
       
     
     
@@ -158,7 +158,7 @@
   <!-- Additional SEO -->
   <meta name="robots" content="index, follow">
   <meta name="googlebot" content="index, follow">
-  <link rel="canonical" href="https://arieradle.github.io/shekel/installation/">
+  <link rel="canonical" href="https://arieradle.github.io/shekel/changelog/">
   
   <!-- Schema.org markup for Google -->
   <script type="application/ld+json">
@@ -209,7 +209,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#installation" class="md-skip">
+        <a href="#changelog" class="md-skip">
           Skip to content
         </a>
       
@@ -247,7 +247,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Installation
+              Changelog
             
           </span>
         </div>
@@ -382,13 +382,11 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="./" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../installation/" class="md-tabs__link">
           
   
   
@@ -444,10 +442,12 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
+      <li class="md-tabs__item md-tabs__item--active">
         <a href="../cli/" class="md-tabs__link">
           
   
@@ -556,31 +556,28 @@
       
   
   
-    
   
   
-  
     
     
     
     
-      
-        
-        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
         
           
-          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
             
   
   
@@ -598,7 +595,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             
@@ -613,37 +610,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Installation
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
         
   
   
@@ -659,214 +629,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#requirements" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Requirements
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#install-shekel" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Install Shekel
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Install Shekel">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#openai-only" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        OpenAI Only
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#anthropic-only" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Anthropic Only
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#both-openai-and-anthropic" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Both OpenAI and Anthropic
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#extended-model-support-400-models" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Extended Model Support (400+ Models)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#cli-tools" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        CLI Tools
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#development-installation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Development Installation
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#verify-installation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Verify Installation
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#no-api-keys-required" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        No API Keys Required
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#minimal-dependencies" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Minimal Dependencies
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#troubleshooting" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Troubleshooting
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Troubleshooting">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#importerror-no-module-named-openai" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        ImportError: No module named 'openai'
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#importerror-no-module-named-anthropic" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        ImportError: No module named 'anthropic'
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#model-pricing-not-found" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Model pricing not found
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#next-steps" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Next Steps
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1369,28 +1131,31 @@
       
   
   
+    
   
   
+  
     
     
     
     
+      
+        
+        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
         
           
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
-        
-          
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
             
   
   
@@ -1408,7 +1173,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1507,10 +1272,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../changelog/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1526,6 +1318,209 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#024-2026-03-11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.2.4] - 2026-03-11
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.2.4] - 2026-03-11">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#langfuse-integration-new" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ✨ Langfuse Integration (New!)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="✨ Langfuse Integration (New!)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#feature-1-real-time-cost-streaming" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Feature #1: Real-Time Cost Streaming
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#feature-2-nested-budget-mapping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Feature #2: Nested Budget Mapping
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#feature-3-circuit-break-events" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Feature #3: Circuit Break Events
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#feature-4-fallback-annotations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Feature #4: Fallback Annotations
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#adapter-pattern-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🏗️ Adapter Pattern Architecture
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#optional-dependency-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📦 Optional Dependency Management
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#technical-details" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Technical Details
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#023-2026-03-11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.2.3] - 2026-03-11
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.2.3] - 2026-03-11">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#nested-budgets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🌳 Nested Budgets
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rich-introspection-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📊 Rich Introspection API
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#safety-rails" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🛡️ Safety Rails
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1710,33 +1705,34 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#requirements" class="md-nav__link">
+  <a href="#024-2026-03-11" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Requirements
+        [0.2.4] - 2026-03-11
       
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#install-shekel" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Install Shekel
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Install Shekel">
+    <nav class="md-nav" aria-label="[0.2.4] - 2026-03-11">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#openai-only" class="md-nav__link">
+  <a href="#langfuse-integration-new" class="md-nav__link">
     <span class="md-ellipsis">
       
-        OpenAI Only
+        ✨ Langfuse Integration (New!)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="✨ Langfuse Integration (New!)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#feature-1-real-time-cost-streaming" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Feature #1: Real-Time Cost Streaming
       
     </span>
   </a>
@@ -1744,10 +1740,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#anthropic-only" class="md-nav__link">
+  <a href="#feature-2-nested-budget-mapping" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Anthropic Only
+        Feature #2: Nested Budget Mapping
       
     </span>
   </a>
@@ -1755,10 +1751,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#both-openai-and-anthropic" class="md-nav__link">
+  <a href="#feature-3-circuit-break-events" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Both OpenAI and Anthropic
+        Feature #3: Circuit Break Events
       
     </span>
   </a>
@@ -1766,10 +1762,26 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#extended-model-support-400-models" class="md-nav__link">
+  <a href="#feature-4-fallback-annotations" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Extended Model Support (400+ Models)
+        Feature #4: Fallback Annotations
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#adapter-pattern-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🏗️ Adapter Pattern Architecture
       
     </span>
   </a>
@@ -1777,10 +1789,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#cli-tools" class="md-nav__link">
+  <a href="#optional-dependency-management" class="md-nav__link">
     <span class="md-ellipsis">
       
-        CLI Tools
+        📦 Optional Dependency Management
       
     </span>
   </a>
@@ -1788,10 +1800,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#development-installation" class="md-nav__link">
+  <a href="#technical-details" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Development Installation
+        Technical Details
       
     </span>
   </a>
@@ -1804,55 +1816,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#verify-installation" class="md-nav__link">
+  <a href="#023-2026-03-11" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Verify Installation
+        [0.2.3] - 2026-03-11
       
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#no-api-keys-required" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        No API Keys Required
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#minimal-dependencies" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Minimal Dependencies
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#troubleshooting" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Troubleshooting
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Troubleshooting">
+    <nav class="md-nav" aria-label="[0.2.3] - 2026-03-11">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#importerror-no-module-named-openai" class="md-nav__link">
+  <a href="#nested-budgets" class="md-nav__link">
     <span class="md-ellipsis">
       
-        ImportError: No module named 'openai'
+        🌳 Nested Budgets
       
     </span>
   </a>
@@ -1860,10 +1839,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#importerror-no-module-named-anthropic" class="md-nav__link">
+  <a href="#rich-introspection-api" class="md-nav__link">
     <span class="md-ellipsis">
       
-        ImportError: No module named 'anthropic'
+        📊 Rich Introspection API
       
     </span>
   </a>
@@ -1871,10 +1850,32 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#model-pricing-not-found" class="md-nav__link">
+  <a href="#safety-rails" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Model pricing not found
+        🛡️ Safety Rails
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
       
     </span>
   </a>
@@ -1883,17 +1884,6 @@
         
       </ul>
     </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#next-steps" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Next Steps
-      
-    </span>
-  </a>
   
 </li>
       
@@ -1917,111 +1907,118 @@
   
 
 
-<h1 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h1>
-<h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permanent link">&para;</a></h2>
+<h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
+<p>All notable changes to this project are documented here. For detailed information, see <a href="https://github.com/arieradle/shekel/blob/main/CHANGELOG.md">CHANGELOG.md</a> on GitHub.</p>
+<h2 id="024-2026-03-11">[0.2.4] - 2026-03-11<a class="headerlink" href="#024-2026-03-11" title="Permanent link">&para;</a></h2>
+<h3 id="langfuse-integration-new">✨ Langfuse Integration (New!)<a class="headerlink" href="#langfuse-integration-new" title="Permanent link">&para;</a></h3>
+<p>Full LLM observability with zero configuration. See <a href="../integrations/langfuse/">Langfuse Integration Guide</a> for complete documentation.</p>
+<h4 id="feature-1-real-time-cost-streaming">Feature #1: Real-Time Cost Streaming<a class="headerlink" href="#feature-1-real-time-cost-streaming" title="Permanent link">&para;</a></h4>
 <ul>
-<li>Python 3.9 or higher</li>
-<li>OpenAI SDK (optional) - for OpenAI models</li>
-<li>Anthropic SDK (optional) - for Anthropic models</li>
+<li>Automatic metadata updates after each LLM call</li>
+<li>Track: <code>shekel_spent</code>, <code>shekel_limit</code>, <code>shekel_utilization</code>, <code>shekel_last_model</code></li>
+<li>Works with track-only mode (no limit)</li>
+<li>Supports custom trace names and tags</li>
 </ul>
-<h2 id="install-shekel">Install Shekel<a class="headerlink" href="#install-shekel" title="Permanent link">&para;</a></h2>
-<p>Choose the installation option that matches your LLM provider:</p>
-<h3 id="openai-only">OpenAI Only<a class="headerlink" href="#openai-only" title="Permanent link">&para;</a></h3>
-<p>If you're only using OpenAI models (GPT-4o, GPT-4o-mini, o1, etc.):</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>shekel<span class="o">[</span>openai<span class="o">]</span>
-</span></code></pre></div>
-<h3 id="anthropic-only">Anthropic Only<a class="headerlink" href="#anthropic-only" title="Permanent link">&para;</a></h3>
-<p>If you're only using Anthropic models (Claude 3.5 Sonnet, Claude 3 Haiku, etc.):</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>pip<span class="w"> </span>install<span class="w"> </span>shekel<span class="o">[</span>anthropic<span class="o">]</span>
-</span></code></pre></div>
-<h3 id="both-openai-and-anthropic">Both OpenAI and Anthropic<a class="headerlink" href="#both-openai-and-anthropic" title="Permanent link">&para;</a></h3>
-<p>If you're using models from both providers:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>pip<span class="w"> </span>install<span class="w"> </span>shekel<span class="o">[</span>all<span class="o">]</span>
-</span></code></pre></div>
-<h3 id="extended-model-support-400-models">Extended Model Support (400+ Models)<a class="headerlink" href="#extended-model-support-400-models" title="Permanent link">&para;</a></h3>
-<p>For support of 400+ models via <a href="https://github.com/AgentOps-AI/tokencost">tokencost</a>:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>pip<span class="w"> </span>install<span class="w"> </span>shekel<span class="o">[</span>all-models<span class="o">]</span>
-</span></code></pre></div>
-<p>This includes models from Google (Gemini), Cohere, AI21, Aleph Alpha, and many more.</p>
-<h3 id="cli-tools">CLI Tools<a class="headerlink" href="#cli-tools" title="Permanent link">&para;</a></h3>
-<p>To use the <code>shekel</code> command-line tools:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>pip<span class="w"> </span>install<span class="w"> </span>shekel<span class="o">[</span>cli<span class="o">]</span>
-</span></code></pre></div>
-<p>This enables commands like:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>shekel<span class="w"> </span>estimate<span class="w"> </span>--model<span class="w"> </span>gpt-4o<span class="w"> </span>--input-tokens<span class="w"> </span><span class="m">1000</span><span class="w"> </span>--output-tokens<span class="w"> </span><span class="m">500</span>
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>shekel<span class="w"> </span>models
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>shekel<span class="w"> </span>models<span class="w"> </span>--provider<span class="w"> </span>openai
-</span></code></pre></div>
-<h3 id="development-installation">Development Installation<a class="headerlink" href="#development-installation" title="Permanent link">&para;</a></h3>
-<p>If you want to contribute to shekel or modify the source:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/arieradle/shekel
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="nb">cd</span><span class="w"> </span>shekel
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;.[all-models,dev]&quot;</span>
-</span></code></pre></div>
-<p>This installs shekel in editable mode with all development dependencies.</p>
-<h2 id="verify-installation">Verify Installation<a class="headerlink" href="#verify-installation" title="Permanent link">&para;</a></h2>
-<p>After installation, verify that shekel is installed correctly:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">shekel</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="nb">print</span><span class="p">(</span><span class="n">shekel</span><span class="o">.</span><span class="n">__version__</span><span class="p">)</span>
-</span></code></pre></div>
-<p>You should see the version number printed (e.g., <code>0.2.2</code>).</p>
-<h2 id="no-api-keys-required">No API Keys Required<a class="headerlink" href="#no-api-keys-required" title="Permanent link">&para;</a></h2>
-<p>Unlike other cost tracking tools, shekel requires <strong>no API keys</strong> and <strong>no external services</strong>. It works by monkey-patching the OpenAI and Anthropic SDKs to track token usage and calculate costs locally.</p>
-<p>Your existing API keys for OpenAI or Anthropic work as-is — shekel doesn't interfere with authentication.</p>
-<h2 id="minimal-dependencies">Minimal Dependencies<a class="headerlink" href="#minimal-dependencies" title="Permanent link">&para;</a></h2>
-<p>Shekel has zero required dependencies beyond the Python standard library. The OpenAI and Anthropic SDKs are optional — install only what you need.</p>
-<table>
-<thead>
-<tr>
-<th>Package</th>
-<th>Required?</th>
-<th>Purpose</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>openai&gt;=1.0.0</code></td>
-<td>Optional</td>
-<td>Track OpenAI API costs</td>
-</tr>
-<tr>
-<td><code>anthropic&gt;=0.7.0</code></td>
-<td>Optional</td>
-<td>Track Anthropic API costs</td>
-</tr>
-<tr>
-<td><code>tokencost&gt;=0.1.0</code></td>
-<td>Optional</td>
-<td>Support 400+ models</td>
-</tr>
-<tr>
-<td><code>click&gt;=8.0.0</code></td>
-<td>Optional</td>
-<td>CLI tools</td>
-</tr>
-</tbody>
-</table>
-<h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
-<h3 id="importerror-no-module-named-openai">ImportError: No module named 'openai'<a class="headerlink" href="#importerror-no-module-named-openai" title="Permanent link">&para;</a></h3>
-<p>If you see this error, install the OpenAI SDK:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>pip<span class="w"> </span>install<span class="w"> </span>shekel<span class="o">[</span>openai<span class="o">]</span>
-</span></code></pre></div>
-<h3 id="importerror-no-module-named-anthropic">ImportError: No module named 'anthropic'<a class="headerlink" href="#importerror-no-module-named-anthropic" title="Permanent link">&para;</a></h3>
-<p>If you see this error, install the Anthropic SDK:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>pip<span class="w"> </span>install<span class="w"> </span>shekel<span class="o">[</span>anthropic<span class="o">]</span>
-</span></code></pre></div>
-<h3 id="model-pricing-not-found">Model pricing not found<a class="headerlink" href="#model-pricing-not-found" title="Permanent link">&para;</a></h3>
-<p>For models not in shekel's built-in pricing table:</p>
-<ol>
-<li>Install extended model support: <code>pip install shekel[all-models]</code></li>
-<li>Or provide custom pricing: <code>budget(price_per_1k_tokens={"input": 0.001, "output": 0.003})</code></li>
-</ol>
-<p>See <a href="../extending/">Extending Shekel</a> for more details.</p>
-<h2 id="next-steps">Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
+<h4 id="feature-2-nested-budget-mapping">Feature #2: Nested Budget Mapping<a class="headerlink" href="#feature-2-nested-budget-mapping" title="Permanent link">&para;</a></h4>
 <ul>
-<li><a href="../quickstart/">Quick Start Guide</a> - Get started with basic examples</li>
-<li><a href="../usage/basic-usage/">Basic Usage</a> - Learn the fundamentals</li>
-<li><a href="../api-reference/">API Reference</a> - Full API documentation</li>
+<li>Nested budgets automatically create span hierarchy in Langfuse</li>
+<li>Parent budget → trace, child budgets → child spans</li>
+<li>Perfect waterfall view for multi-stage workflows</li>
+<li>Each span has its own budget metadata</li>
+</ul>
+<h4 id="feature-3-circuit-break-events">Feature #3: Circuit Break Events<a class="headerlink" href="#feature-3-circuit-break-events" title="Permanent link">&para;</a></h4>
+<ul>
+<li>WARNING events created when budget limits exceeded</li>
+<li>Event metadata: spent, limit, overage, model, tokens, parent_remaining</li>
+<li>Nested budget violations create events on child spans</li>
+<li>Easy filtering and alerting in Langfuse UI</li>
+</ul>
+<h4 id="feature-4-fallback-annotations">Feature #4: Fallback Annotations<a class="headerlink" href="#feature-4-fallback-annotations" title="Permanent link">&para;</a></h4>
+<ul>
+<li>INFO events created when fallback model activates</li>
+<li>Event metadata: from_model, to_model, switched_at, costs, savings</li>
+<li>Trace/span metadata updated to show fallback is active</li>
+<li>Fallback info persists across subsequent cost updates</li>
+</ul>
+<h3 id="adapter-pattern-architecture">🏗️ Adapter Pattern Architecture<a class="headerlink" href="#adapter-pattern-architecture" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>ObservabilityAdapter</code> base class for integrations</li>
+<li><code>AdapterRegistry</code> for managing multiple adapters</li>
+<li>Thread-safe registration and event broadcasting</li>
+<li>Error isolation (one adapter failure doesn't break others)</li>
+<li><code>AsyncEventQueue</code> for non-blocking event delivery</li>
+<li>Background worker thread processes events asynchronously</li>
+<li>Queue drops old events if full (no blocking)</li>
+<li>Graceful shutdown with timeout</li>
+</ul>
+<h3 id="optional-dependency-management">📦 Optional Dependency Management<a class="headerlink" href="#optional-dependency-management" title="Permanent link">&para;</a></h3>
+<ul>
+<li>New <code>shekel[langfuse]</code> extra for Langfuse integration</li>
+<li>Graceful import handling (works even if langfuse not installed)</li>
+</ul>
+<h3 id="technical-details">Technical Details<a class="headerlink" href="#technical-details" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Core event emission in <code>_patch.py::_record()</code> and <code>_budget.py::_check_limit()</code></li>
+<li>Type-safe implementation with guards for Python 3.9+ compatibility</li>
+<li>All 267 tests passing (65 new integration tests), 95%+ coverage</li>
+<li>Zero performance impact: &lt;1ms overhead per LLM call</li>
+</ul>
+<h2 id="023-2026-03-11">[0.2.3] - 2026-03-11<a class="headerlink" href="#023-2026-03-11" title="Permanent link">&para;</a></h2>
+<h3 id="nested-budgets">🌳 Nested Budgets<a class="headerlink" href="#nested-budgets" title="Permanent link">&para;</a></h3>
+<p>Hierarchical budget tracking for multi-stage AI workflows:</p>
+<ul>
+<li>Automatic spend propagation from child to parent on context exit</li>
+<li>Auto-capping: child budgets capped to parent's remaining budget</li>
+<li>Parent locking: parent cannot spend while child is active (sequential execution)</li>
+<li>Named budgets: names required when nesting for clear cost attribution</li>
+<li>Track-only children: <code>max_usd=None</code> for unlimited child tracking</li>
+</ul>
+<h3 id="rich-introspection-api">📊 Rich Introspection API<a class="headerlink" href="#rich-introspection-api" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>budget.full_name</code> — Hierarchical path (e.g., <code>"workflow.research.validation"</code>)</li>
+<li><code>budget.spent_direct</code> — Direct spend by this budget (excluding children)</li>
+<li><code>budget.spent_by_children</code> — Sum of all child spend</li>
+<li><code>budget.parent</code> — Reference to parent budget (<code>None</code> for root)</li>
+<li><code>budget.children</code> — List of child budgets</li>
+<li><code>budget.active_child</code> — Currently active child budget</li>
+<li><code>budget.tree()</code> — Visual hierarchy of budget tree with spend breakdown</li>
+</ul>
+<h3 id="safety-rails">🛡️ Safety Rails<a class="headerlink" href="#safety-rails" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Maximum nesting depth of 5 levels enforced</li>
+<li>Async nesting detection (raises clear error — deferred to future version)</li>
+<li>Zero/negative budget validation at <code>__init__</code></li>
+<li>Spend propagation on all exceptions (money spent is money spent)</li>
+</ul>
+<h3 id="changes">Changes<a class="headerlink" href="#changes" title="Permanent link">&para;</a></h3>
+<div class="admonition warning">
+<p class="admonition-title">BREAKING CHANGES</p>
+<p><strong>Budget Variables Now Always Accumulate</strong></p>
+<ul>
+<li>Previously: <code>budget(max_usd=10)</code> reset on each entry (unless <code>persistent=True</code>)</li>
+<li>Now: Same budget variable = same accumulated state (matches Python's expected behavior)</li>
+<li>Migration: Create new <code>Budget()</code> instances instead of relying on reset behavior</li>
+</ul>
+<p><strong>Names Required When Nesting</strong></p>
+<ul>
+<li>Both parent and child must have <code>name</code> parameter when creating nested contexts</li>
+<li>Validation happens at child <code>__enter__</code> with clear error messages</li>
+</ul>
+</div>
+<div class="admonition deprecated">
+<p class="admonition-title">Deprecated</p>
+<p><strong>persistent Parameter</strong></p>
+<ul>
+<li>Shows <code>DeprecationWarning</code> when <code>persistent=True</code> is explicitly used</li>
+<li>Parameter kept for backwards compatibility but no longer has effect</li>
+<li>Will be removed in v0.3.0</li>
+</ul>
+</div>
+<h3 id="fixed">Fixed<a class="headerlink" href="#fixed" title="Permanent link">&para;</a></h3>
+<ul>
+<li>ContextVar token management now uses proper <code>.reset()</code> instead of manual <code>.set(None)</code></li>
+<li>Patch reference counting no longer leaks when validation errors occur before patching</li>
+<li>Sibling budgets must have unique names under the same parent</li>
 </ul>
 
 
