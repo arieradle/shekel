@@ -45,7 +45,7 @@ with budget(max_usd=10.00, fallback="gpt-4o-mini", name="agent") as b:
 - ⚠️ **Circuit break events** — WARNING events when budgets are exceeded
 - 🔄 **Fallback annotations** — INFO events when fallback models activate
 
-**[📖 Full Langfuse Integration Guide](docs/langfuse-integration.md)**
+**[📖 Full Langfuse Integration Guide](https://arieradle.github.io/shekel/langfuse-integration/)**
 
 ---
 
@@ -89,9 +89,9 @@ print(workflow.tree())
 ```bash
 pip install shekel[openai]       # OpenAI
 pip install shekel[anthropic]    # Anthropic
-pip install shekel[langfuse]     # Langfuse integration (NEW in v0.2.4)
-pip install shekel[all]          # OpenAI + Anthropic
-pip install shekel[all-models]   # Both + tokencost (400+ model pricing)
+pip install shekel[langfuse]     # Langfuse observability (NEW in v0.2.4)
+pip install shekel[all]          # OpenAI + Anthropic + Langfuse
+pip install shekel[all-models]   # All above + tokencost (400+ model pricing)
 pip install shekel[cli]          # CLI tools (shekel estimate, shekel models)
 ```
 
@@ -407,6 +407,7 @@ For unlisted models: pass `price_per_1k_tokens` or install `shekel[all-models]` 
 
 Works seamlessly with:
 
+- **Langfuse** — Full observability: cost streaming, span hierarchy, circuit-break events *(v0.2.4)*
 - **LangGraph** — Budget entire agent workflows
 - **CrewAI** — Per-agent budget tracking
 - **AutoGen** — Multi-agent cost control
@@ -472,6 +473,7 @@ with budget(max_usd=10, name="parent"):    # ✅ Required
 
 - [Quick Start Guide](https://arieradle.github.io/shekel/quickstart/)
 - [Nested Budgets Guide](https://arieradle.github.io/shekel/usage/nested-budgets/)
+- [Langfuse Integration Guide](https://arieradle.github.io/shekel/langfuse-integration/) *(v0.2.4)*
 - [API Reference](https://arieradle.github.io/shekel/api-reference/)
 - [Framework Integrations](https://arieradle.github.io/shekel/integrations/)
 

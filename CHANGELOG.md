@@ -51,7 +51,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Technical
 - Core event emission in `_patch.py::_record()` and `_budget.py::_check_limit()`
 - Type-safe implementation with guards for Python 3.9+ compatibility
-- All 245 tests passing (44 new integration tests)
+- All 267 tests passing (65 new integration tests), 95%+ coverage
 - Zero performance impact: <1ms overhead per LLM call
 
 ## [0.2.3] - 2026-03-11
@@ -129,7 +129,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - `UnknownModelError` is kept for backwards compatibility but no longer raised internally
 
-[Unreleased]: https://github.com/arieradle/shekel/compare/v0.2.3...HEAD
+[Unreleased]: https://github.com/arieradle/shekel/compare/v0.2.4...HEAD
+[0.2.4]: https://github.com/arieradle/shekel/compare/v0.2.3...v0.2.4
 [0.2.3]: https://github.com/arieradle/shekel/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/arieradle/shekel/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/arieradle/shekel/compare/v0.2.0...v0.2.1
