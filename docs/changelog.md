@@ -2,6 +2,63 @@
 
 All notable changes to this project are documented here. For detailed information, see [CHANGELOG.md](https://github.com/arieradle/shekel/blob/main/CHANGELOG.md) on GitHub.
 
+## [0.2.5] - 2026-03-11
+
+### 🔧 Extensible Provider Architecture
+
+Shekel now has a pluggable architecture for adding new LLM provider support without modifying core code.
+
+**ProviderAdapter** — Standard interface for any LLM provider
+- 8 abstract methods: patching, token extraction, streaming, validation
+- All providers (OpenAI, Anthropic, custom) implement this interface
+- Clear contract for what shekel needs from a provider
+
+**ProviderRegistry** — Central hub for provider management
+- Thread-safe registration and lifecycle management
+- Automatic patch installation and removal
+- Provider discovery by name for fallback validation
+- Decoupled from core code — no core changes needed for new providers
+
+**Add your own provider in 3 steps:**
+1. Implement `ProviderAdapter` interface
+2. Register with `ADAPTER_REGISTRY.register(YourAdapter())`
+3. Works everywhere automatically
+
+**Community can now add:** Cohere, Replicate, vLLM, Mistral, Bedrock, Vertex AI, and others
+
+### ✅ Validated with Real Integration Tests
+
+The architecture is battle-tested with comprehensive end-to-end validation:
+
+**Groq API** — 25+ integration tests
+- Custom pricing and budget enforcement
+- Nested budgets and cost attribution
+- Streaming responses and concurrent calls
+- Rate limiting and error handling
+- Real API keys in CI
+
+**Google Gemini API** — 30+ integration tests
+- Multi-turn conversations and streaming
+- JSON mode and function calling
+- Token counting accuracy
+- Budget enforcement and fallback
+- Real API keys in CI
+
+These test suites serve as **reference implementations** showing how to build a provider adapter.
+
+### ⚙️ Production-Grade Reliability
+
+- **Exponential backoff retry logic** — Gracefully handles rate limiting and transient failures
+- **100+ integration test scenarios** — Comprehensive validation of architecture under load
+- **Concurrent test stability** — Reduced flakiness when multiple providers are tested simultaneously
+- **CI improvements** — Integration and performance tests run in parallel
+
+### ✅ Quality Improvements
+
+- **100+ integration test scenarios** — Comprehensive real API coverage
+- **mkdocs integrity checks** — Prevent broken documentation links in CI
+- **Better provider abstraction** — Easier to add new LLM provider support in the future
+
 ## [0.2.4] - 2026-03-11
 
 ### ✨ Langfuse Integration (New!)

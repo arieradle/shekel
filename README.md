@@ -21,68 +21,110 @@ I spent $47 debugging a LangGraph retry loop. The agent kept failing, LangGraph 
 
 ---
 
-## ⚡️ What's New in v0.2.4: Langfuse Integration
+## ⚡️ What's New in v0.2.5: Extensible Provider Architecture
 
-**Full LLM observability with zero configuration.** Track costs, visualize budget hierarchies, and debug overruns in Langfuse — automatically.
+**Built an open architecture for adding new LLM providers without touching shekel's core. Validated with comprehensive integration tests.**
+
+### 🔧 Provider Registry Architecture
+
+Shekel now uses a pluggable provider adapter pattern, enabling the community to add support for any LLM provider:
 
 ```python
-from langfuse import Langfuse
-from shekel import budget
-from shekel.integrations import AdapterRegistry
-from shekel.integrations.langfuse import LangfuseAdapter
+from shekel.providers.base import ADAPTER_REGISTRY, ProviderAdapter
 
-# One-time setup
-lf = Langfuse(public_key="pk-lf-...", secret_key="sk-lf-...")
-adapter = LangfuseAdapter(client=lf, trace_name="my-app", tags=["production"])
-AdapterRegistry.register(adapter)
+class MyProviderAdapter(ProviderAdapter):
+    @property
+    def name(self) -> str:
+        return "myprovider"
 
-# Use budgets as normal - costs flow to Langfuse automatically!
-with budget(max_usd=10.00, fallback="gpt-4o-mini", name="agent") as b:
-    run_agent()  # Real-time cost tracking in Langfuse UI
+    # Implement: install_patches(), remove_patches(), extract_tokens(), wrap_stream()
+    def install_patches(self) -> None: ...
+    def extract_tokens(self, response) -> tuple: ...
+    # ... 5 more methods
+
+# Register once at import time
+ADAPTER_REGISTRY.register(MyProviderAdapter())
+
+# Works everywhere automatically:
+with budget(max_usd=10.00):
+    response = my_provider_client.call()  # Shekel tracks cost
 ```
 
-**What you get in Langfuse:**
-- 💰 **Real-time cost streaming** — See spend, utilization, model after each LLM call
-- 🌳 **Nested budget hierarchy** — Child budgets → child spans (perfect waterfall view)
-- ⚠️ **Circuit break events** — WARNING events when budgets are exceeded
-- 🔄 **Fallback annotations** — INFO events when fallback models activate
+**What this enables:**
+- Add new providers without modifying shekel core
+- Standard interface all providers implement
+- Easy community contributions (Cohere, Replicate, vLLM, Mistral, etc.)
 
-**[📖 Full Langfuse Integration Guide](https://arieradle.github.io/shekel/langfuse-integration/)**
+### ✅ Validated with Real-World Integration Tests
+
+Provider architecture validated and stress-tested with comprehensive integration test suites:
+
+- **25+ Groq API integration tests** — Custom pricing, nested budgets, streaming, concurrent calls, rate limiting
+- **30+ Google Gemini API integration tests** — Multi-turn conversations, JSON mode, function calls, token accuracy
+- Real API keys in CI pipeline ensure it works end-to-end
+
+### ⚙️ Production-Grade Reliability
+
+- **Exponential backoff retry logic** — Gracefully handles rate limiting and transient failures
+- **100+ integration test scenarios** — Comprehensive validation across multiple providers
+- **Concurrent test stability** — Reduced flakiness in multi-provider scenarios
 
 ---
 
-## ⚡️ What's New in v0.2.3: Nested Budgets
+## ✨ Core Features
 
-**Control costs for multi-stage AI workflows** with hierarchical budget tracking:
+### 🌳 Nested Budgets
+
+Control costs for multi-stage AI workflows with hierarchical budget tracking:
 
 ```python
-with budget(max_usd=10.00, name="AI Research Assistant") as workflow:
-    # Research phase: $2 budget
+with budget(max_usd=10.00, name="workflow") as workflow:
     with budget(max_usd=2.00, name="research"):
         sources = search_papers()      # $0.80
-        summaries = summarize(sources)  # $1.10
-    
-    # Analysis phase: $5 budget  
-    with budget(max_usd=5.00, name="analysis"):
-        insights = analyze(summaries)   # $3.50
-        report = draft_report(insights) # $1.20
-    
-    # Final polish (parent budget)
-    final = polish_report(report)       # $0.60
 
-print(f"Total cost: ${workflow.spent:.2f}")  # $7.20
+    with budget(max_usd=5.00, name="analysis"):
+        insights = analyze(sources)    # $3.50
+
+    final = polish(insights)           # $0.60
+
 print(workflow.tree())
-# AI Research Assistant: $7.20 / $10.00 (direct: $0.60)
-#   research: $1.90 / $2.00 (direct: $1.90)
-#   analysis: $4.70 / $5.00 (direct: $4.70)
+# workflow: $5.00 / $10.00
+#   research: $0.80 / $2.00
+#   analysis: $3.50 / $5.00
 ```
 
 **Why you'll love this:**
-- 🎯 **Per-stage budgets** — Cap each phase independently
-- 🔒 **Auto-capping** — Child budgets can't exceed parent's remaining budget
-- 📊 **Cost attribution** — See exactly where money was spent
-- 🚫 **Safety rails** — Parent can't spend while child is active
-- 🌳 **Visual tree** — Debug complex workflows instantly
+- 🎯 Per-stage budgets — Cap each phase independently
+- 🔒 Auto-capping — Child budgets can't exceed parent's remaining
+- 📊 Cost attribution — See exactly where money was spent
+- 🌳 Visual tree — Debug complex workflows instantly
+
+**[📖 Nested Budgets Guide](https://arieradle.github.io/shekel/usage/nested-budgets/)**
+
+### 🔭 Langfuse Integration
+
+Full LLM observability with zero configuration. Track costs, visualize budget hierarchies, and debug overruns in Langfuse automatically:
+
+```python
+from langfuse import Langfuse
+from shekel.integrations import AdapterRegistry
+from shekel.integrations.langfuse import LangfuseAdapter
+
+lf = Langfuse(public_key="...", secret_key="...")
+adapter = LangfuseAdapter(client=lf, trace_name="my-app")
+AdapterRegistry.register(adapter)
+
+with budget(max_usd=10.00, name="agent") as b:
+    run_agent()  # Costs flow to Langfuse automatically!
+```
+
+**What you get:**
+- 💰 Real-time cost streaming — See spend after each LLM call
+- 🌳 Nested budget hierarchy — Child budgets → child spans
+- ⚠️ Circuit break events — Alerts when budgets are exceeded
+- 🔄 Fallback annotations — Track model switches
+
+**[📖 Langfuse Integration Guide](https://arieradle.github.io/shekel/integrations/langfuse/)**
 
 ---
 
@@ -91,7 +133,7 @@ print(workflow.tree())
 ```bash
 pip install shekel[openai]       # OpenAI
 pip install shekel[anthropic]    # Anthropic
-pip install shekel[langfuse]     # Langfuse observability (NEW in v0.2.4)
+pip install shekel[langfuse]     # Langfuse observability
 pip install shekel[all]          # OpenAI + Anthropic + Langfuse
 pip install shekel[all-models]   # All above + tokencost (400+ model pricing)
 pip install shekel[cli]          # CLI tools (shekel estimate, shekel models)

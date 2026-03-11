@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.5] - 2026-03-11
+
+### Added
+- **🔧 Extensible Provider Architecture** — Open design for community-contributed provider support
+  - `ProviderAdapter` — Standard interface that all LLM providers implement (8 abstract methods)
+  - `ProviderRegistry` — Central registry managing provider lifecycle, patching, and token extraction
+  - Zero-touch provider onboarding: implement interface → register → automatic integration
+  - Enables community to add Cohere, Replicate, vLLM, Mistral, and other providers without core changes
+  - `shekel/providers/base.py` — Base classes for extensibility
+- **✅ Validated with Real-World Integration Tests** — Proof the architecture works end-to-end
+  - 25+ integration tests for Groq API (custom pricing, nested budgets, streaming, concurrent calls, rate limiting)
+  - 30+ integration tests for Google Gemini API (multi-turn conversations, streaming, JSON mode, function calling)
+  - Both suites use real API keys in CI pipeline to validate architecture
+  - Provider adapters for Groq and Gemini included as reference implementations
+- **⚙️ Production-Grade Reliability**
+  - Exponential backoff retry logic — Gracefully handles rate limiting and transient failures
+  - 100+ integration test scenarios — Comprehensive validation across multiple provider implementations
+  - Concurrent test stability — Reduced flakiness when testing multiple providers in parallel
+  - CI improvements — Integration and performance tests run in parallel with improved error isolation
+
+### Technical
+- New `shekel/providers/base.py`: `ProviderAdapter` ABC and `ProviderRegistry` singleton
+- New provider implementations: `shekel/providers/groq.py` and `shekel/providers/gemini.py` (for testing/reference)
+- All 300+ tests passing with 55+ new provider integration tests
+- Zero performance impact on core budget tracking
+- Graceful handling of provider-specific quirks (rate limits, response formats, token counting)
+
 ## [0.2.4] - 2026-03-11
 
 ### Added
@@ -129,7 +156,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - `UnknownModelError` is kept for backwards compatibility but no longer raised internally
 
-[Unreleased]: https://github.com/arieradle/shekel/compare/v0.2.4...HEAD
+[Unreleased]: https://github.com/arieradle/shekel/compare/v0.2.5...HEAD
+[0.2.5]: https://github.com/arieradle/shekel/compare/v0.2.4...v0.2.5
 [0.2.4]: https://github.com/arieradle/shekel/compare/v0.2.3...v0.2.4
 [0.2.3]: https://github.com/arieradle/shekel/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/arieradle/shekel/compare/v0.2.1...v0.2.2

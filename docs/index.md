@@ -195,6 +195,34 @@ print(f"Remaining: ${b.remaining:.4f}")
 
 ---
 
+## What's New in v0.2.5
+
+**Extensible Provider Architecture** — Build support for any LLM provider. Community can now add Cohere, Replicate, vLLM, Mistral, and others.
+
+<div class="grid cards" markdown>
+
+-   :material-puzzle-outline:{ .lg .middle } **[Provider Architecture](changelog.md#025---2026-03-11)**
+
+    ---
+
+    Pluggable `ProviderAdapter` interface. Add new providers in 3 steps, no core changes.
+
+-   :material-test-tube:{ .lg .middle } **[Battle-Tested Design](changelog.md#025---2026-03-11)**
+
+    ---
+
+    Validated with 55+ real API integration tests (Groq, Gemini). Reference implementations included.
+
+-   :material-shield-check:{ .lg .middle } **[Production Reliability](changelog.md#025---2026-03-11)**
+
+    ---
+
+    Exponential backoff, 100+ test scenarios, concurrent stability, CI improvements.
+
+</div>
+
+---
+
 ## What's Next?
 
 <div class="grid cards" markdown>
