@@ -225,3 +225,33 @@ class TestBudgetExceededEventLimit:
         assert len(adapter.budget_exceeded_events) >= 1
         event = adapter.budget_exceeded_events[0]
         assert event["limit"] == 5.00
+
+
+class TestEmitEventExceptionSwallowing:
+    """Test that adapter system failures do not break budget enforcement."""
+
+    def setup_method(self) -> None:
+        AdapterRegistry.clear()
+
+    def test_emit_fallback_event_tolerates_registry_failure(self) -> None:
+        """Budget fallback activates even if the adapter registry raises."""
+        from unittest.mock import patch
+
+        with patch.object(AdapterRegistry, "emit_event", side_effect=RuntimeError("registry down")):
+            # Should not raise — exception is swallowed by _emit_fallback_event
+            with budget(max_usd=0.001, fallback="gpt-4o-mini", hard_cap=10.0, name="test"):
+                from shekel._patch import _record
+
+                _record(input_tokens=1000, output_tokens=500, model="gpt-4o")
+                assert True  # reached here means enforcement continued
+
+    def test_emit_budget_exceeded_event_tolerates_registry_failure(self) -> None:
+        """BudgetExceededError is still raised even if the adapter registry raises."""
+        from unittest.mock import patch
+
+        with patch.object(AdapterRegistry, "emit_event", side_effect=RuntimeError("registry down")):
+            with pytest.raises(BudgetExceededError):
+                with budget(max_usd=0.001, name="tiny"):
+                    from shekel._patch import _record
+
+                    _record(input_tokens=10000, output_tokens=5000, model="gpt-4o")

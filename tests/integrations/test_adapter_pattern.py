@@ -236,3 +236,29 @@ class TestAdapterRegistry:
         AdapterRegistry.emit_event("on_cost_update", {"spent": 1.0})
         assert len(a1.cost_updates) == 0  # removed
         assert len(a2.cost_updates) == 1  # still registered
+
+
+class TestOptionalLangfuseImport:
+    def test_integrations_package_works_without_langfuse(self) -> None:
+        """integrations __init__ handles ImportError gracefully when langfuse is absent.
+
+        Setting sys.modules['shekel.integrations.langfuse'] = None causes Python to
+        raise ImportError when the __init__ tries to import LangfuseAdapter, exercising
+        the except ImportError: pass branch.
+        """
+        import importlib
+        import sys
+
+        import shekel.integrations
+
+        # Setting a module key to None in sys.modules makes any import of it raise ImportError
+        sys.modules["shekel.integrations.langfuse"] = None  # type: ignore[assignment]
+        try:
+            importlib.reload(shekel.integrations)
+            # Core symbols must still be present
+            assert hasattr(shekel.integrations, "AdapterRegistry")
+            assert hasattr(shekel.integrations, "ObservabilityAdapter")
+        finally:
+            # Restore the real module
+            del sys.modules["shekel.integrations.langfuse"]
+            importlib.reload(shekel.integrations)

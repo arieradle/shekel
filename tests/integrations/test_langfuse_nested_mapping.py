@@ -327,3 +327,46 @@ class TestNestedBudgetMapping:
 
         # Should update trace twice
         assert mock_trace.update.call_count == 2
+
+    def test_nested_update_with_null_trace_is_safe(self) -> None:
+        """on_cost_update with depth>0 when trace() returns None is handled gracefully.
+
+        When client.trace() returns None (e.g. connection failure), parent is None
+        for depth=1 updates, hitting the else branch at langfuse.py:127.
+        The IndexError is caught and the adapter continues silently.
+        """
+        from unittest.mock import MagicMock
+
+        from shekel.integrations.langfuse import LangfuseAdapter
+
+        mock_client = MagicMock()
+        mock_client.trace.return_value = None  # simulate trace creation failure
+        adapter = LangfuseAdapter(client=mock_client)
+
+        # Establish a top-level "trace" (which is None due to mock)
+        adapter.on_cost_update(
+            {
+                "spent": 0.10,
+                "limit": 10.00,
+                "name": "parent",
+                "full_name": "parent",
+                "depth": 0,
+                "model": "gpt-4o-mini",
+                "call_cost": 0.10,
+            }
+        )
+
+        # Now a nested update: parent = self._trace = None → hits else branch (line 127)
+        adapter.on_cost_update(
+            {
+                "spent": 0.05,
+                "limit": 2.00,
+                "name": "child",
+                "full_name": "parent.child",
+                "depth": 1,
+                "model": "gpt-4o-mini",
+                "call_cost": 0.05,
+            }
+        )
+
+        # Should not raise — exception is swallowed gracefully
