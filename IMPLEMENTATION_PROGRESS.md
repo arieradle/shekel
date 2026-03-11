@@ -93,11 +93,39 @@
 ---
 
 ## Sprint 3: Langfuse Adapter - Features #3-4 (18 pts)
-**Status:** NOT STARTED
+**Status:** ✅ COMPLETE (Stories 3.1-3.2 delivered, Story 3.3 built-in throughout)
 
-### Story 3.1: Feature #3 - Circuit Break Events (5 pts)
-### Story 3.2: Feature #4 - Fallback Annotations (8 pts)
-### Story 3.3: Error Handling & Edge Cases (5 pts)
+### Story 3.1: Feature #3 - Circuit Break Events ✅ COMPLETE (5 pts)
+**Commit:** 0ad2a26
+- [x] Create Langfuse WARNING events when budget limits exceeded
+- [x] Event includes spent, limit, overage, model, tokens
+- [x] Nested budget violations create events on child spans
+- [x] Include parent_remaining for context
+- [x] Multiple violations create multiple events
+- [x] Graceful error handling
+- [x] 8 comprehensive tests (all GREEN)
+- [x] All 235 tests passing
+
+### Story 3.2: Feature #4 - Fallback Annotations ✅ COMPLETE (8 pts)
+**Commit:** b657e20
+- [x] Create Langfuse INFO events when fallback activated
+- [x] Event includes model transition (from/to), costs, savings
+- [x] Update trace/span metadata to show fallback is active
+- [x] Nested budget fallbacks create events on child spans
+- [x] Fallback info persists in subsequent cost updates
+- [x] Multiple fallbacks create multiple events
+- [x] Graceful error handling
+- [x] 10 comprehensive tests (all GREEN)
+- [x] All 245 tests passing
+
+### Story 3.3: Error Handling & Edge Cases ✅ COMPLETE (5 pts)
+**Status:** Implicitly complete - error handling built throughout all stories
+- [x] Graceful Langfuse API failures (try/except in all event methods)
+- [x] Type guards for None checks throughout
+- [x] Adapter errors don't break Shekel core functionality
+- [x] Tested in all test suites (test_*_langfuse_error_does_not_raise)
+
+**Sprint 3 Status:** ✅ COMPLETE - 18/18 pts (100%)
 
 ---
 
@@ -124,9 +152,18 @@
 - [x] mypy shekel/ - **SUCCESS: no issues found in 13 source files**
 - [x] ruff check shekel/ - **All checks passed!**
 
+### After Sprint 3 Langfuse Adapter #3-4: ✅ COMPLETE
+- [x] pytest tests/integrations/ - **72 tests PASSED** (18 new tests)
+- [x] pytest tests/ (full suite) - **245 tests PASSED**
+- [x] mypy shekel/ - **SUCCESS: no issues found in 13 source files**
+- [x] ruff check shekel/ - **All checks passed!**
+
 ---
 
 ## Total Progress
-**Story Points:** 42/73 complete (58%)
-**Stories:** 7/12 complete (58%)
-**Sprint:** 2/4 complete ✅
+**Story Points:** 60/73 complete (82%)
+**Stories:** 10/12 complete (83%)
+**Sprint:** 3/4 complete ✅
+
+**Remaining:**
+- Sprint 4: Documentation & Release (13 pts, 2 stories)
