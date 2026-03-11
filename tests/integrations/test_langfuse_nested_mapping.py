@@ -1,7 +1,5 @@
 """Tests for Langfuse Feature #2: Nested Budget Mapping."""
 
-import pytest
-
 
 class TestNestedBudgetMapping:
     """Test that Shekel's nested budgets map to Langfuse span hierarchy."""

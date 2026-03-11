@@ -24,9 +24,11 @@ After running, check the Langfuse UI to see:
 """
 
 import os
-from openai import OpenAI
+
 from langfuse import Langfuse
-from shekel import budget, BudgetExceededError
+from openai import OpenAI
+
+from shekel import BudgetExceededError, budget
 from shekel.integrations import AdapterRegistry
 from shekel.integrations.langfuse import LangfuseAdapter
 
@@ -57,7 +59,7 @@ def demo_real_time_cost_streaming(client):
 
         # Each call updates Langfuse metadata
         for i in range(3):
-            response = client.chat.completions.create(
+            client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
                     {"role": "user", "content": f"Say 'Hello {i+1}' in a creative way (be brief)"}
@@ -67,8 +69,8 @@ def demo_real_time_cost_streaming(client):
             print(f"  Call {i+1}: ${b.spent:.4f} spent ({pct:.1f}% of budget)")
 
         print(f"\n💰 Final cost: ${b.spent:.4f}")
-        print(f"📊 Check Langfuse UI → Trace 'shekel-demo' → Metadata")
-        print(f"    You'll see: shekel_spent, shekel_utilization, shekel_last_model")
+        print("📊 Check Langfuse UI → Trace 'shekel-demo' → Metadata")
+        print("    You'll see: shekel_spent, shekel_utilization, shekel_last_model")
 
 
 def demo_nested_budget_mapping(client):
@@ -83,7 +85,7 @@ def demo_nested_budget_mapping(client):
         # Stage 1: Research (child budget → child span)
         with budget(max_usd=1.50, name="research") as research:
             print(f"\n🔍 Research stage (budget: ${research.max_usd:.2f})")
-            response = client.chat.completions.create(
+            client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
                     {
@@ -97,17 +99,17 @@ def demo_nested_budget_mapping(client):
         # Stage 2: Analysis (sibling budget → sibling span)
         with budget(max_usd=2.00, name="analysis") as analysis:
             print(f"\n📊 Analysis stage (budget: ${analysis.max_usd:.2f})")
-            response = client.chat.completions.create(
+            client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[{"role": "user", "content": "Summarize: Python facts in one sentence"}],
             )
             print(f"   Analysis cost: ${analysis.spent:.4f}")
 
         print(f"\n💰 Total workflow cost: ${workflow.spent:.4f}")
-        print(f"🌳 Check Langfuse UI → See waterfall view with spans:")
-        print(f"    Trace: multi-stage-workflow")
-        print(f"      Span: multi-stage-workflow.research")
-        print(f"      Span: multi-stage-workflow.analysis")
+        print("🌳 Check Langfuse UI → See waterfall view with spans:")
+        print("    Trace: multi-stage-workflow")
+        print("      Span: multi-stage-workflow.research")
+        print("      Span: multi-stage-workflow.analysis")
 
 
 def demo_circuit_break_events(client):
@@ -121,17 +123,17 @@ def demo_circuit_break_events(client):
             print(f"Attempting call with tiny budget: ${b.max_usd:.4f}")
 
             # This will exceed the budget
-            response = client.chat.completions.create(
+            client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[{"role": "user", "content": "Write a long story about AI" * 10}],
             )
     except BudgetExceededError as e:
-        print(f"\n⚠️  Budget exceeded!")
+        print("\n⚠️  Budget exceeded!")
         print(f"   Spent: ${e.spent:.4f}")
         print(f"   Limit: ${e.limit:.4f}")
         print(f"   Overage: ${e.spent - e.limit:.4f}")
-        print(f"\n📊 Check Langfuse UI → Events → Filter: 'budget_exceeded'")
-        print(f"    You'll see: spent, limit, overage, model, tokens")
+        print("\n📊 Check Langfuse UI → Events → Filter: 'budget_exceeded'")
+        print("    You'll see: spent, limit, overage, model, tokens")
 
 
 def demo_fallback_annotations(client):
@@ -146,7 +148,7 @@ def demo_fallback_annotations(client):
         hard_cap=0.50,
         name="fallback-demo",
     ) as b:
-        print(f"Primary model: gpt-4o")
+        print("Primary model: gpt-4o")
         print(f"Fallback model: {b.fallback}")
         print(f"Primary budget: ${b.max_usd:.4f}")
         print(f"Hard cap: ${b.hard_cap:.4f}")
@@ -154,7 +156,7 @@ def demo_fallback_annotations(client):
         # Make calls until fallback triggers
         for i in range(5):
             try:
-                response = client.chat.completions.create(
+                client.chat.completions.create(
                     model="gpt-4o" if not b.model_switched else "gpt-4o-mini",
                     messages=[{"role": "user", "content": f"Say hello {i+1}"}],
                 )
@@ -170,11 +172,11 @@ def demo_fallback_annotations(client):
                 break
 
         print(f"\n💰 Final cost: ${b.spent:.4f}")
-        print(f"📊 Check Langfuse UI → Events → Filter: 'fallback_activated'")
-        print(f"    You'll see: from_model, to_model, switched_at, costs, savings")
-        print(f"📊 Also check Trace Metadata:")
-        print(f"    shekel_fallback_active: true")
-        print(f"    shekel_fallback_model: gpt-4o-mini")
+        print("📊 Check Langfuse UI → Events → Filter: 'fallback_activated'")
+        print("    You'll see: from_model, to_model, switched_at, costs, savings")
+        print("📊 Also check Trace Metadata:")
+        print("    shekel_fallback_active: true")
+        print("    shekel_fallback_model: gpt-4o-mini")
 
 
 def main():

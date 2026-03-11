@@ -106,6 +106,7 @@ class TestAutoCapEnforcement:
     def test_auto_capped_child_raises_at_effective_limit(self) -> None:
         """Child capped to $3 must raise BudgetExceededError at $3, not at max_usd ($5)."""
         import pytest
+
         from shekel import BudgetExceededError
 
         with budget(max_usd=10.00, name="parent") as parent:
@@ -121,6 +122,7 @@ class TestAutoCapEnforcement:
     def test_uncapped_child_still_enforces_max_usd(self) -> None:
         """Non-capped child enforces max_usd as before."""
         import pytest
+
         from shekel import BudgetExceededError
 
         with budget(max_usd=20.00, name="parent"):
@@ -142,7 +144,7 @@ class TestAutoCapWarnAt:
             with budget(
                 max_usd=5.00,
                 warn_at=0.5,
-                on_exceed=lambda s, l: fired.append((s, l)),
+                on_exceed=lambda s, lim: fired.append((s, lim)),
                 name="child",
             ) as child:
                 assert child.limit == 3.00
@@ -163,7 +165,7 @@ class TestAutoCapWarnAt:
             with budget(
                 max_usd=5.00,
                 warn_at=0.5,
-                on_exceed=lambda s, l: fired.append((s, l)),
+                on_exceed=lambda s, lim: fired.append((s, lim)),
                 name="child",
             ) as child:
                 assert child.limit == 3.00

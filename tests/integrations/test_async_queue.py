@@ -1,10 +1,8 @@
 """Tests for AsyncEventQueue - non-blocking event delivery."""
 
-import time
 import threading
+import time
 from typing import Any
-
-import pytest
 
 from shekel.integrations import AdapterRegistry, ObservabilityAdapter
 
@@ -34,7 +32,6 @@ class TestAsyncEventQueue:
 
     def setup_method(self) -> None:
         """Reset registry and create fresh queue before each test."""
-        from shekel.integrations import AdapterRegistry
         from shekel.integrations.async_queue import AsyncEventQueue
 
         AdapterRegistry.clear()
@@ -48,7 +45,6 @@ class TestAsyncEventQueue:
 
     def test_enqueue_is_non_blocking(self) -> None:
         """enqueue() should return immediately without blocking."""
-        from shekel.integrations import AdapterRegistry
 
         adapter = RecordingAdapter()
         AdapterRegistry.register(adapter)
@@ -62,7 +58,6 @@ class TestAsyncEventQueue:
 
     def test_events_delivered_to_adapters(self) -> None:
         """Events in queue are delivered to registered adapters."""
-        from shekel.integrations import AdapterRegistry
 
         adapter = RecordingAdapter()
         AdapterRegistry.register(adapter)
@@ -79,7 +74,6 @@ class TestAsyncEventQueue:
 
     def test_queue_drops_when_full(self) -> None:
         """When queue is full, enqueue drops oldest events."""
-        from shekel.integrations import AdapterRegistry
         from shekel.integrations.async_queue import AsyncEventQueue
 
         # Create small queue
@@ -102,7 +96,6 @@ class TestAsyncEventQueue:
 
     def test_shutdown_drains_queue(self) -> None:
         """shutdown() processes all pending events before stopping."""
-        from shekel.integrations import AdapterRegistry
 
         adapter = RecordingAdapter()
         AdapterRegistry.register(adapter)
@@ -125,7 +118,6 @@ class TestAsyncEventQueue:
 
     def test_enqueue_after_shutdown_is_noop(self) -> None:
         """enqueue() after shutdown does nothing."""
-        from shekel.integrations import AdapterRegistry
 
         adapter = RecordingAdapter()
         AdapterRegistry.register(adapter)
@@ -140,7 +132,6 @@ class TestAsyncEventQueue:
 
     def test_background_worker_processes_events(self) -> None:
         """Background thread continuously processes events."""
-        from shekel.integrations import AdapterRegistry
 
         adapter = RecordingAdapter()
         AdapterRegistry.register(adapter)
@@ -156,7 +147,6 @@ class TestAsyncEventQueue:
 
     def test_queue_handles_adapter_errors(self) -> None:
         """Queue continues processing even if adapter raises."""
-        from shekel.integrations import AdapterRegistry
 
         class BrokenAdapter(ObservabilityAdapter):
             def on_cost_update(self, budget_data: dict[str, Any]) -> None:

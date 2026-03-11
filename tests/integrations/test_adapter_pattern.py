@@ -1,7 +1,5 @@
 """Tests for the ObservabilityAdapter base interface."""
 
-import pytest
-
 from shekel.integrations.base import ObservabilityAdapter
 
 
@@ -184,6 +182,7 @@ class TestAdapterRegistry:
     def test_registry_is_thread_safe(self) -> None:
         """Registry operations are thread-safe."""
         import threading
+
         from shekel.integrations import AdapterRegistry
 
         adapters = [MockAdapter() for _ in range(10)]

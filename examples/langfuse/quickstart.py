@@ -14,8 +14,10 @@ Setup:
 """
 
 import os
-from openai import OpenAI
+
 from langfuse import Langfuse
+from openai import OpenAI
+
 from shekel import budget
 from shekel.integrations import AdapterRegistry
 from shekel.integrations.langfuse import LangfuseAdapter

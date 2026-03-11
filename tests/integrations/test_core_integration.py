@@ -34,12 +34,11 @@ class TestCoreIntegration:
 
     def test_cost_update_emitted_after_llm_call(self) -> None:
         """_record() should emit on_cost_update event after each LLM call."""
-        from unittest.mock import MagicMock
 
         adapter = CollectingAdapter()
         AdapterRegistry.register(adapter)
 
-        with budget(max_usd=5.00, name="test") as b:
+        with budget(max_usd=5.00, name="test"):
             # Simulate LLM call by directly calling _record
             from shekel._patch import _record
 
@@ -57,13 +56,12 @@ class TestCoreIntegration:
 
     def test_budget_exceeded_event_emitted(self) -> None:
         """BudgetExceededError should emit on_budget_exceeded event."""
-        from unittest.mock import MagicMock
 
         adapter = CollectingAdapter()
         AdapterRegistry.register(adapter)
 
         try:
-            with budget(max_usd=0.001, name="tiny_budget") as b:
+            with budget(max_usd=0.001, name="tiny_budget"):
                 from shekel._patch import _record
 
                 # Spend more than limit
@@ -86,9 +84,7 @@ class TestCoreIntegration:
         adapter = CollectingAdapter()
         AdapterRegistry.register(adapter)
 
-        with budget(
-            max_usd=0.001, fallback="gpt-4o-mini", hard_cap=10.0, name="fallback_test"
-        ) as b:
+        with budget(max_usd=0.001, fallback="gpt-4o-mini", hard_cap=10.0, name="fallback_test"):
             from shekel._patch import _record
 
             # First call exceeds limit, triggers fallback
@@ -111,7 +107,7 @@ class TestCoreIntegration:
         AdapterRegistry.clear()
 
         # Should not raise
-        with budget(max_usd=5.00) as b:
+        with budget(max_usd=5.00):
             from shekel._patch import _record
 
             _record(input_tokens=100, output_tokens=50, model="gpt-4o-mini")
@@ -122,7 +118,7 @@ class TestCoreIntegration:
         AdapterRegistry.register(adapter)
 
         with budget(max_usd=10.00, name="parent"):
-            with budget(max_usd=3.00, name="child") as b:
+            with budget(max_usd=3.00, name="child"):
                 from shekel._patch import _record
 
                 _record(input_tokens=100, output_tokens=50, model="gpt-4o-mini")

@@ -1,7 +1,5 @@
 """Tests for Langfuse Feature #3: Circuit Break Events."""
 
-import pytest
-
 
 class TestCircuitBreakEvents:
     """Test that budget exceeded events create events in Langfuse."""

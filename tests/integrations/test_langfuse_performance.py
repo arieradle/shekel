@@ -7,9 +7,6 @@ This test verifies that the Langfuse adapter adds minimal overhead (<1ms per cal
 import time
 from unittest.mock import MagicMock
 
-import pytest
-
-from shekel import budget
 from shekel.integrations import AdapterRegistry
 from shekel.integrations.langfuse import LangfuseAdapter
 
@@ -242,7 +239,7 @@ if __name__ == "__main__":
         print(f"\n📊 {name}...")
         try:
             test_func()
-            print(f"✅ PASSED")
+            print("✅ PASSED")
             passed += 1
         except AssertionError as e:
             print(f"❌ FAILED: {e}")

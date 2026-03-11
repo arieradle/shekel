@@ -1,7 +1,5 @@
 """Tests for Langfuse Feature #4: Fallback Annotations."""
 
-import pytest
-
 
 class TestFallbackAnnotations:
     """Test that fallback activation creates events and updates metadata."""

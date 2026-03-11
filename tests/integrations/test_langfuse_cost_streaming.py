@@ -1,7 +1,5 @@
 """Tests for Langfuse Feature #1: Real-Time Cost Streaming."""
 
-import pytest
-
 
 class TestRealTimeCostStreaming:
     """Test that cost updates are streamed to Langfuse after each LLM call."""
