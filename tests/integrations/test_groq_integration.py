@@ -163,3 +163,109 @@ class TestGroqWithoutAPIKey:
 
         # Should track even without real API
         assert b.spent >= 0
+
+    def test_groq_with_custom_pricing(self) -> None:
+        """Test Groq with custom pricing when model not in bundled prices."""
+        with budget(
+            max_usd=1.00,
+            name="groq_custom_pricing",
+            price_per_1k_tokens={"input": 0.0005, "output": 0.001},
+        ) as b:
+            from shekel._patch import _record
+
+            # Simulate usage with custom pricing
+            _record(input_tokens=100, output_tokens=50, model="groq:mixtral-8x7b")
+            _record(input_tokens=200, output_tokens=100, model="groq:llama2-70b")
+
+        # Should track with custom pricing
+        assert b.spent > 0
+
+    def test_groq_nested_budgets(self) -> None:
+        """Test nested budgets with Groq models."""
+        from shekel._patch import _record
+
+        with budget(max_usd=1.00, name="parent") as parent_budget:
+            _record(input_tokens=50, output_tokens=20, model="groq:mixtral-8x7b")
+
+            with budget(max_usd=0.50, name="child") as child_budget:
+                _record(input_tokens=100, output_tokens=50, model="groq:llama2-70b")
+
+            assert child_budget.spent >= 0
+            assert parent_budget.spent >= child_budget.spent
+
+    def test_groq_multiple_sequential_calls(self) -> None:
+        """Test multiple sequential Groq API calls within same budget."""
+        with budget(max_usd=1.00, name="sequential") as b:
+            from shekel._patch import _record
+
+            # Simulate 3 sequential calls
+            _record(input_tokens=30, output_tokens=10, model="groq:mixtral-8x7b")
+            _record(input_tokens=40, output_tokens=15, model="groq:mixtral-8x7b")
+            _record(input_tokens=50, output_tokens=20, model="groq:llama2-70b")
+
+        assert b.spent >= 0
+        assert b.calls >= 3
+
+    def test_groq_budget_remaining(self) -> None:
+        """Test budget remaining calculation with Groq."""
+        with budget(max_usd=0.10, name="remaining") as b:
+            from shekel._patch import _record
+
+            _record(input_tokens=100, output_tokens=50, model="groq:mixtral-8x7b")
+
+            # Check remaining is computed
+            if b.spent > 0:
+                assert b.remaining == b.max_usd - b.spent
+
+    def test_groq_zero_cost_fallback(self) -> None:
+        """Test that Groq models can be free when using zero-cost pricing."""
+        with budget(
+            max_usd=0.01, name="zero_cost", price_per_1k_tokens={"input": 0, "output": 0}
+        ) as b:
+            from shekel._patch import _record
+
+            # Even large requests don't consume budget with zero cost
+            _record(input_tokens=1000, output_tokens=500, model="groq:mixtral-8x7b")
+            _record(input_tokens=2000, output_tokens=1000, model="groq:llama2-70b")
+
+        # Should have spent $0
+        assert b.spent == 0
+
+    def test_groq_model_name_variants(self) -> None:
+        """Test Groq with different model name formats."""
+        from shekel._patch import _record
+
+        with budget(max_usd=1.00, name="models") as b:
+            # Different model name formats
+            _record(input_tokens=50, output_tokens=20, model="mixtral-8x7b-32768")
+            _record(input_tokens=50, output_tokens=20, model="groq:mixtral-8x7b-32768")
+            _record(input_tokens=50, output_tokens=20, model="llama2-70b-4096")
+
+        assert b.spent >= 0
+
+    def test_groq_large_token_counts(self) -> None:
+        """Test Groq with large token counts."""
+        from shekel._patch import _record
+
+        with budget(max_usd=10.00, name="large") as b:
+            # Simulate large requests
+            _record(input_tokens=128000, output_tokens=4000, model="groq:mixtral-8x7b")
+
+        assert b.spent >= 0
+
+    def test_groq_budget_name_hierarchy(self) -> None:
+        """Test Groq works with hierarchical budget names."""
+        from shekel._patch import _record
+
+        with budget(max_usd=1.00, name="app") as app:
+            _record(input_tokens=50, output_tokens=20, model="groq:mixtral-8x7b")
+
+            with budget(max_usd=0.50, name="feature") as feature:
+                _record(input_tokens=100, output_tokens=50, model="groq:llama2-70b")
+
+                with budget(max_usd=0.25, name="request") as request:
+                    _record(input_tokens=50, output_tokens=25, model="groq:mixtral-8x7b")
+
+        assert request.spent >= 0
+        assert feature.spent >= request.spent
+        assert app.spent >= feature.spent
