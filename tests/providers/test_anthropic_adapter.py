@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """TDD tests for AnthropicAdapter."""
 
 from unittest.mock import MagicMock

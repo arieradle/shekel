@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """Test fixtures and utilities for provider adapter testing."""
 
 from collections.abc import Generator

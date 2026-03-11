@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """Shekel provider adapters — pluggable LLM provider integrations.
 
 Built-in adapters (OpenAI, Anthropic) are auto-registered here.
