@@ -1413,10 +1413,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#nested-budgets-v023" class="md-nav__link">
+  <a href="#nested-budgets" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Nested Budgets (v0.2.3)
+        Nested Budgets
       
     </span>
   </a>
@@ -1460,7 +1460,7 @@
   <a href="#nested-budget-properties" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Nested Budget Properties (v0.2.3)
+        Nested Budget Properties
       
     </span>
   </a>
@@ -2061,10 +2061,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#nested-budgets-v023" class="md-nav__link">
+  <a href="#nested-budgets" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Nested Budgets (v0.2.3)
+        Nested Budgets
       
     </span>
   </a>
@@ -2108,7 +2108,7 @@
   <a href="#nested-budget-properties" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Nested Budget Properties (v0.2.3)
+        Nested Budget Properties
       
     </span>
   </a>
@@ -2389,7 +2389,7 @@
 <td><code>name</code></td>
 <td><code>str \| None</code></td>
 <td><code>None</code></td>
-<td><strong>NEW v0.2.3</strong>: Budget name for debugging and cost attribution. <strong>Required when nesting budgets</strong>.</td>
+<td>Budget name for debugging and cost attribution. <strong>Required when nesting budgets</strong>.</td>
 </tr>
 <tr>
 <td><code>warn_at</code></td>
@@ -2425,7 +2425,7 @@
 <td><code>persistent</code></td>
 <td><code>bool</code></td>
 <td><code>False</code></td>
-<td><strong>DEPRECATED v0.2.3</strong>: Budgets always accumulate now. Shows deprecation warning if set to <code>True</code>.</td>
+<td><strong>DEPRECATED</strong>: Budgets always accumulate now. Shows deprecation warning if set to <code>True</code>.</td>
 </tr>
 <tr>
 <td><code>hard_cap</code></td>
@@ -2463,7 +2463,7 @@
 </span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="n">run_agent</span><span class="p">()</span>
 </span></code></pre></div>
 <h4 id="accumulating-budget">Accumulating Budget<a class="headerlink" href="#accumulating-budget" title="Permanent link">&para;</a></h4>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># Budget variables accumulate across uses (v0.2.3+)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># Budget variables accumulate across uses</span>
 </span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="n">session</span> <span class="o">=</span> <span class="n">budget</span><span class="p">(</span><span class="n">max_usd</span><span class="o">=</span><span class="mf">10.00</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;session&quot;</span><span class="p">)</span>
 </span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
 </span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="k">with</span> <span class="n">session</span><span class="p">:</span>
@@ -2481,7 +2481,7 @@
 </span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="p">):</span>
 </span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>    <span class="n">run_agent</span><span class="p">()</span>
 </span></code></pre></div>
-<h4 id="nested-budgets-v023">Nested Budgets (v0.2.3)<a class="headerlink" href="#nested-budgets-v023" title="Permanent link">&para;</a></h4>
+<h4 id="nested-budgets">Nested Budgets<a class="headerlink" href="#nested-budgets" title="Permanent link">&para;</a></h4>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">with</span> <span class="n">budget</span><span class="p">(</span><span class="n">max_usd</span><span class="o">=</span><span class="mf">10.00</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;workflow&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">workflow</span><span class="p">:</span>
 </span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>    <span class="c1"># Research stage: $2 budget</span>
 </span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>    <span class="k">with</span> <span class="n">budget</span><span class="p">(</span><span class="n">max_usd</span><span class="o">=</span><span class="mf">2.00</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;research&quot;</span><span class="p">):</span>
@@ -2529,7 +2529,7 @@
 <tr>
 <td><code>name</code></td>
 <td><code>str \| None</code></td>
-<td><strong>NEW v0.2.3</strong>: Budget name.</td>
+<td>Budget name.</td>
 </tr>
 <tr>
 <td><code>model_switched</code></td>
@@ -2548,7 +2548,7 @@
 </tr>
 </tbody>
 </table>
-<h3 id="nested-budget-properties">Nested Budget Properties (v0.2.3)<a class="headerlink" href="#nested-budget-properties" title="Permanent link">&para;</a></h3>
+<h3 id="nested-budget-properties">Nested Budget Properties<a class="headerlink" href="#nested-budget-properties" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -2635,7 +2635,7 @@
 - <code>calls</code>: List of all call records
 - <code>by_model</code>: Aggregated stats per model</p>
 <h4 id="tree"><code>tree()</code><a class="headerlink" href="#tree" title="Permanent link">&para;</a></h4>
-<p><strong>NEW in v0.2.3</strong>: Return visual hierarchy of budget tree with spend breakdown.</p>
+<p>Return visual hierarchy of budget tree with spend breakdown.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="k">with</span> <span class="n">budget</span><span class="p">(</span><span class="n">max_usd</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;workflow&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">w</span><span class="p">:</span>
 </span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>    <span class="k">with</span> <span class="n">budget</span><span class="p">(</span><span class="n">max_usd</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;research&quot;</span><span class="p">):</span>
 </span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>        <span class="n">research</span><span class="p">()</span>
@@ -2767,7 +2767,7 @@
 <h2 id="next-steps">Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="../usage/basic-usage/">Basic Usage</a> - Learn the fundamentals</li>
-<li><a href="../usage/nested-budgets/">Nested Budgets</a> - <strong>NEW v0.2.3</strong>: Hierarchical tracking</li>
+<li><a href="../usage/nested-budgets/">Nested Budgets</a> - Hierarchical tracking for multi-stage workflows</li>
 <li><a href="../usage/budget-enforcement/">Budget Enforcement</a> - Hard caps and warnings</li>
 <li><a href="../usage/fallback-models/">Fallback Models</a> - Automatic model switching</li>
 </ul>
