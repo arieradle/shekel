@@ -547,6 +547,20 @@ Use cases include:
 
 ---
 
+## Example Projects
+
+Discover practical examples of shekel in action:
+
+- **[openai-budget-guard-example](https://github.com/arieradle/openai-budget-guard-example)** — Control OpenAI API costs with budget enforcement
+- **[langchain-budget-guard](https://github.com/arieradle/langchain-budget-guard)** — Enforce LLM budgets on LangChain applications
+- **[langgraph-agent-budget](https://github.com/arieradle/langgraph-agent-budget)** — Enforce LLM budgets on LangGraph agents
+- **[anthropic-cost-control](https://github.com/arieradle/anthropic-cost-control)** — Control Anthropic Claude API costs
+- **[llm-budget-control-examples](https://github.com/arieradle/llm-budget-control-examples)** — Before/after comparison of budget enforcement patterns
+
+These repositories demonstrate how to prevent runaway API costs and enforce LLM usage budgets using Shekel.
+
+---
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md).
