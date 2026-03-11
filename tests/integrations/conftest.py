@@ -10,7 +10,7 @@ from tests.integrations.ollama_mock import OllamaMockServer, create_mock_ollama_
 @pytest.fixture
 def ollama_mock_server():
     """Fixture that provides a mock Ollama server."""
-    server = OllamaMockServer("127.0.0.1", 11435)  # Use different port to avoid conflicts
+    server = OllamaMockServer("127.0.0.1", 12435)  # Use non-conflicting port
     server.start()
     yield server
     server.stop()

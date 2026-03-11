@@ -30,7 +30,7 @@ class TestOllamaBudgetIntegration:
 
     def test_mock_ollama_server_starts(self) -> None:
         """Mock Ollama server can start and respond."""
-        server = OllamaMockServer("127.0.0.1", 11434)
+        server = OllamaMockServer("127.0.0.1", 12434)  # Use different port to avoid conflicts
         try:
             server.start()
             time.sleep(0.1)  # Give server time to start
@@ -723,7 +723,7 @@ class TestOllamaRequestTracking:
         """Test that mock server logs API requests."""
         import time
 
-        server = OllamaMockServer("127.0.0.1", 11436)
+        server = OllamaMockServer("127.0.0.1", 12436)  # Use non-conflicting port
         try:
             server.start()
             time.sleep(0.1)
@@ -746,7 +746,7 @@ class TestOllamaRequestTracking:
         """Test custom response registration."""
         import time
 
-        server = OllamaMockServer("127.0.0.1", 11437)
+        server = OllamaMockServer("127.0.0.1", 12437)  # Use non-conflicting port
         try:
             server.start()
             time.sleep(0.1)
