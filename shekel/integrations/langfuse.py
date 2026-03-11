@@ -48,6 +48,8 @@ class LangfuseAdapter(ObservabilityAdapter):
         self.tags = tags or []
         self._trace = None  # Current trace object
         self._span_stack: list[Any] = []  # Stack of spans for nested budgets
+        self._fallback_active = False  # Track if fallback is currently active
+        self._fallback_model: Union[str, None] = None  # Current fallback model
 
     def on_cost_update(self, budget_data: dict[str, Any]) -> None:
         """Called after each LLM API call with updated cost information.
@@ -90,6 +92,11 @@ class LangfuseAdapter(ObservabilityAdapter):
                 metadata["shekel_utilization"] = utilization
             else:
                 metadata["shekel_utilization"] = None
+            
+            # Include fallback info if active
+            if self._fallback_active:
+                metadata["shekel_fallback_active"] = True
+                metadata["shekel_fallback_model"] = self._fallback_model
             
             # Handle nesting
             if depth == 0:
@@ -201,5 +208,51 @@ class LangfuseAdapter(ObservabilityAdapter):
                 - cost_fallback: Total cost on fallback model (float)
                 - savings: Estimated savings from fallback (float)
         """
-        # TODO: Implement in Story 3.2
-        pass
+        try:
+            # Create trace if it doesn't exist
+            if self._trace is None:
+                self._trace = self.client.trace(
+                    name=self.trace_name,
+                    tags=self.tags if self.tags else None,
+                )
+            
+            # Update internal state
+            self._fallback_active = True
+            self._fallback_model = fallback_data["to_model"]
+            
+            # Determine target (trace or current span)
+            if len(self._span_stack) > 0:
+                target = self._span_stack[-1]
+            else:
+                target = self._trace
+            
+            # Build event metadata
+            event_metadata = {
+                "from_model": fallback_data["from_model"],
+                "to_model": fallback_data["to_model"],
+                "switched_at": fallback_data["switched_at"],
+                "cost_primary": fallback_data["cost_primary"],
+                "cost_fallback": fallback_data["cost_fallback"],
+                "savings": fallback_data["savings"],
+            }
+            
+            # Create event
+            if target is not None:  # Type guard
+                target.event(
+                    name="fallback_activated",
+                    level="INFO",
+                    metadata=event_metadata,
+                )
+            
+            # Also update trace/span metadata to show fallback is active
+            update_metadata = {
+                "shekel_fallback_active": True,
+                "shekel_fallback_model": fallback_data["to_model"],
+            }
+            
+            if target is not None:  # Type guard
+                target.update(metadata=update_metadata)
+            
+        except Exception:
+            # Don't break Shekel if Langfuse fails
+            pass
