@@ -11,6 +11,7 @@ jobs:
     environment: pypi
     permissions:
       id-token: write  # required for trusted publishing
+      contents: write  # required for creating GitHub releases
 
     steps:
       - uses: actions/checkout@v4
@@ -28,3 +29,13 @@ jobs:
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION=${GITHUB_REF_NAME}
+          gh release create "$VERSION" dist/* \
+            --title "$VERSION" \
+            --generate-notes \
+            --verify-tag
