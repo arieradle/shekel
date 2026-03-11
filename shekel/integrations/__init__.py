@@ -12,7 +12,7 @@ __all__ = ["ObservabilityAdapter", "AdapterRegistry", "AsyncEventQueue"]
 
 # Optional Langfuse adapter (only if langfuse is installed)
 try:
-    from shekel.integrations.langfuse import LangfuseAdapter
+    from shekel.integrations.langfuse import LangfuseAdapter  # noqa: F401
 
     __all__.append("LangfuseAdapter")
 except ImportError:

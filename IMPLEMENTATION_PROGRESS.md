@@ -54,11 +54,41 @@
 ---
 
 ## Sprint 2: Langfuse Adapter - Features #1-2 (16 pts)
-**Status:** NOT STARTED
+**Status:** ✅ COMPLETE
 
-### Story 2.1: LangfuseAdapter Setup (3 pts)
-### Story 2.2: Feature #1 - Real-Time Cost Streaming (8 pts)
-### Story 2.3: Feature #2 - Nested Budget Mapping (5 pts)
+### Story 2.1: LangfuseAdapter Setup ✅ COMPLETE (3 pts)
+**Commit:** 5d48aad
+- [x] LangfuseAdapter base class with proper initialization
+- [x] Accept client, trace_name, and tags parameters
+- [x] Implement base structure for all three hook methods
+- [x] Graceful optional import handling
+- [x] 11 comprehensive tests (all GREEN)
+- [x] All 212 tests passing
+
+### Story 2.2: Feature #1 - Real-Time Cost Streaming ✅ COMPLETE (8 pts)
+**Commit:** 655c935
+- [x] Create Langfuse traces automatically on first cost update
+- [x] Stream budget metadata to Langfuse after each LLM call
+- [x] Track spent, limit, utilization, and model info
+- [x] Support nested budgets with hierarchical names
+- [x] Handle track-only mode (no limit)
+- [x] Graceful error handling (Langfuse failures don't break Shekel)
+- [x] Apply custom tags to traces
+- [x] 9 comprehensive tests (all GREEN)
+- [x] All 221 tests passing
+
+### Story 2.3: Feature #2 - Nested Budget Mapping ✅ COMPLETE (5 pts)
+**Commit:** bf52269
+- [x] Map Shekel's nested budgets to Langfuse span hierarchy
+- [x] Create child spans for nested budgets (depth > 0)
+- [x] Maintain span stack for proper parent-child relationships
+- [x] Support multiple nesting levels and sibling budgets
+- [x] Each span gets its own budget metadata
+- [x] Return to parent correctly updates parent span/trace
+- [x] 6 comprehensive tests (all GREEN)
+- [x] All 227 tests passing
+
+**Sprint 2 Status:** ✅ COMPLETE - 16/16 pts (100%)
 
 ---
 
@@ -88,9 +118,15 @@
 - [x] mypy shekel/ - **SUCCESS: no issues found in 12 source files**
 - [x] ruff check shekel/ - **All checks passed!**
 
+### After Sprint 2 Langfuse Adapter #1-2: ✅ COMPLETE
+- [x] pytest tests/integrations/ - **54 tests PASSED** (26 new tests)
+- [x] pytest tests/ (full suite) - **227 tests PASSED**
+- [x] mypy shekel/ - **SUCCESS: no issues found in 13 source files**
+- [x] ruff check shekel/ - **All checks passed!**
+
 ---
 
 ## Total Progress
-**Story Points:** 26/73 complete (36%)
-**Stories:** 4/12 complete (33%)
-**Sprint:** 1/4 complete ✅
+**Story Points:** 42/73 complete (58%)
+**Stories:** 7/12 complete (58%)
+**Sprint:** 2/4 complete ✅

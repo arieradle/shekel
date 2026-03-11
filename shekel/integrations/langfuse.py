@@ -1,6 +1,6 @@
 """Langfuse adapter for Shekel observability integration."""
 
-from typing import Any
+from typing import Any, Union
 
 from shekel.integrations.base import ObservabilityAdapter
 
@@ -34,7 +34,7 @@ class LangfuseAdapter(ObservabilityAdapter):
         self,
         client: Any,
         trace_name: str = "shekel-budget",
-        tags: list[str] | None = None,
+        tags: Union[list[str], None] = None,
     ) -> None:
         """Initialize the Langfuse adapter.
         
@@ -96,7 +96,8 @@ class LangfuseAdapter(ObservabilityAdapter):
                 # Top-level budget: update trace
                 # Adjust span stack if we returned from nested budget
                 self._span_stack = []
-                self._trace.update(metadata=metadata)
+                if self._trace is not None:  # Type guard
+                    self._trace.update(metadata=metadata)
             else:
                 # Nested budget: manage span hierarchy
                 # Adjust stack to match current depth
@@ -110,7 +111,7 @@ class LangfuseAdapter(ObservabilityAdapter):
                     parent = self._span_stack[-1]
                 
                 # Check if we need to create a new span or update existing
-                if len(self._span_stack) < depth:
+                if parent is not None and len(self._span_stack) < depth:
                     # Create new span
                     span = parent.span(name=full_name)
                     self._span_stack.append(span)
@@ -119,7 +120,8 @@ class LangfuseAdapter(ObservabilityAdapter):
                     span = self._span_stack[depth - 1]
                 
                 # Update span with metadata
-                span.update(metadata=metadata)
+                if span is not None:  # Type guard
+                    span.update(metadata=metadata)
             
         except Exception:
             # Don't break Shekel if Langfuse fails
