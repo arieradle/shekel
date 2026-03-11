@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections.abc import Generator
-from typing import TYPE_CHECKING, Any, Tuple
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     pass
@@ -60,7 +60,7 @@ class ProviderAdapter(ABC):
         ...
 
     @abstractmethod
-    def extract_tokens(self, response: Any) -> Tuple[int, int, str]:
+    def extract_tokens(self, response: Any) -> tuple[int, int, str]:
         """Extract token counts from a non-streaming API response.
 
         Args:
@@ -89,7 +89,7 @@ class ProviderAdapter(ABC):
         ...
 
     @abstractmethod
-    def wrap_stream(self, stream: Any) -> Generator[Any, None, Tuple[int, int, str]]:
+    def wrap_stream(self, stream: Any) -> Generator[Any, None, tuple[int, int, str]]:
         """Wrap a streaming response to collect token counts.
 
         Yields chunks/events to the caller unchanged, then returns token
