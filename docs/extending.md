@@ -67,132 +67,116 @@ assert cost == 0.005  # (1000/1000 * 0.002) + (500/1000 * 0.006)
 
 ## Supporting New LLM Providers
 
-To add support for a new provider (e.g., Cohere, Mistral), you need to:
+Shekel uses a pluggable `ProviderAdapter` pattern. To add support for a new provider (e.g., Cohere, Mistral), implement `ProviderAdapter` and register it — no changes to core Shekel code required.
 
-1. Add patching logic
-2. Extract tokens from responses
-3. Handle streaming
-4. Validate fallback compatibility
-
-### Step 1: Add Patching Logic
-
-Edit `shekel/_patch.py`:
+### The ProviderAdapter Interface
 
 ```python
-def _install_patches():
-    # Existing OpenAI/Anthropic patches...
-    
-    # Add your provider
-    try:
-        import cohere_sdk.resources.chat as _cohere_chat
-        
-        _originals["cohere_sync"] = _cohere_chat.Chat.create
-        _cohere_chat.Chat.create = _cohere_sync_wrapper
-    except ImportError:
-        pass
+from shekel.providers.base import ProviderAdapter, ADAPTER_REGISTRY
+from collections.abc import Generator
+from typing import Any
 
-def _restore_patches():
-    # Existing restore logic...
-    
-    # Restore your provider
-    try:
-        import cohere_sdk.resources.chat as _cohere_chat
-        
-        if "cohere_sync" in _originals:
-            _cohere_chat.Chat.create = _originals.pop("cohere_sync")
-    except ImportError:
-        pass
-```
 
-### Step 2: Extract Tokens
+class CohereAdapter(ProviderAdapter):
 
-Add token extraction function:
+    @property
+    def name(self) -> str:
+        return "cohere"
 
-```python
-def _extract_cohere_tokens(response):
-    """Extract tokens from Cohere response."""
-    try:
-        input_tokens = response.meta.tokens.input_tokens or 0
-        output_tokens = response.meta.tokens.output_tokens or 0
-        model = response.model or "unknown"
+    def install_patches(self) -> None:
+        """Monkey-patch the Cohere SDK."""
+        from shekel import _patch
+        try:
+            import cohere.resources.chat as _cohere_chat
+            if "cohere_sync" not in _patch._originals:
+                _patch._originals["cohere_sync"] = _cohere_chat.Chat.create
+                _cohere_chat.Chat.create = _cohere_sync_wrapper
+        except ImportError:
+            pass
+
+    def remove_patches(self) -> None:
+        """Restore original Cohere SDK methods."""
+        from shekel import _patch
+        try:
+            import cohere.resources.chat as _cohere_chat
+            if "cohere_sync" in _patch._originals:
+                _cohere_chat.Chat.create = _patch._originals.pop("cohere_sync")
+        except ImportError:
+            pass
+
+    def extract_tokens(self, response: Any) -> tuple[int, int, str]:
+        """Extract tokens from a Cohere non-streaming response."""
+        try:
+            input_tokens = response.meta.tokens.input_tokens or 0
+            output_tokens = response.meta.tokens.output_tokens or 0
+            model = getattr(response, "model", None) or "unknown"
+            return input_tokens, output_tokens, model
+        except AttributeError:
+            return 0, 0, "unknown"
+
+    def detect_streaming(self, kwargs: dict[str, Any], response: Any) -> bool:
+        """Detect streaming — Cohere uses stream=True kwarg."""
+        return kwargs.get("stream") is True
+
+    def wrap_stream(self, stream: Any) -> Generator[Any, None, tuple[int, int, str]]:
+        """Wrap Cohere streaming response to collect token counts."""
+        input_tokens = 0
+        output_tokens = 0
+        model = "unknown"
+        for event in stream:
+            if hasattr(event, "meta") and hasattr(event.meta, "tokens"):
+                input_tokens = event.meta.tokens.input_tokens or 0
+                output_tokens = event.meta.tokens.output_tokens or 0
+            if hasattr(event, "model"):
+                model = event.model or "unknown"
+            yield event
         return input_tokens, output_tokens, model
-    except AttributeError:
-        return 0, 0, "unknown"
+
+    def validate_fallback(self, fallback_model: str) -> None:
+        """Validate that fallback is a Cohere model."""
+        is_other = fallback_model.startswith(("gpt-", "claude-", "o1", "o2"))
+        if is_other:
+            raise ValueError(
+                f"shekel: fallback model '{fallback_model}' is not a Cohere model. "
+                f"Use a Cohere model as fallback (e.g. fallback='command-r-plus')."
+            )
+
+
+# Register once at module load
+ADAPTER_REGISTRY.register(CohereAdapter())
 ```
 
-### Step 3: Create Wrapper
+### Wiring the Sync Wrapper
 
-Add sync and async wrappers:
+The wrapper intercepts calls, applies fallback, records costs:
 
 ```python
+from shekel import _context, _patch
+
+
 def _cohere_sync_wrapper(self, *args, **kwargs):
-    original = _originals.get("cohere_sync")
+    original = _patch._originals.get("cohere_sync")
     if original is None:
         raise RuntimeError("shekel: cohere original not stored")
-    
-    # Apply fallback if needed
+
     active_budget = _context.get_active_budget()
-    if active_budget is not None:
-        _apply_fallback_if_needed(active_budget, kwargs, "cohere")
-    
-    # Handle streaming
+    if active_budget is not None and active_budget._using_fallback:
+        kwargs["model"] = active_budget.fallback
+
     if kwargs.get("stream") is True:
         stream = original(self, *args, **kwargs)
-        return _wrap_cohere_stream(stream)
-    
-    # Regular call
+        return _wrap_cohere_stream_gen(stream)
+
     response = original(self, *args, **kwargs)
-    input_tokens, output_tokens, model = _extract_cohere_tokens(response)
-    _record(input_tokens, output_tokens, model)
+    adapter = ADAPTER_REGISTRY.get_by_name("cohere")
+    it, ot, model = adapter.extract_tokens(response)
+    _patch._record(it, ot, model)
     return response
 ```
 
-### Step 4: Handle Streaming
+### Complete Example
 
-Add streaming wrapper:
-
-```python
-def _wrap_cohere_stream(stream):
-    """Wrap Cohere streaming response."""
-    input_tokens = 0
-    output_tokens = 0
-    model = "unknown"
-    
-    try:
-        for event in stream:
-            # Extract tokens from stream events
-            if hasattr(event, 'meta') and hasattr(event.meta, 'tokens'):
-                input_tokens = event.meta.tokens.input_tokens or 0
-                output_tokens = event.meta.tokens.output_tokens or 0
-            if hasattr(event, 'model'):
-                model = event.model or "unknown"
-            yield event
-    finally:
-        _record(input_tokens, output_tokens, model)
-```
-
-### Step 5: Provider Detection
-
-Add provider detection for fallback validation:
-
-```python
-def _validate_same_provider(fallback_model: str, current_provider: str):
-    """Validate fallback model is same provider."""
-    is_cohere = fallback_model.startswith("command-")
-    is_openai = any(fallback_model.startswith(p) for p in ("gpt-", "o1"))
-    is_anthropic = fallback_model.startswith("claude-")
-    
-    if current_provider == "cohere" and (is_openai or is_anthropic):
-        raise ValueError(
-            f"shekel: fallback model '{fallback_model}' appears to be from a different provider. "
-            f"Use a Cohere model as fallback."
-        )
-    # ... other validations
-```
-
-### Complete Example: Adding Cohere
-
-See the [full example](https://github.com/arieradle/shekel/tree/main/examples/adding_provider.py) in the repo.
+See `examples/cohere_adapter_template.py` in the repository for a full working template.
 
 ## Custom Budget Callbacks
 
