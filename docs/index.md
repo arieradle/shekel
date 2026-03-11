@@ -73,6 +73,20 @@ I built shekel so you don't have to learn that lesson yourself.
             run_analysis()
     ```
 
+-   :material-telescope:{ .lg .middle } **Langfuse Observability** :octicons-sparkle-fill-16:{ .new }
+
+    ---
+
+    **NEW in v0.2.4**: Real-time cost tracking, budget visualization, and event logging in Langfuse.
+
+    ```python
+    from shekel.integrations.langfuse import LangfuseAdapter
+
+    adapter = LangfuseAdapter(client=lf)
+    AdapterRegistry.register(adapter)
+    # Automatic cost tracking and budget monitoring!
+    ```
+
 -   :material-speedometer:{ .lg .middle } **Framework Agnostic**
 
     ---

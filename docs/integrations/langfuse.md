@@ -540,9 +540,9 @@ with budget(max_usd=5.00) as b:
 ## Resources
 
 - **Langfuse Docs**: https://langfuse.com/docs
-- **Shekel Docs**: https://github.com/yourusername/shekel
-- **Examples**: See `examples/langfuse/` in the Shekel repository
-- **Community**: [Discord/Slack/Forum link]
+- **Shekel Repository**: https://github.com/arieradle/shekel
+- **Shekel Docs**: https://arieradle.github.io/shekel/
+- **Report Issues**: https://github.com/arieradle/shekel/issues
 
 ## License
 
