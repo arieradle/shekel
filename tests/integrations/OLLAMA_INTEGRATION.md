@@ -207,32 +207,23 @@ with budget(
 
 ## CI/CD Integration
 
-### GitHub Actions with Docker Ollama Service
+### GitHub Actions (CI Pipeline)
 
-The CI/CD pipeline automatically runs with Ollama in Docker:
+The CI/CD pipeline runs only mock-based tests for reliability:
 
-```yaml
-services:
-  ollama:
-    image: ollama/ollama:latest
-    ports:
-      - 11434:11434
-    options: >-
-      --health-cmd "curl --fail http://localhost:11434/api/tags || exit 1"
-      --health-interval 10s
-      --health-timeout 5s
-      --health-retries 5
+```
+✅ Mock-based tests (26 tests) — Always run, no external dependencies
+⊘ Real Ollama tests (3 tests) — Skip gracefully in CI
 ```
 
-This enables:
-- ✅ All mock-based tests run (always reliable)
-- ✅ Real Ollama tests run against the Docker container
-- ✅ Automatic model pulling (tinyllama for lightweight testing)
-- ✅ Health checks before tests start
+Why:
+- Ollama Docker startup is too slow for GitHub Actions health checks
+- Mock tests validate all budget tracking logic
+- Real tests are optional for developers with local Ollama
 
-### Local CI/CD with Docker Compose
+### Local Development with Docker Ollama
 
-For local testing with full Ollama integration:
+For full integration testing with real Ollama:
 
 ```bash
 # Start Ollama in Docker
@@ -242,19 +233,20 @@ docker run -d -p 11434:11434 ollama/ollama
 until curl -s http://localhost:11434/api/tags; do sleep 2; done
 
 # Pull a model
+docker exec <container-id> ollama pull tinyllama
+# or
 curl -X POST http://localhost:11434/api/pull -d '{"name":"tinyllama"}'
 
-# Run tests (both mock and real will run)
+# Run tests (all 38 tests will run)
 pytest tests/integrations/test_ollama_integration.py -v
 ```
 
-### Manual CI/CD Setup
-
-If not using Docker, mock tests still work:
+### Local Testing (Mock Only)
 
 ```bash
-# This runs all tests, but real Ollama tests skip if not available
-pytest tests/integrations/test_ollama_integration.py
+# Run mock-based tests (no Ollama required)
+pytest tests/integrations/test_ollama_integration.py -v
+# Result: 35 passed, 3 skipped
 ```
 
 ## Troubleshooting
