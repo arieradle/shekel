@@ -68,7 +68,8 @@ def demo_real_time_cost_streaming(client):
                     "content": f"Say 'Hello {i+1}' in a creative way (be brief)"
                 }]
             )
-            print(f"  Call {i+1}: ${b.spent:.4f} spent ({b.utilization*100:.1f}% of budget)")
+            pct = (b.spent / b.limit * 100) if b.limit else 0.0
+            print(f"  Call {i+1}: ${b.spent:.4f} spent ({pct:.1f}% of budget)")
         
         print(f"\n💰 Final cost: ${b.spent:.4f}")
         print(f"📊 Check Langfuse UI → Trace 'shekel-demo' → Metadata")

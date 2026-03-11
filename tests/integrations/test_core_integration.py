@@ -187,3 +187,43 @@ class TestAsyncQueueIntegration:
             assert adapter.cost_updates[0]["spent"] == 1.23
         finally:
             queue.shutdown()
+
+
+class TestBudgetExceededEventLimit:
+    def setup_method(self) -> None:
+        AdapterRegistry.clear()
+
+    def test_exceeded_event_reports_effective_limit(self) -> None:
+        """on_budget_exceeded event should report effective_limit, not max_usd."""
+        adapter = CollectingAdapter()
+        AdapterRegistry.register(adapter)
+
+        with budget(max_usd=10.00, name="parent") as parent:
+            parent._spent = 7.00  # child will be capped to $3
+
+            try:
+                with budget(max_usd=5.00, name="child") as child:
+                    assert child.limit == 3.00
+                    child._record_spend(4.00, "gpt-4o", {"input": 100, "output": 50})
+            except BudgetExceededError:
+                pass
+
+        assert len(adapter.budget_exceeded_events) >= 1
+        event = adapter.budget_exceeded_events[0]
+        assert event["limit"] == 3.00, f"Expected limit=3.00 in event, got {event['limit']}"
+        assert event["overage"] == pytest.approx(1.00)
+
+    def test_exceeded_event_uncapped_reports_max_usd(self) -> None:
+        """For non-capped budgets, event limit equals max_usd."""
+        adapter = CollectingAdapter()
+        AdapterRegistry.register(adapter)
+
+        try:
+            with budget(max_usd=5.00, name="root") as b:
+                b._record_spend(6.00, "gpt-4o", {"input": 100, "output": 50})
+        except BudgetExceededError:
+            pass
+
+        assert len(adapter.budget_exceeded_events) >= 1
+        event = adapter.budget_exceeded_events[0]
+        assert event["limit"] == 5.00

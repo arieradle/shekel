@@ -202,3 +202,37 @@ class TestAdapterRegistry:
         
         for adapter in adapters:
             assert len(adapter.cost_updates) == 1
+
+    def test_unregister_removes_adapter(self) -> None:
+        """unregister() removes a specific adapter from the registry."""
+        from shekel.integrations import AdapterRegistry
+
+        adapter = MockAdapter()
+        AdapterRegistry.register(adapter)
+        result = AdapterRegistry.unregister(adapter)
+        assert result is True
+
+        AdapterRegistry.emit_event("on_cost_update", {"spent": 1.0})
+        assert len(adapter.cost_updates) == 0
+
+    def test_unregister_returns_false_if_not_registered(self) -> None:
+        """unregister() returns False when the adapter was never registered."""
+        from shekel.integrations import AdapterRegistry
+
+        adapter = MockAdapter()
+        result = AdapterRegistry.unregister(adapter)
+        assert result is False
+
+    def test_unregister_only_removes_specific_instance(self) -> None:
+        """unregister() removes only the specified adapter, leaving others intact."""
+        from shekel.integrations import AdapterRegistry
+
+        a1 = MockAdapter()
+        a2 = MockAdapter()
+        AdapterRegistry.register(a1)
+        AdapterRegistry.register(a2)
+        AdapterRegistry.unregister(a1)
+
+        AdapterRegistry.emit_event("on_cost_update", {"spent": 1.0})
+        assert len(a1.cost_updates) == 0  # removed
+        assert len(a2.cost_updates) == 1  # still registered
