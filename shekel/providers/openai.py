@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Generator
-from typing import Any
+from typing import Any, Tuple
 
 from shekel.providers.base import ProviderAdapter
 
@@ -47,7 +47,7 @@ class OpenAIAdapter(ProviderAdapter):
         except ImportError:
             pass
 
-    def extract_tokens(self, response: Any) -> tuple[int, int, str]:
+    def extract_tokens(self, response: Any) -> Tuple[int, int, str]:
         """Extract tokens from OpenAI non-streaming response."""
         try:
             usage = response.usage
@@ -65,9 +65,9 @@ class OpenAIAdapter(ProviderAdapter):
         """Detect streaming via the 'stream' kwarg."""
         return kwargs.get("stream") is True
 
-    def wrap_stream(self, stream: Any) -> Generator[Any, None, tuple[int, int, str]]:
+    def wrap_stream(self, stream: Any) -> Generator[Any, None, Tuple[int, int, str]]:
         """Wrap OpenAI streaming response to collect token counts."""
-        seen: list[tuple[int, int, str]] = []
+        seen: list[Tuple[int, int, str]] = []
         for chunk in stream:
             if chunk.usage is not None:
                 try:

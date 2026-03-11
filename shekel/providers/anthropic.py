@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Generator
-from typing import Any
+from typing import Any, Tuple
 
 from shekel.providers.base import ProviderAdapter
 
@@ -47,7 +47,7 @@ class AnthropicAdapter(ProviderAdapter):
         except ImportError:
             pass
 
-    def extract_tokens(self, response: Any) -> tuple[int, int, str]:
+    def extract_tokens(self, response: Any) -> Tuple[int, int, str]:
         """Extract tokens from Anthropic non-streaming response."""
         try:
             usage = response.usage
@@ -67,7 +67,7 @@ class AnthropicAdapter(ProviderAdapter):
             return False
         return hasattr(response, "__iter__") and not hasattr(response, "usage")
 
-    def wrap_stream(self, stream: Any) -> Generator[Any, None, tuple[int, int, str]]:
+    def wrap_stream(self, stream: Any) -> Generator[Any, None, Tuple[int, int, str]]:
         """Wrap Anthropic streaming response to collect token counts."""
         input_tokens = 0
         output_tokens = 0
