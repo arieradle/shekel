@@ -2,10 +2,7 @@
 
 from __future__ import annotations
 
-import json
-import os
 import time
-from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -63,7 +60,7 @@ class TestOllamaBudgetIntegration:
             max_usd=5.00,
             name="ollama_test",
             price_per_1k_tokens={"input": 0.00001, "output": 0.00001},
-        ) as b:
+        ) as b:  # noqa: F841
             # Simulate Ollama response with token counts
             from shekel._patch import _record
 
@@ -81,13 +78,13 @@ class TestOllamaBudgetIntegration:
         """Test nested budgets with simulated Ollama calls."""
         with budget(max_usd=10.00, name="workflow") as workflow:
             # Phase 1: Research (use known model for cost tracking)
-            with budget(max_usd=3.00, name="research") as research:
+            with budget(max_usd=3.00, name="research") as research:  # noqa: F841
                 from shekel._patch import _record
 
                 _record(input_tokens=200, output_tokens=150, model="gpt-4o-mini")
 
             # Phase 2: Analysis (use known model for cost tracking)
-            with budget(max_usd=5.00, name="analysis") as analysis:
+            with budget(max_usd=5.00, name="analysis") as analysis:  # noqa: F841
                 from shekel._patch import _record
 
                 _record(input_tokens=300, output_tokens=200, model="gpt-4o-mini")
@@ -111,7 +108,7 @@ class TestOllamaBudgetIntegration:
 
     def test_ollama_fallback_model_switching(self) -> None:
         """Test fallback model switching with Ollama models."""
-        with budget(max_usd=0.001, fallback="gpt-4o-mini", hard_cap=5.0) as b:
+        with budget(max_usd=0.001, fallback="gpt-4o-mini", hard_cap=5.0) as b:  # noqa: F841
             from shekel._patch import _record
 
             # Use known model with pricing to trigger fallback
@@ -159,7 +156,7 @@ class TestOllamaBudgetIntegration:
         """Budget summary works with Ollama model calls."""
         with budget(
             max_usd=5.00, price_per_1k_tokens={"input": 0.00001, "output": 0.00001}
-        ) as b:
+        ) as b:  # noqa: F841
             from shekel._patch import _record
 
             _record(input_tokens=100, output_tokens=50, model="ollama:llama2")
@@ -195,7 +192,7 @@ class TestOllamaRealIntegration:
         if not ollama_available or not requests:
             pytest.skip("Ollama not available")
 
-        with budget(max_usd=0.10, name="ollama_real") as b:
+        with budget(max_usd=0.10, name="ollama_real") as b:  # noqa: F841
             try:
                 # Try tinyllama first (used in CI), fall back to llama2
                 model = "tinyllama"
@@ -216,9 +213,7 @@ class TestOllamaRealIntegration:
                         "http://localhost:11434/api/chat",
                         json={
                             "model": model,
-                            "messages": [
-                                {"role": "user", "content": "Say 'hello' in one word."}
-                            ],
+                            "messages": [{"role": "user", "content": "Say 'hello' in one word."}],
                             "stream": False,
                         },
                         timeout=30,
@@ -251,7 +246,7 @@ class TestOllamaRealIntegration:
         if not ollama_available or not requests:
             pytest.skip("Ollama not available")
 
-        with budget(max_usd=0.10, name="ollama_generate") as b:
+        with budget(max_usd=0.10, name="ollama_generate") as b:  # noqa: F841
             try:
                 # Try tinyllama first (used in CI), fall back to llama2
                 model = "tinyllama"
@@ -345,7 +340,7 @@ class TestOllamaCostCalculation:
         # Assign minimal cost to free models
         with budget(
             max_usd=10.00, price_per_1k_tokens={"input": 0.00001, "output": 0.00001}
-        ) as b:
+        ) as b:  # noqa: F841
             from shekel._patch import _record
 
             # With custom pricing, even free models are tracked
@@ -385,7 +380,7 @@ class TestOllamaErrorHandling:
 
     def test_malformed_token_counts_handled_gracefully(self) -> None:
         """Missing token counts shouldn't crash budget tracking."""
-        with budget(max_usd=5.00) as b:
+        with budget(max_usd=5.00) as b:  # noqa: F841
             from shekel._patch import _record
 
             # Record with minimal data
@@ -396,7 +391,7 @@ class TestOllamaErrorHandling:
 
     def test_budget_operations_with_unknown_models(self) -> None:
         """Budget operations work with unknown/custom model names."""
-        with budget(max_usd=5.00, name="unknown_model") as b:
+        with budget(max_usd=5.00, name="unknown_model") as b:  # noqa: F841
             from shekel._patch import _record
 
             _record(input_tokens=100, output_tokens=50, model="ollama:custom-model:latest")
@@ -405,7 +400,7 @@ class TestOllamaErrorHandling:
 
     def test_zero_input_tokens(self) -> None:
         """Handling zero input tokens."""
-        with budget(max_usd=5.00) as b:
+        with budget(max_usd=5.00) as b:  # noqa: F841
             from shekel._patch import _record
 
             _record(input_tokens=0, output_tokens=100, model="gpt-4o-mini")
@@ -414,7 +409,7 @@ class TestOllamaErrorHandling:
 
     def test_zero_output_tokens(self) -> None:
         """Handling zero output tokens."""
-        with budget(max_usd=5.00) as b:
+        with budget(max_usd=5.00) as b:  # noqa: F841
             from shekel._patch import _record
 
             _record(input_tokens=100, output_tokens=0, model="gpt-4o-mini")
@@ -423,7 +418,7 @@ class TestOllamaErrorHandling:
 
     def test_very_large_token_counts(self) -> None:
         """Handling very large token counts."""
-        with budget(max_usd=100.00) as b:
+        with budget(max_usd=100.00) as b:  # noqa: F841
             from shekel._patch import _record
 
             _record(input_tokens=1000000, output_tokens=500000, model="gpt-4o-mini")
@@ -449,7 +444,7 @@ class TestOllamaBudgetWarnings:
                 fallback="gpt-4o-mini",
                 hard_cap=1.0,
                 name="warn_test",
-            ) as b:
+            ) as b:  # noqa: F841
                 from shekel._patch import _record
 
                 # Spend enough to trigger warning but with fallback available
@@ -482,7 +477,7 @@ class TestOllamaMultipleConcurrentModels:
 
     def test_budget_with_multiple_different_models(self) -> None:
         """Test budget tracks multiple different models."""
-        with budget(max_usd=10.00, name="multi_model") as b:
+        with budget(max_usd=10.00, name="multi_model") as b:  # noqa: F841
             from shekel._patch import _record
 
             _record(input_tokens=100, output_tokens=50, model="gpt-4o-mini")
@@ -530,18 +525,18 @@ class TestOllamaNestedBudgetAdvanced:
 
     def test_sibling_budgets_accumulate_properly(self) -> None:
         """Test sibling budgets accumulate correctly."""
-        with budget(max_usd=20.00, name="parent") as parent:
-            with budget(max_usd=8.00, name="sibling1") as s1:
+        with budget(max_usd=20.00, name="parent") as parent:  # noqa: F841
+            with budget(max_usd=8.00, name="sibling1") as s1:  # noqa: F841
                 from shekel._patch import _record
 
                 _record(input_tokens=100, output_tokens=50, model="gpt-4o-mini")
 
-            with budget(max_usd=8.00, name="sibling2") as s2:
+            with budget(max_usd=8.00, name="sibling2") as s2:  # noqa: F841
                 from shekel._patch import _record
 
                 _record(input_tokens=100, output_tokens=50, model="gpt-4o-mini")
 
-            with budget(max_usd=8.00, name="sibling3") as s3:
+            with budget(max_usd=8.00, name="sibling3") as s3:  # noqa: F841
                 from shekel._patch import _record
 
                 _record(input_tokens=100, output_tokens=50, model="gpt-4o-mini")
@@ -551,14 +546,14 @@ class TestOllamaNestedBudgetAdvanced:
 
     def test_auto_capping_in_deep_nesting(self) -> None:
         """Test auto-capping works in deep nesting."""
-        with budget(max_usd=1.00, name="strict_parent") as parent:
+        with budget(max_usd=1.00, name="strict_parent") as parent:  # noqa: F841
             # Child wants $5 but parent only has $1
             with budget(max_usd=5.00, name="greedy_child") as child:
                 assert child.limit <= 1.00  # Should be auto-capped
 
     def test_budget_tree_with_many_children(self) -> None:
         """Test budget tree with many children."""
-        with budget(max_usd=50.00, name="parent") as parent:
+        with budget(max_usd=50.00, name="parent") as parent:  # noqa: F841
             for i in range(5):
                 with budget(max_usd=8.00, name=f"child_{i}"):
                     from shekel._patch import _record
@@ -576,7 +571,7 @@ class TestOllamaMixedProviders:
 
     def test_budget_with_mixed_openai_models(self) -> None:
         """Test budget with multiple OpenAI models."""
-        with budget(max_usd=5.00, name="mixed") as b:
+        with budget(max_usd=5.00, name="mixed") as b:  # noqa: F841
             from shekel._patch import _record
 
             _record(input_tokens=100, output_tokens=50, model="gpt-4o")
@@ -587,7 +582,7 @@ class TestOllamaMixedProviders:
 
     def test_budget_with_anthropic_models(self) -> None:
         """Test budget with Anthropic models."""
-        with budget(max_usd=5.00, name="anthropic") as b:
+        with budget(max_usd=5.00, name="anthropic") as b:  # noqa: F841
             from shekel._patch import _record
 
             _record(input_tokens=100, output_tokens=50, model="claude-3-5-sonnet-20241022")
@@ -656,7 +651,7 @@ class TestOllamaEdgeCases:
     def test_budget_slightly_exceeded(self) -> None:
         """Test when spending slightly exceeds limit."""
         exceeded = False
-        with budget(max_usd=0.001, name="exceeded") as b:
+        with budget(max_usd=0.001, name="exceeded") as b:  # noqa: F841
             from shekel._patch import _record
 
             try:
@@ -670,7 +665,7 @@ class TestOllamaEdgeCases:
 
     def test_budget_with_none_limit_unlimited(self) -> None:
         """Test track-only mode with no limit."""
-        with budget(name="unlimited") as b:
+        with budget(name="unlimited") as b:  # noqa: F841
             from shekel._patch import _record
 
             # No limit, should track anything
@@ -681,7 +676,7 @@ class TestOllamaEdgeCases:
 
     def test_budget_summary_with_no_calls(self) -> None:
         """Test summary when no calls were made."""
-        with budget(max_usd=5.00) as b:
+        with budget(max_usd=5.00) as b:  # noqa: F841
             pass  # No calls
 
         summary = b.summary()
@@ -691,7 +686,7 @@ class TestOllamaEdgeCases:
         """Test fallback with very low hard cap."""
         with budget(
             max_usd=0.001, fallback="gpt-4o-mini", hard_cap=0.005, name="fallback_chain"
-        ) as b:
+        ) as b:  # noqa: F841
             from shekel._patch import _record
 
             try:
@@ -704,7 +699,7 @@ class TestOllamaEdgeCases:
 
     def test_budget_properties_accuracy(self) -> None:
         """Test all budget properties are accurate."""
-        with budget(max_usd=5.00, name="props") as b:
+        with budget(max_usd=5.00, name="props") as b:  # noqa: F841
             from shekel._patch import _record
 
             _record(input_tokens=100, output_tokens=50, model="gpt-4o-mini")

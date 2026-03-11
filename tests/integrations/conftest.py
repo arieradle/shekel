@@ -27,9 +27,7 @@ def ollama_mock_server_with_responses(ollama_mock_server):
     ollama_mock_server.register_response(
         "chat",
         "neural-chat",
-        create_mock_ollama_response(
-            "neural-chat", "Neural chat model response.", 120, 60
-        ),
+        create_mock_ollama_response("neural-chat", "Neural chat model response.", 120, 60),
     )
     ollama_mock_server.register_response(
         "generate",

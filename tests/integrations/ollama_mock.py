@@ -6,7 +6,6 @@ import json
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import Any, ClassVar
-from unittest.mock import MagicMock
 
 
 class OllamaMockHandler(BaseHTTPRequestHandler):
@@ -63,7 +62,6 @@ class OllamaMockHandler(BaseHTTPRequestHandler):
     def _handle_chat(self, request_data: dict[str, Any]) -> None:
         """Handle /api/chat endpoint."""
         model = request_data.get("model", "default")
-        messages = request_data.get("messages", [])
 
         # Get mock response from registry
         response_key = f"chat_{model}"
@@ -115,9 +113,7 @@ class OllamaMockServer:
             if self.thread:
                 self.thread.join(timeout=1)
 
-    def register_response(
-        self, endpoint: str, model: str, response: dict[str, Any]
-    ) -> None:
+    def register_response(self, endpoint: str, model: str, response: dict[str, Any]) -> None:
         """Register a mock response for a specific endpoint and model.
 
         Args:
