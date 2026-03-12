@@ -8,9 +8,26 @@ Shekel works seamlessly with [LangGraph](https://github.com/langchain-ai/langgra
 pip install shekel[openai] "langgraph>=0.2"
 ```
 
+## Convenience Helper
+
+Shekel provides a `budgeted_graph()` context manager so you don't need to import `budget` directly:
+
+```python
+from shekel.integrations.langgraph import budgeted_graph
+
+app = graph.compile()
+
+with budgeted_graph(max_usd=0.50, name="research-graph") as b:
+    result = app.invoke({"question": "What is 2+2?", "answer": ""})
+    print(f"Answer: {result['answer']}")
+    print(f"Cost: ${b.spent:.4f}")
+```
+
+It accepts the same keyword arguments as `budget()` (`name`, `warn_at`, `fallback`, `max_llm_calls`, etc.) and yields the active budget object.
+
 ## Basic Integration
 
-Wrap your LangGraph execution with a budget context:
+You can also use `budget()` directly — they are equivalent:
 
 ```python
 from langgraph.graph import StateGraph, END
