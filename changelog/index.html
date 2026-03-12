@@ -2171,12 +2171,6 @@
 <li>Tracks costs across all 100+ providers LiteLLM supports (Gemini, Cohere, Ollama, Azure, Bedrock, Mistral, and more)</li>
 <li>Model names with provider prefix (e.g. <code>gemini/gemini-1.5-flash</code>) pass through to the pricing engine</li>
 </ul>
-<p><strong>LangGraph integration helper</strong></p>
-<ul>
-<li><code>from shekel.integrations.langgraph import budgeted_graph</code></li>
-<li><code>budgeted_graph(max_usd, **kwargs)</code> — convenience context manager wrapping <code>budget()</code> for LangGraph workflows</li>
-<li>Install with <code>pip install shekel[langgraph]</code></li>
-</ul>
 <h2 id="025-2026-03-11">[0.2.5] - 2026-03-11<a class="headerlink" href="#025-2026-03-11" title="Permanent link">&para;</a></h2>
 <h3 id="extensible-provider-architecture">🔧 Extensible Provider Architecture<a class="headerlink" href="#extensible-provider-architecture" title="Permanent link">&para;</a></h3>
 <p>Shekel now has a pluggable architecture for adding new LLM provider support without modifying core code.</p>
