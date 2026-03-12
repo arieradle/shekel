@@ -73,7 +73,7 @@ def my_warning_handler(spent: float, limit: float):
     print(f"⚠️  ALERT: ${spent:.2f} of ${limit:.2f} used!")
     print(f"   {(spent/limit)*100:.1f}% of budget consumed")
 
-with budget(max_usd=5.00, warn_at=0.8, on_exceed=my_warning_handler):
+with budget(max_usd=5.00, warn_at=0.8, on_warn=my_warning_handler):
     run_my_agent()
 ```
 
@@ -96,7 +96,7 @@ def log_budget_warning(spent: float, limit: float):
         }
     )
 
-with budget(max_usd=10.00, warn_at=0.8, on_exceed=log_budget_warning):
+with budget(max_usd=10.00, warn_at=0.8, on_warn=log_budget_warning):
     run_my_agent()
 ```
 
@@ -114,7 +114,7 @@ def send_slack_alert(spent: float, limit: float):
     }
     requests.post(webhook_url, json=message)
 
-with budget(max_usd=50.00, warn_at=0.8, on_exceed=send_slack_alert):
+with budget(max_usd=50.00, warn_at=0.8, on_warn=send_slack_alert):
     run_production_agent()
 ```
 
@@ -134,7 +134,7 @@ def comprehensive_alert(spent: float, limit: float):
     if spent / limit > 0.9:
         pagerduty.trigger("high-llm-spend")
 
-with budget(max_usd=100.00, warn_at=0.8, on_exceed=comprehensive_alert):
+with budget(max_usd=100.00, warn_at=0.8, on_warn=comprehensive_alert):
     run_my_agent()
 ```
 
@@ -328,7 +328,7 @@ def test_warning_callback():
     def capture_warning(spent, limit):
         warning_fired.append((spent, limit))
     
-    with budget(max_usd=1.00, warn_at=0.5, on_exceed=capture_warning):
+    with budget(max_usd=1.00, warn_at=0.5, on_warn=capture_warning):
         # Make calls that trigger warning
         ...
     

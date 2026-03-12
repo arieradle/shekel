@@ -75,7 +75,7 @@ I built shekel so you don't have to learn that lesson yourself.
     Automatically switch to cheaper models instead of crashing.
 
     ```python
-    with budget(max_usd=1.00, fallback="gpt-4o-mini"):
+    with budget(max_usd=1.00, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}):
         run_agent()
     ```
 
@@ -211,33 +211,33 @@ print(f"Remaining: ${b.remaining:.4f}")
 | No visibility into LLM spending | Track every API call automatically |
 | Expensive models blow your budget | Automatic fallback to cheaper models |
 | Need to enforce spend limits | Context manager raises on budget exceeded |
-| Multi-step workflows need session budgets | Persistent budgets accumulate across runs |
+| Multi-step workflows need session budgets | Budgets always accumulate across runs |
 
 ---
 
-## What's New in v0.2.5
+## What's New in v0.2.6
 
-**Extensible Provider Architecture** — Build support for any LLM provider. Community can now add Cohere, Replicate, vLLM, Mistral, and others.
+**Breaking-Change Release** — Cleaner API with dict-based fallback, renamed callbacks, removed deprecated parameters, and new call-count budgets.
 
 <div class="grid cards" markdown>
 
--   :material-puzzle-outline:{ .lg .middle } **[Provider Architecture](changelog.md#025---2026-03-11)**
+-   :material-swap-horizontal:{ .lg .middle } **[Dict Fallback](changelog.md#026)**
 
     ---
 
-    Pluggable `ProviderAdapter` interface. Add new providers in 3 steps, no core changes.
+    `fallback` is now a dict: `{"at_pct": 0.8, "model": "gpt-4o-mini"}`. Fallback shares the same `max_usd` budget — no separate ceiling.
 
--   :material-test-tube:{ .lg .middle } **[Battle-Tested Design](changelog.md#025---2026-03-11)**
-
-    ---
-
-    Validated with 55+ real API integration tests (Groq, Gemini). Reference implementations included.
-
--   :material-shield-check:{ .lg .middle } **[Production Reliability](changelog.md#025---2026-03-11)**
+-   :material-bell-outline:{ .lg .middle } **[Renamed Callback](changelog.md#026)**
 
     ---
 
-    Exponential backoff, 100+ test scenarios, concurrent stability, CI improvements.
+    `on_exceed` renamed to `on_warn`. `persistent` and `hard_cap` parameters removed.
+
+-   :material-counter:{ .lg .middle } **[Call-Count Budgets](changelog.md#026)**
+
+    ---
+
+    New `max_llm_calls` parameter limits by number of LLM API calls, combinable with `max_usd`.
 
 </div>
 

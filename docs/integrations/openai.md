@@ -144,7 +144,7 @@ print(f"Cost: ${b.spent:.6f}")
 
 # 3. Fallback to cheaper model
 print("\n=== Fallback ===")
-with budget(max_usd=0.001, fallback="gpt-4o-mini") as b:
+with budget(max_usd=0.001, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}) as b:
     response = client.chat.completions.create(
         model="gpt-4o",
         messages=[{"role": "user", "content": "What is the capital of France?"}],

@@ -11,14 +11,13 @@ Context manager for tracking and enforcing LLM API budgets.
 ```python
 def budget(
     max_usd: float | None = None,
-    name: str | None = None,
     warn_at: float | None = None,
-    on_exceed: Callable[[float, float], None] | None = None,
+    on_warn: Callable[[float, float], None] | None = None,
     price_per_1k_tokens: dict[str, float] | None = None,
-    fallback: str | None = None,
+    fallback: dict[str, Any] | None = None,
     on_fallback: Callable[[float, float, str], None] | None = None,
-    persistent: bool = False,
-    hard_cap: float | None = None,
+    name: str | None = None,
+    max_llm_calls: int | None = None,
 ) -> Budget
 ```
 
@@ -27,14 +26,13 @@ def budget(
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `max_usd` | `float \| None` | `None` | Maximum spend in USD. `None` = track-only mode (no enforcement). Must be positive if set. |
-| `name` | `str \| None` | `None` | Budget name for debugging and cost attribution. **Required when nesting budgets**. |
 | `warn_at` | `float \| None` | `None` | Fraction (0.0-1.0) of `max_usd` at which to warn. |
-| `on_exceed` | `Callable[[float, float], None] \| None` | `None` | Callback fired at `warn_at` threshold. Receives `(spent, limit)`. |
+| `on_warn` | `Callable[[float, float], None] \| None` | `None` | Callback fired at `warn_at` threshold. Receives `(spent, limit)`. |
 | `price_per_1k_tokens` | `dict[str, float] \| None` | `None` | Override pricing: `{"input": X, "output": Y}` per 1k tokens. |
-| `fallback` | `str \| None` | `None` | Model to switch to when `max_usd` is hit. Same provider only. |
+| `fallback` | `dict[str, Any] \| None` | `None` | Dict specifying when and what model to switch to: `{"at_pct": 0.8, "model": "gpt-4o-mini"}`. `at_pct` is the fraction of `max_usd` at which to switch; `model` is the fallback model (same provider only). Fallback shares the same `max_usd` budget — there is no separate ceiling. |
 | `on_fallback` | `Callable[[float, float, str], None] \| None` | `None` | Callback on fallback switch. Receives `(spent, limit, fallback_model)`. |
-| `persistent` | `bool` | `False` | **DEPRECATED**: Budgets always accumulate now. Shows deprecation warning if set to `True`. |
-| `hard_cap` | `float \| None` | `max_usd * 2` | Absolute ceiling when fallback is active. Default: `max_usd * 2`. |
+| `name` | `str \| None` | `None` | Budget name for debugging and cost attribution. **Required when nesting budgets**. |
+| `max_llm_calls` | `int \| None` | `None` | Maximum number of LLM API calls. Raises `BudgetExceededError` when exceeded. Can be combined with `max_usd`. |
 
 ### Returns
 
@@ -70,14 +68,28 @@ with budget(max_usd=5.00, warn_at=0.8) as b:
 def my_handler(spent: float, limit: float):
     print(f"Alert: ${spent:.2f} / ${limit:.2f}")
 
-with budget(max_usd=10.00, warn_at=0.8, on_exceed=my_handler):
+with budget(max_usd=10.00, warn_at=0.8, on_warn=my_handler):
     run_agent()
 ```
 
 #### Model Fallback
 
 ```python
-with budget(max_usd=1.00, fallback="gpt-4o-mini") as b:
+with budget(max_usd=1.00, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}) as b:
+    run_agent()
+```
+
+#### Call-Count Budget
+
+```python
+with budget(max_llm_calls=50) as b:
+    run_agent()  # Raises BudgetExceededError after 50 LLM calls
+```
+
+#### Combined USD and Call-Count Budget
+
+```python
+with budget(max_usd=1.00, max_llm_calls=20, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}) as b:
     run_agent()
 ```
 
@@ -206,8 +218,6 @@ print(data["by_model"])
 **Returns:** Dictionary with keys:
 - `total_spent`: Total USD
 - `limit`: Budget limit
-- `hard_cap`: Configured hard cap
-- `effective_hard_cap`: Actual hard cap used
 - `model_switched`: Boolean
 - `switched_at_usd`: Switch point
 - `fallback_model`: Fallback model name
@@ -251,16 +261,17 @@ Decorator that wraps functions with a budget context.
 def with_budget(
     max_usd: float | None = None,
     warn_at: float | None = None,
-    on_exceed: Callable[[float, float], None] | None = None,
+    on_warn: Callable[[float, float], None] | None = None,
     price_per_1k_tokens: dict[str, float] | None = None,
-    fallback: str | None = None,
+    fallback: dict[str, Any] | None = None,
     on_fallback: Callable[[float, float, str], None] | None = None,
+    max_llm_calls: int | None = None,
 )
 ```
 
 ### Parameters
 
-Same as `budget()`, except no `persistent` or `hard_cap` (decorator creates fresh budget per call).
+Same as `budget()` (decorator creates fresh budget per call).
 
 ### Examples
 
@@ -293,8 +304,8 @@ async def async_generate(prompt: str) -> str:
 @with_budget(
     max_usd=2.00,
     warn_at=0.8,
-    fallback="gpt-4o-mini",
-    on_exceed=my_warning_handler
+    fallback={"at_pct": 0.8, "model": "gpt-4o-mini"},
+    on_warn=my_warning_handler
 )
 def process_request(data: dict) -> str:
     ...

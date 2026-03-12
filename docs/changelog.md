@@ -2,6 +2,45 @@
 
 All notable changes to this project are documented here. For detailed information, see [CHANGELOG.md](https://github.com/arieradle/shekel/blob/main/CHANGELOG.md) on GitHub.
 
+## [0.2.6] {#026}
+
+### Breaking Changes
+
+!!! danger "BREAKING CHANGES"
+
+    **`fallback` parameter changed from string to dict**
+
+    - OLD: `fallback="gpt-4o-mini"`
+    - NEW: `fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}`
+    - The `at_pct` key specifies the fraction of `max_usd` at which to switch (e.g. `0.8` = 80%)
+    - The `model` key specifies the fallback model (same provider only)
+    - Fallback shares the same `max_usd` budget — there is no separate ceiling
+
+    **`on_exceed` renamed to `on_warn`**
+
+    - OLD: `budget(max_usd=5.00, warn_at=0.8, on_exceed=my_handler)`
+    - NEW: `budget(max_usd=5.00, warn_at=0.8, on_warn=my_handler)`
+
+    **`hard_cap` parameter removed**
+
+    - The separate `hard_cap` ceiling is gone. The fallback model is subject to the same `max_usd` limit.
+    - OLD: `budget(max_usd=1.00, fallback="gpt-4o-mini", hard_cap=1.50)`
+    - NEW: `budget(max_usd=1.00, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"})`
+
+    **`persistent` parameter removed**
+
+    - Budgets always accumulate across uses. The `persistent` parameter no longer exists.
+    - OLD: `budget(max_usd=5.00, persistent=True)`
+    - NEW: `budget(max_usd=5.00)`
+
+### New Features
+
+**`max_llm_calls` — limit budgets by call count**
+
+- `budget(max_llm_calls=50)` raises `BudgetExceededError` after 50 LLM API calls
+- Can be combined with `max_usd`: `budget(max_usd=1.00, max_llm_calls=20)`
+- Works with fallback: `budget(max_usd=1.00, max_llm_calls=20, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"})`
+
 ## [0.2.5] - 2026-03-11
 
 ### 🔧 Extensible Provider Architecture

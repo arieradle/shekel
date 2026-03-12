@@ -231,8 +231,8 @@ monitor = BudgetMonitor()
 with budget(
     max_usd=10.00,
     warn_at=0.8,
-    fallback="gpt-4o-mini",
-    on_exceed=monitor.on_warning,
+    fallback={"at_pct": 0.8, "model": "gpt-4o-mini"},
+    on_warn=monitor.on_warning,
     on_fallback=monitor.on_fallback
 ):
     run_my_agent()
@@ -252,7 +252,7 @@ def collect_metrics(spent: float, limit: float):
     statsd.gauge("llm.budget.limit", limit)
     statsd.gauge("llm.budget.utilization", spent / limit)
 
-with budget(max_usd=10.00, warn_at=0.8, on_exceed=collect_metrics):
+with budget(max_usd=10.00, warn_at=0.8, on_warn=collect_metrics):
     run_my_agent()
 ```
 
@@ -346,7 +346,7 @@ def test_custom_provider():
 
 def test_custom_provider_fallback():
     """Test fallback with custom provider."""
-    with budget(max_usd=0.001, fallback="custom-cheap-model") as b:
+    with budget(max_usd=0.001, fallback={"at_pct": 0.8, "model": "custom-cheap-model"}) as b:
         # Should trigger fallback
         for i in range(10):
             custom_client.generate(prompt=f"Test {i}")

@@ -125,9 +125,9 @@ except BudgetExceededError as e:
 Use cheaper models when budget is reached:
 
 ```python
-with budget(max_usd=1.00, fallback="gpt-4o-mini") as b:
+with budget(max_usd=1.00, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}) as b:
     result = crew.kickoff()
-    
+
     if b.model_switched:
         print(f"Switched to cheaper model at ${b.switched_at_usd:.4f}")
 ```

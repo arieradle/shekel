@@ -46,19 +46,9 @@ print(f"Total session: ${session.spent:.4f}")  # $1.05
     with budget(max_usd=1.00): process_2()  # $0.35 (fresh, not $0.65)
     ```
 
-## Note on the `persistent` Parameter
+## Budgets Always Accumulate
 
-The `persistent` parameter is **deprecated**:
-
-```python
-# ⚠️  Deprecated (shows warning)
-session = budget(max_usd=5.00, persistent=True)
-
-# ✅ Correct in v0.2.3+
-session = budget(max_usd=5.00, name="session")
-```
-
-The parameter still works for backwards compatibility, but accumulation is now the default behavior.
+Budget variables always accumulate across multiple uses. There is no `persistent` parameter — accumulation is the only behavior.
 
 ## Multi-Turn Conversations
 
@@ -216,7 +206,7 @@ Combine accumulating budgets with fallback models:
 ```python
 session = budget(
     max_usd=5.00,
-    fallback="gpt-4o-mini",
+    fallback={"at_pct": 0.8, "model": "gpt-4o-mini"},
     name="session"
 )
 
@@ -257,7 +247,7 @@ def warn_user(spent: float, limit: float):
 session = budget(
     max_usd=10.00,
     warn_at=0.8,
-    on_exceed=warn_user,
+    on_warn=warn_user,
     name="session"
 )
 
@@ -383,8 +373,8 @@ class ConversationManager:
         self.session = budget(
             max_usd=daily_limit,
             warn_at=0.8,
-            fallback="gpt-4o-mini",
-            on_exceed=self._warn_user,
+            fallback={"at_pct": 0.8, "model": "gpt-4o-mini"},
+            on_warn=self._warn_user,
             on_fallback=self._notify_fallback,
             name=f"user_{user_id}"
         )
