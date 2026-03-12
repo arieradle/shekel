@@ -35,6 +35,22 @@ If you're using models from both providers:
 pip install shekel[all]
 ```
 
+### Google Gemini
+
+For Google Gemini via the `google-genai` SDK:
+
+```bash
+pip install shekel[gemini]
+```
+
+### HuggingFace Inference API
+
+For HuggingFace's `InferenceClient`:
+
+```bash
+pip install shekel[huggingface]
+```
+
 ### LiteLLM (100+ Providers)
 
 For access to OpenAI, Anthropic, Gemini, Cohere, Ollama, Azure, Bedrock, and 90+ more through a unified interface:
@@ -107,6 +123,8 @@ Shekel has zero required dependencies beyond the Python standard library. The Op
 | `openai>=1.0.0` | Optional | Track OpenAI API costs |
 | `anthropic>=0.7.0` | Optional | Track Anthropic API costs |
 | `litellm>=1.0.0` | Optional | Track costs via LiteLLM (100+ providers) |
+| `google-genai>=1.0.0` | Optional | Track Google Gemini costs (native SDK) |
+| `huggingface-hub>=0.20.0` | Optional | Track HuggingFace Inference API costs |
 | `tokencost>=0.1.0` | Optional | Support 400+ models |
 | `click>=8.0.0` | Optional | CLI tools |
 

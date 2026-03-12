@@ -556,3 +556,48 @@ def test_fallback_empty_string_raises() -> None:
     """budget(fallback={...}) with empty model raises ValueError at init."""
     with pytest.raises(ValueError, match="non-empty string"):
         budget(max_usd=1.00, fallback={"at_pct": 0.8, "model": ""})
+
+
+# ---------------------------------------------------------------------------
+# Cross-provider fallback validation (_validate_same_provider)
+# ---------------------------------------------------------------------------
+
+
+def test_validate_same_provider_anthropic_rejects_openai_model() -> None:
+    """Anthropic provider + OpenAI fallback model raises ValueError."""
+    from shekel._patch import _validate_same_provider
+
+    with pytest.raises(ValueError, match="OpenAI model"):
+        _validate_same_provider("gpt-4o", "anthropic")
+
+
+def test_validate_same_provider_gemini_rejects_non_gemini() -> None:
+    """Gemini provider + non-Gemini fallback model raises ValueError."""
+    from shekel._patch import _validate_same_provider
+
+    with pytest.raises(ValueError, match="Gemini"):
+        _validate_same_provider("gpt-4o", "gemini")
+
+
+def test_validate_same_provider_huggingface_rejects_openai() -> None:
+    """HuggingFace provider + OpenAI fallback raises ValueError."""
+    from shekel._patch import _validate_same_provider
+
+    with pytest.raises(ValueError, match="HuggingFace"):
+        _validate_same_provider("gpt-4o", "huggingface")
+
+
+def test_validate_same_provider_huggingface_rejects_anthropic() -> None:
+    """HuggingFace provider + Anthropic fallback raises ValueError."""
+    from shekel._patch import _validate_same_provider
+
+    with pytest.raises(ValueError, match="HuggingFace"):
+        _validate_same_provider("claude-3-haiku-20240307", "huggingface")
+
+
+def test_validate_same_provider_huggingface_rejects_gemini() -> None:
+    """HuggingFace provider + Gemini fallback raises ValueError."""
+    from shekel._patch import _validate_same_provider
+
+    with pytest.raises(ValueError, match="HuggingFace"):
+        _validate_same_provider("gemini-2.0-flash", "huggingface")

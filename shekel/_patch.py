@@ -58,6 +58,7 @@ def _validate_same_provider(fallback_model: str, current_provider: str) -> None:
     """Raise ValueError if fallback model is from a different provider."""
     is_anthropic = fallback_model.startswith("claude-")
     is_openai = any(fallback_model.startswith(p) for p in ("gpt-", "o1", "o2", "o3", "o4", "text-"))
+    is_gemini = fallback_model.startswith("gemini-")
 
     if current_provider == "openai" and is_anthropic:
         raise ValueError(
@@ -71,6 +72,18 @@ def _validate_same_provider(fallback_model: str, current_provider: str) -> None:
             f"but the current call is to Anthropic. "
             f"Cross-provider fallback is not supported in v0.2. "
             f"Use an Anthropic model as fallback (e.g. fallback='claude-3-haiku-20240307')."
+        )
+    if current_provider == "gemini" and not is_gemini:
+        raise ValueError(
+            f"shekel: fallback model '{fallback_model}' does not appear to be a Gemini model "
+            f"but the current call is to Gemini. Cross-provider fallback is not supported. "
+            f"Use a Gemini model as fallback (e.g. fallback='gemini-2.0-flash')."
+        )
+    if current_provider == "huggingface" and (is_openai or is_anthropic or is_gemini):
+        raise ValueError(
+            f"shekel: fallback model '{fallback_model}' does not appear to be a HuggingFace model "
+            f"but the current call is to HuggingFace. Cross-provider fallback is not supported. "
+            f"Use a HuggingFace model as fallback (e.g. fallback='HuggingFaceH4/zephyr-7b-beta')."
         )
 
 
@@ -410,6 +423,123 @@ async def _wrap_litellm_stream_async(stream: Any) -> Any:
                 try:
                     it = chunk.usage.prompt_tokens or 0
                     ot = chunk.usage.completion_tokens or 0
+                    m = getattr(chunk, "model", None) or "unknown"
+                    seen.append((it, ot, m))
+                except AttributeError:
+                    pass
+            yield chunk
+    finally:
+        it, ot, m = seen[-1] if seen else (0, 0, "unknown")
+        _record(it, ot, m)
+
+
+# ---------------------------------------------------------------------------
+# Gemini sync wrapper (google-genai SDK)
+# ---------------------------------------------------------------------------
+
+
+def _gemini_sync_wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
+    original = _originals.get("gemini_sync")
+    if original is None:
+        raise RuntimeError("shekel: gemini original not stored")
+
+    # Capture model name from kwargs before call (not available in response)
+    model_name: str = kwargs.get("model", None) or "unknown"
+
+    active_budget = _context.get_active_budget()
+    if active_budget is not None:
+        _apply_fallback_if_needed(active_budget, kwargs, "gemini")
+        # Re-read model in case fallback rewrote it
+        model_name = kwargs.get("model", None) or model_name
+
+    response = original(self, *args, **kwargs)
+    input_tokens, output_tokens, _ = _extract_gemini_tokens(response)
+    _record(input_tokens, output_tokens, model_name)
+    return response
+
+
+def _gemini_stream_wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
+    original = _originals.get("gemini_stream")
+    if original is None:
+        raise RuntimeError("shekel: gemini stream original not stored")
+
+    model_name: str = kwargs.get("model", None) or "unknown"
+
+    active_budget = _context.get_active_budget()
+    if active_budget is not None:
+        _apply_fallback_if_needed(active_budget, kwargs, "gemini")
+        model_name = kwargs.get("model", None) or model_name
+
+    stream = original(self, *args, **kwargs)
+    return _wrap_gemini_stream(stream, model_name)
+
+
+def _wrap_gemini_stream(stream: Any, model_name: str) -> Generator[Any, None, None]:
+    seen: list[tuple[int, int]] = []
+    try:
+        for chunk in stream:
+            usage = getattr(chunk, "usage_metadata", None)
+            if usage is not None:
+                try:
+                    it = usage.prompt_token_count or 0
+                    ot = usage.candidates_token_count or 0
+                    seen.append((it, ot))
+                except AttributeError:
+                    pass
+            yield chunk
+    finally:
+        if seen:
+            it, ot = seen[-1]
+        else:
+            it, ot = 0, 0
+        _record(it, ot, model_name)
+
+
+def _extract_gemini_tokens(response: Any) -> tuple[int, int, str]:
+    try:
+        usage = response.usage_metadata
+        if usage is None:
+            return 0, 0, "unknown"
+        input_tokens = usage.prompt_token_count or 0
+        output_tokens = usage.candidates_token_count or 0
+        return input_tokens, output_tokens, "unknown"
+    except AttributeError:
+        return 0, 0, "unknown"
+
+
+# ---------------------------------------------------------------------------
+# HuggingFace sync wrapper (huggingface-hub SDK)
+# ---------------------------------------------------------------------------
+
+
+def _huggingface_sync_wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
+    original = _originals.get("huggingface_sync")
+    if original is None:
+        raise RuntimeError("shekel: huggingface original not stored")
+
+    active_budget = _context.get_active_budget()
+    if active_budget is not None:
+        _apply_fallback_if_needed(active_budget, kwargs, "huggingface")
+
+    if kwargs.get("stream") is True:
+        stream = original(self, *args, **kwargs)
+        return _wrap_huggingface_stream(stream)
+
+    response = original(self, *args, **kwargs)
+    input_tokens, output_tokens, model = _extract_openai_tokens(response)
+    _record(input_tokens, output_tokens, model)
+    return response
+
+
+def _wrap_huggingface_stream(stream: Any) -> Generator[Any, None, None]:
+    seen: list[tuple[int, int, str]] = []
+    try:
+        for chunk in stream:
+            usage = getattr(chunk, "usage", None)
+            if usage is not None:
+                try:
+                    it = usage.prompt_tokens or 0
+                    ot = usage.completion_tokens or 0
                     m = getattr(chunk, "model", None) or "unknown"
                     seen.append((it, ot, m))
                 except AttributeError:
