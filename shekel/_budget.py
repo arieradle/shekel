@@ -114,9 +114,7 @@ class Budget:
 
             # Require at least one limit so fallback has something to threshold against
             if max_usd is None and max_llm_calls is None:
-                raise ValueError(
-                    "fallback requires either max_usd or max_llm_calls to be set"
-                )
+                raise ValueError("fallback requires either max_usd or max_llm_calls to be set")
 
         if on_fallback is not None and fallback is None:
             raise ValueError("on_fallback requires fallback to be set")
@@ -381,18 +379,23 @@ class Budget:
 
         budget_exceeded = self._spent > effective_limit
         fallback_threshold_met = (
-            self.fallback is not None
-            and self._spent >= effective_limit * self.fallback["at_pct"]
+            self.fallback is not None and self._spent >= effective_limit * self.fallback["at_pct"]
         )
 
-        if (budget_exceeded or fallback_threshold_met) and self.fallback is not None and not self._using_fallback:
+        if (
+            (budget_exceeded or fallback_threshold_met)
+            and self.fallback is not None
+            and not self._using_fallback
+        ):
             self._activate_fallback(budget_exceeded=budget_exceeded)
             return  # Fallback just activated — keep running on cheaper model
 
         if budget_exceeded and (self.fallback is None or self._using_fallback):
             # No fallback available, or already on fallback and still exceeded — raise
             self._emit_budget_exceeded_event()
-            raise BudgetExceededError(self._spent, effective_limit, self._last_model, self._last_tokens)
+            raise BudgetExceededError(
+                self._spent, effective_limit, self._last_model, self._last_tokens
+            )
 
     def _check_call_limit_for_fallback(self) -> None:
         """Called BEFORE the API call. Activates fallback if call-count threshold is reached.
@@ -639,8 +642,7 @@ class Budget:
 
         lines.append("┌─ Shekel Budget Summary " + "─" * (width - 24) + "┐")
         lines.append(
-            f"│ Total: ${total_spent:.4f}  Limit: {limit_str}  "
-            f"{call_str}  Status: {status}"
+            f"│ Total: ${total_spent:.4f}  Limit: {limit_str}  " f"{call_str}  Status: {status}"
         )
 
         if calls:
@@ -655,7 +657,9 @@ class Budget:
                     f"${call['cost']:>9.4f}{fallback_marker}"
                 )
 
-        fallback_model_name: str | None = self.fallback["model"] if self.fallback is not None else None
+        fallback_model_name: str | None = (
+            self.fallback["model"] if self.fallback is not None else None
+        )
         lines.append("├" + "─" * width + "┤")
         for model, stats in by_model.items():
             role = " (fallback)" if model == fallback_model_name and model_switched else ""

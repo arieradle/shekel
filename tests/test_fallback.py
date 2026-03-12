@@ -232,9 +232,7 @@ def test_no_raise_when_fallback_set() -> None:
         # Should NOT raise despite exceeding budget
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            with budget(
-                max_usd=0.001, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}
-            ) as b:
+            with budget(max_usd=0.001, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}) as b:
                 import openai
 
                 client = openai.OpenAI(api_key="test")
@@ -271,9 +269,7 @@ def test_fallback_does_not_overspend_primary_budget() -> None:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             with pytest.raises(BudgetExceededError):
-                with budget(
-                    max_usd=0.01, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}
-                ) as b:
+                with budget(max_usd=0.01, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}) as b:
                     import openai
 
                     client = openai.OpenAI(api_key="test")
@@ -305,9 +301,7 @@ def test_fallback_small_call_within_budget() -> None:
     with patch(OPENAI_CREATE, new=fake_create):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            with budget(
-                max_usd=0.08, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}
-            ) as b:
+            with budget(max_usd=0.08, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}) as b:
                 import openai
 
                 client = openai.OpenAI(api_key="test")
@@ -353,9 +347,7 @@ def test_fallback_continues_within_shared_budget() -> None:
     with patch(OPENAI_CREATE, new=fake_create):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            with budget(
-                max_usd=0.08, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}
-            ) as b:
+            with budget(max_usd=0.08, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}) as b:
                 import openai
 
                 client = openai.OpenAI(api_key="test")
@@ -449,9 +441,7 @@ def test_fallback_async() -> None:
 
     async def run() -> budget:
         with patch(ASYNC_OPENAI_CREATE, new=fake_create_async):
-            async with budget(
-                max_usd=0.08, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}
-            ) as b:
+            async with budget(max_usd=0.08, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}) as b:
                 import openai
 
                 client = openai.AsyncOpenAI(api_key="test")
@@ -489,9 +479,7 @@ def test_fallback_stream_activates_after_stream() -> None:
     with patch(OPENAI_CREATE, new=fake_create):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            with budget(
-                max_usd=0.08, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}
-            ) as b:
+            with budget(max_usd=0.08, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}) as b:
                 import openai
 
                 client = openai.OpenAI(api_key="test")

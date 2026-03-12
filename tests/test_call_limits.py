@@ -75,7 +75,7 @@ def test_call_limit_enforced() -> None:
     fake = make_openai_response("gpt-4o", 100, 50)
     with patch(OPENAI_CREATE, return_value=fake):
         with pytest.raises(BudgetExceededError):
-            with budget(max_llm_calls=2) as b:
+            with budget(max_llm_calls=2):
                 import openai
 
                 client = openai.OpenAI(api_key="test")
@@ -91,7 +91,7 @@ def test_call_limit_with_usd_limit() -> None:
     with patch(OPENAI_CREATE, return_value=fake):
         # USD limit will be hit first (each call costs ~$0.00075)
         with pytest.raises(BudgetExceededError):
-            with budget(max_usd=0.0005, max_llm_calls=100) as b:
+            with budget(max_usd=0.0005, max_llm_calls=100):
                 import openai
 
                 client = openai.OpenAI(api_key="test")
@@ -214,7 +214,7 @@ def test_nested_call_limits_propagate_to_parent() -> None:
 
             client = openai.OpenAI(api_key="test")
 
-            with budget(max_llm_calls=10, name="child") as child:
+            with budget(max_llm_calls=10, name="child"):
                 for _ in range(8):
                     client.chat.completions.create(model="gpt-4o", messages=[])
 
@@ -236,9 +236,7 @@ def test_streaming_counted_as_one_call() -> None:
 
             client = openai.OpenAI(api_key="test")
             # Stream is 1 call
-            stream = client.chat.completions.create(
-                model="gpt-4o", messages=[], stream=True
-            )
+            stream = client.chat.completions.create(model="gpt-4o", messages=[], stream=True)
             list(stream)  # Consume stream
             assert b.calls_used == 1
             assert b.calls_remaining == 1

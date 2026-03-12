@@ -111,9 +111,7 @@ def test_summary_data_with_fallback() -> None:
     with patch(OPENAI_CREATE, new=fake_create):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            with budget(
-                max_usd=0.08, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}
-            ) as b:
+            with budget(max_usd=0.08, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}) as b:
                 import openai
 
                 client = openai.OpenAI(api_key="test")
