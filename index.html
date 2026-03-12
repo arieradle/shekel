@@ -663,10 +663,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#whats-new-in-v025" class="md-nav__link">
+  <a href="#whats-new-in-v026" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What's New in v0.2.5
+        What's New in v0.2.6
       
     </span>
   </a>
@@ -1728,10 +1728,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#whats-new-in-v025" class="md-nav__link">
+  <a href="#whats-new-in-v026" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What's New in v0.2.5
+        What's New in v0.2.6
       
     </span>
   </a>
@@ -1855,7 +1855,7 @@ usage quotas
 <p><span class="twemoji lg middle"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m21 9-4-4v3h-7v2h7v3M7 11l-4 4 4 4v-3h7v-2H7z"/></svg></span> <strong>Smart Fallback</strong></p>
 <hr />
 <p>Automatically switch to cheaper models instead of crashing.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">with</span> <span class="n">budget</span><span class="p">(</span><span class="n">max_usd</span><span class="o">=</span><span class="mf">1.00</span><span class="p">,</span> <span class="n">fallback</span><span class="o">=</span><span class="s2">&quot;gpt-4o-mini&quot;</span><span class="p">):</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">with</span> <span class="n">budget</span><span class="p">(</span><span class="n">max_usd</span><span class="o">=</span><span class="mf">1.00</span><span class="p">,</span> <span class="n">fallback</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;at_pct&quot;</span><span class="p">:</span> <span class="mf">0.8</span><span class="p">,</span> <span class="s2">&quot;model&quot;</span><span class="p">:</span> <span class="s2">&quot;gpt-4o-mini&quot;</span><span class="p">}):</span>
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="n">run_agent</span><span class="p">()</span>
 </span></code></pre></div>
 </li>
@@ -1986,29 +1986,29 @@ usage quotas
 </tr>
 <tr>
 <td>Multi-step workflows need session budgets</td>
-<td>Persistent budgets accumulate across runs</td>
+<td>Budgets always accumulate across runs</td>
 </tr>
 </tbody>
 </table>
 <hr />
-<h2 id="whats-new-in-v025">What's New in v0.2.5<a class="headerlink" href="#whats-new-in-v025" title="Permanent link">&para;</a></h2>
-<p><strong>Extensible Provider Architecture</strong> — Build support for any LLM provider. Community can now add Cohere, Replicate, vLLM, Mistral, and others.</p>
+<h2 id="whats-new-in-v026">What's New in v0.2.6<a class="headerlink" href="#whats-new-in-v026" title="Permanent link">&para;</a></h2>
+<p><strong>Breaking-Change Release</strong> — Cleaner API with dict-based fallback, renamed callbacks, removed deprecated parameters, and new call-count budgets.</p>
 <div class="grid cards">
 <ul>
 <li>
-<p><span class="twemoji lg middle"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M22 13.5c0 1.76-1.3 3.22-3 3.46V20a2 2 0 0 1-2 2h-3.8v-.3a2.7 2.7 0 0 0-2.7-2.7c-1.5 0-2.7 1.21-2.7 2.7v.3H4a2 2 0 0 1-2-2v-3.8h.3C3.79 16.2 5 15 5 13.5s-1.21-2.7-2.7-2.7H2V7a2 2 0 0 1 2-2h3.04c.24-1.7 1.7-3 3.46-3s3.22 1.3 3.46 3H17a2 2 0 0 1 2 2v3.04c1.7.24 3 1.7 3 3.46M17 15h1.5a1.5 1.5 0 0 0 1.5-1.5 1.5 1.5 0 0 0-1.5-1.5H17V7h-5V5.5A1.5 1.5 0 0 0 10.5 4 1.5 1.5 0 0 0 9 5.5V7H4v2.12c1.76.68 3 2.38 3 4.38s-1.25 3.7-3 4.38V20h2.12a4.7 4.7 0 0 1 4.38-3c2 0 3.7 1.25 4.38 3H17z"/></svg></span> <strong><a href="changelog/#025---2026-03-11">Provider Architecture</a></strong></p>
+<p><span class="twemoji lg middle"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m21 9-4-4v3h-7v2h7v3M7 11l-4 4 4 4v-3h7v-2H7z"/></svg></span> <strong><a href="changelog/#026">Dict Fallback</a></strong></p>
 <hr />
-<p>Pluggable <code>ProviderAdapter</code> interface. Add new providers in 3 steps, no core changes.</p>
+<p><code>fallback</code> is now a dict: <code>{"at_pct": 0.8, "model": "gpt-4o-mini"}</code>. Fallback shares the same <code>max_usd</code> budget — no separate ceiling.</p>
 </li>
 <li>
-<p><span class="twemoji lg middle"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M7 2v2h1v14a4 4 0 0 0 4 4 4 4 0 0 0 4-4V4h1V2zm4 14c-.6 0-1-.4-1-1s.4-1 1-1 1 .4 1 1-.4 1-1 1m2-4c-.6 0-1-.4-1-1s.4-1 1-1 1 .4 1 1-.4 1-1 1m1-5h-4V4h4z"/></svg></span> <strong><a href="changelog/#025---2026-03-11">Battle-Tested Design</a></strong></p>
+<p><span class="twemoji lg middle"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 21h4c0 1.1-.9 2-2 2s-2-.9-2-2m11-2v1H3v-1l2-2v-6c0-3.1 2-5.8 5-6.7V4c0-1.1.9-2 2-2s2 .9 2 2v.3c3 .9 5 3.6 5 6.7v6zm-4-8c0-2.8-2.2-5-5-5s-5 2.2-5 5v7h10z"/></svg></span> <strong><a href="changelog/#026">Renamed Callback</a></strong></p>
 <hr />
-<p>Validated with 55+ real API integration tests (Groq, Gemini). Reference implementations included.</p>
+<p><code>on_exceed</code> renamed to <code>on_warn</code>. <code>persistent</code> and <code>hard_cap</code> parameters removed.</p>
 </li>
 <li>
-<p><span class="twemoji lg middle"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m10 17-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9m-6-8L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5z"/></svg></span> <strong><a href="changelog/#025---2026-03-11">Production Reliability</a></strong></p>
+<p><span class="twemoji lg middle"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2m0 2v12h7V6zm16 12V6h-1.24c.24.54.19 1.07.19 1.13-.07.67-.54 1.37-.71 1.62l-2.33 2.55 3.32-.02.01 1.22-5.2-.03-.04-1s3.05-3.23 3.2-3.52c.14-.28.71-1.95-.7-1.95-1.23.05-1.09 1.3-1.09 1.3l-1.54.01s.01-.66.38-1.31H13v12h2.58l-.01-.86.97-.01s.91-.16.92-1.05c.04-1-.81-1-.96-1-.13 0-1.07.05-1.07.87h-1.52s.04-2.06 2.59-2.06c2.6 0 2.46 2.02 2.46 2.02s.04 1.25-1.11 1.72l.52.37zM8.92 16h-1.5v-5.8l-1.8.56V9.53l3.14-1.12h.16z"/></svg></span> <strong><a href="changelog/#026">Call-Count Budgets</a></strong></p>
 <hr />
-<p>Exponential backoff, 100+ test scenarios, concurrent stability, CI improvements.</p>
+<p>New <code>max_llm_calls</code> parameter limits by number of LLM API calls, combinable with <code>max_usd</code>.</p>
 </li>
 </ul>
 </div>

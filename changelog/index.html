@@ -1325,6 +1325,45 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#026" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.2.6]
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.2.6]">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#breaking-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Breaking Changes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#new-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        New Features
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#025-2026-03-11" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1756,6 +1795,45 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#026" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.2.6]
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.2.6]">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#breaking-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Breaking Changes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#new-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        New Features
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#025-2026-03-11" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2021,6 +2099,43 @@
 
 <h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
 <p>All notable changes to this project are documented here. For detailed information, see <a href="https://github.com/arieradle/shekel/blob/main/CHANGELOG.md">CHANGELOG.md</a> on GitHub.</p>
+<h2 id="026">[0.2.6]<a class="headerlink" href="#026" title="Permanent link">&para;</a></h2>
+<h3 id="breaking-changes">Breaking Changes<a class="headerlink" href="#breaking-changes" title="Permanent link">&para;</a></h3>
+<div class="admonition danger">
+<p class="admonition-title">BREAKING CHANGES</p>
+<p><strong><code>fallback</code> parameter changed from string to dict</strong></p>
+<ul>
+<li>OLD: <code>fallback="gpt-4o-mini"</code></li>
+<li>NEW: <code>fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}</code></li>
+<li>The <code>at_pct</code> key specifies the fraction of <code>max_usd</code> at which to switch (e.g. <code>0.8</code> = 80%)</li>
+<li>The <code>model</code> key specifies the fallback model (same provider only)</li>
+<li>Fallback shares the same <code>max_usd</code> budget — there is no separate ceiling</li>
+</ul>
+<p><strong><code>on_exceed</code> renamed to <code>on_warn</code></strong></p>
+<ul>
+<li>OLD: <code>budget(max_usd=5.00, warn_at=0.8, on_exceed=my_handler)</code></li>
+<li>NEW: <code>budget(max_usd=5.00, warn_at=0.8, on_warn=my_handler)</code></li>
+</ul>
+<p><strong><code>hard_cap</code> parameter removed</strong></p>
+<ul>
+<li>The separate <code>hard_cap</code> ceiling is gone. The fallback model is subject to the same <code>max_usd</code> limit.</li>
+<li>OLD: <code>budget(max_usd=1.00, fallback="gpt-4o-mini", hard_cap=1.50)</code></li>
+<li>NEW: <code>budget(max_usd=1.00, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"})</code></li>
+</ul>
+<p><strong><code>persistent</code> parameter removed</strong></p>
+<ul>
+<li>Budgets always accumulate across uses. The <code>persistent</code> parameter no longer exists.</li>
+<li>OLD: <code>budget(max_usd=5.00, persistent=True)</code></li>
+<li>NEW: <code>budget(max_usd=5.00)</code></li>
+</ul>
+</div>
+<h3 id="new-features">New Features<a class="headerlink" href="#new-features" title="Permanent link">&para;</a></h3>
+<p><strong><code>max_llm_calls</code> — limit budgets by call count</strong></p>
+<ul>
+<li><code>budget(max_llm_calls=50)</code> raises <code>BudgetExceededError</code> after 50 LLM API calls</li>
+<li>Can be combined with <code>max_usd</code>: <code>budget(max_usd=1.00, max_llm_calls=20)</code></li>
+<li>Works with fallback: <code>budget(max_usd=1.00, max_llm_calls=20, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"})</code></li>
+</ul>
 <h2 id="025-2026-03-11">[0.2.5] - 2026-03-11<a class="headerlink" href="#025-2026-03-11" title="Permanent link">&para;</a></h2>
 <h3 id="extensible-provider-architecture">🔧 Extensible Provider Architecture<a class="headerlink" href="#extensible-provider-architecture" title="Permanent link">&para;</a></h3>
 <p>Shekel now has a pluggable architecture for adding new LLM provider support without modifying core code.</p>
