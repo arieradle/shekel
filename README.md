@@ -10,7 +10,7 @@
 [![Downloads](https://img.shields.io/pypi/dm/shekel)](https://pypi.org/project/shekel/)
 [![Documentation](https://img.shields.io/badge/docs-mkdocs-blue)](https://arieradle.github.io/shekel/)
 
-**LLM cost tracking and budget enforcement for Python. One line. Zero config.**
+**LLM budget enforcement and cost tracking for Python. One line. Zero config.**
 
 ```python
 with budget(max_usd=1.00):
@@ -23,7 +23,7 @@ I spent $47 debugging a LangGraph retry loop. The agent kept failing, LangGraph 
 
 ## ⚡️ What's New in v0.2.6: Native Gemini & HuggingFace Support
 
-**Zero-config cost tracking for Google Gemini and HuggingFace Inference API — same `with budget():` pattern, no changes needed.**
+**Zero-config budget enforcement for Google Gemini and HuggingFace Inference API — same `with budget():` pattern, no changes needed.**
 
 ### Google Gemini
 
@@ -103,7 +103,7 @@ with budget(max_usd=10.00):
 
 ### 🌳 Nested Budgets
 
-Control costs for multi-stage AI workflows with hierarchical budget tracking:
+Enforce independent spend limits per workflow stage with automatic rollup:
 
 ```python
 with budget(max_usd=10.00, name="workflow") as workflow:
@@ -131,7 +131,7 @@ print(workflow.tree())
 
 ### 🔭 Langfuse Integration
 
-Full LLM observability with zero configuration. Track costs, visualize budget hierarchies, and debug overruns in Langfuse automatically:
+See exactly where your budget is going and when it breaks. Circuit-break events, budget hierarchy, and per-call spend stream to Langfuse automatically:
 
 ```python
 from langfuse import Langfuse
@@ -147,10 +147,10 @@ with budget(max_usd=10.00, name="agent") as b:
 ```
 
 **What you get:**
-- 💰 Real-time cost streaming — See spend after each LLM call
-- 🌳 Nested budget hierarchy — Child budgets → child spans
-- ⚠️ Circuit break events — Alerts when budgets are exceeded
-- 🔄 Fallback annotations — Track model switches
+- ⚠️ Circuit break events — Captured in Langfuse the moment a budget is exceeded
+- 🔄 Fallback annotations — Model switches recorded with timing and cost
+- 🌳 Nested budget hierarchy — Child budgets map to child spans
+- 💰 Per-call spend streaming — See cumulative cost after every LLM call
 
 **[📖 Langfuse Integration Guide](https://arieradle.github.io/shekel/integrations/langfuse/)**
 
@@ -163,8 +163,8 @@ pip install shekel[openai]       # OpenAI
 pip install shekel[anthropic]    # Anthropic
 pip install shekel[gemini]       # Google Gemini (google-genai SDK)
 pip install shekel[huggingface]  # HuggingFace Inference API
-pip install shekel[langfuse]     # Langfuse observability
-pip install shekel[litellm]      # LiteLLM (100+ providers via proxy)
+pip install shekel[langfuse]     # Langfuse (budget visibility and circuit-break events)
+pip install shekel[litellm]      # LiteLLM (budget enforcement across 100+ providers)
 pip install shekel[all]          # All providers + Langfuse
 pip install shekel[all-models]   # All above + tokencost (400+ model pricing)
 pip install shekel[cli]          # CLI tools (shekel estimate, shekel models)
@@ -203,15 +203,15 @@ print(f"Cost: ${b.spent:.4f}")
 ### Fallback to Cheaper Model
 
 ```python
-# Fall back to gpt-4o-mini instead of raising
-with budget(max_usd=0.50, fallback="gpt-4o-mini") as b:
+# Switch to gpt-4o-mini at 80% of budget instead of raising
+with budget(max_usd=0.50, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}) as b:
     response = client.chat.completions.create(
-        model="gpt-4o",  # Will switch to gpt-4o-mini if needed
+        model="gpt-4o",
         messages=[{"role": "user", "content": prompt}]
     )
-    
+
 if b.model_switched:
-    print(f"Switched to {b.fallback} at ${b.switched_at_usd:.4f}")
+    print(f"Switched to {b.fallback['model']} at ${b.switched_at_usd:.4f}")
 ```
 
 ### Accumulating Sessions
@@ -410,14 +410,13 @@ shekel models --provider anthropic
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `max_usd` | `float \| None` | `None` | Hard spend cap in USD. `None` = track only. |
-| `name` | `str \| None` | `None` | **v0.2.3**: Budget name. **Required for nesting**. |
-| `warn_at` | `float \| None` | `None` | Fraction of limit (0.0–1.0) at which to warn. |
-| `on_exceed` | `Callable \| None` | `None` | Callback at `warn_at` threshold. Receives `(spent, limit)`. |
-| `fallback` | `str \| None` | `None` | Model to switch to when `max_usd` is hit. Same provider only. |
+| `name` | `str \| None` | `None` | Budget name. Required for nested budgets. |
+| `warn_at` | `float \| None` | `None` | Fraction of limit (0.0–1.0) at which to call `on_warn`. |
+| `on_warn` | `Callable \| None` | `None` | Callback at `warn_at` threshold. Receives `(spent, limit)`. |
+| `fallback` | `dict \| None` | `None` | Switch model at threshold: `{"at_pct": 0.8, "model": "gpt-4o-mini"}`. Same provider only. |
 | `on_fallback` | `Callable \| None` | `None` | Callback on fallback switch. Receives `(spent, limit, fallback_model)`. |
-| `hard_cap` | `float \| None` | `max_usd * 2` | Absolute ceiling when fallback is active. |
+| `max_llm_calls` | `int \| None` | `None` | Hard cap on number of LLM API calls. |
 | `price_per_1k_tokens` | `dict \| None` | `None` | Override pricing: `{"input": 0.001, "output": 0.003}`. |
-| `persistent` | `bool` | `False` | **DEPRECATED v0.2.3**: Budgets always accumulate now. |
 
 ### Properties
 
@@ -427,15 +426,17 @@ shekel models --provider anthropic
 | `remaining` | `float \| None` | USD remaining (based on effective limit). |
 | `limit` | `float \| None` | Effective limit (auto-capped if nested). |
 | `name` | `str \| None` | Budget name. |
-| `parent` | `Budget \| None` | **v0.2.3**: Parent budget, or `None` if root. |
-| `children` | `list[Budget]` | **v0.2.3**: List of child budgets. |
-| `active_child` | `Budget \| None` | **v0.2.3**: Currently active child. |
-| `full_name` | `str` | **v0.2.3**: Hierarchical path (e.g., `"workflow.research"`). |
-| `spent_direct` | `float` | **v0.2.3**: Direct spend (excluding children). |
-| `spent_by_children` | `float` | **v0.2.3**: Sum of all child spend. |
+| `calls_used` | `int` | Number of LLM API calls made so far. |
+| `calls_remaining` | `int \| None` | Calls remaining before `max_llm_calls` is hit. |
+| `parent` | `Budget \| None` | Parent budget, or `None` if root. |
+| `children` | `list[Budget]` | List of child budgets. |
+| `active_child` | `Budget \| None` | Currently active child. |
+| `full_name` | `str` | Hierarchical path (e.g., `"workflow.research"`). |
+| `spent_direct` | `float` | Direct spend on this budget (excluding children). |
+| `spent_by_children` | `float` | Sum of all child spend. |
 | `model_switched` | `bool` | `True` if fallback was activated. |
 | `switched_at_usd` | `float \| None` | Spend level when fallback triggered. |
-| `fallback_spent` | `float` | Cost on the fallback model. |
+| `fallback_spent` | `float` | Cost incurred on the fallback model. |
 
 ### Methods
 
@@ -443,7 +444,7 @@ shekel models --provider anthropic
 |--------|---------|-------------|
 | `summary()` | `str` | Formatted spend summary with model breakdown. |
 | `summary_data()` | `dict` | Structured spend data as dictionary. |
-| `tree()` | `str` | **v0.2.3**: Visual hierarchy of budget tree. |
+| `tree()` | `str` | Visual hierarchy of the budget tree. |
 | `reset()` | `None` | Reset spend tracking (only outside context). |
 
 ### `BudgetExceededError`

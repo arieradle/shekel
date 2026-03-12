@@ -1,6 +1,6 @@
 # Streaming
 
-Budget tracking works seamlessly with streaming responses from both OpenAI and Anthropic.
+Budget enforcement and spend tracking work identically for streaming and non-streaming responses — no changes needed to your streaming code.
 
 ## OpenAI Streaming
 

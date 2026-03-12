@@ -1,6 +1,6 @@
 # LiteLLM Integration
 
-Shekel natively supports [LiteLLM](https://github.com/BerriAI/litellm), the unified gateway that routes to 100+ LLM providers using an OpenAI-compatible interface.
+Shekel natively supports [LiteLLM](https://github.com/BerriAI/litellm), the unified gateway that routes to 100+ LLM providers using an OpenAI-compatible interface. Wrap any LiteLLM call in a `budget()` context to enforce hard spend limits, trigger circuit-breakers, and switch to cheaper fallback models before a runaway agent drains your wallet.
 
 ## Installation
 
@@ -14,9 +14,26 @@ Or alongside other extras:
 pip install "shekel[litellm,langfuse]"
 ```
 
-## Basic Usage
+## Why LiteLLM + Shekel?
 
-Wrap any `litellm.completion` call in a budget context — no other changes needed:
+LiteLLM already gives you a single interface to OpenAI, Anthropic, Gemini, Cohere, Ollama, Azure, Bedrock, and 90+ more. The problem is nothing stops a buggy agent from looping indefinitely across all of them. Shekel adds the circuit-breaker: a hard dollar cap that raises `BudgetExceededError` the moment the combined spend crosses your limit, regardless of which provider LiteLLM happened to route to.
+
+```python
+import litellm
+from shekel import budget, BudgetExceededError
+
+try:
+    with budget(max_usd=2.00) as b:
+        # Spend tracked cumulatively across all providers
+        litellm.completion(model="gpt-4o-mini", messages=[...])
+        litellm.completion(model="claude-3-haiku-20240307", messages=[...])
+        litellm.completion(model="gemini/gemini-1.5-flash", messages=[...])
+        # BudgetExceededError fires the moment total crosses $2.00
+except BudgetExceededError as e:
+    print(f"Stopped at ${e.spent:.4f}")
+```
+
+## Basic Usage
 
 ```python
 import litellm
@@ -30,25 +47,6 @@ with budget(max_usd=0.50) as b:
     print(response.choices[0].message.content)
 
 print(f"Cost: ${b.spent:.4f}")
-```
-
-## Why LiteLLM + Shekel?
-
-LiteLLM routes to OpenAI, Anthropic, Gemini, Cohere, Ollama, Azure, Bedrock, and 90+ more. Shekel tracks the cost of every call regardless of which provider LiteLLM routes to.
-
-```python
-import litellm
-from shekel import budget
-
-with budget(max_usd=2.00) as b:
-    # OpenAI
-    litellm.completion(model="gpt-4o-mini", messages=[...])
-    # Anthropic
-    litellm.completion(model="claude-3-haiku-20240307", messages=[...])
-    # Google Gemini
-    litellm.completion(model="gemini/gemini-1.5-flash", messages=[...])
-
-print(f"Combined cost across providers: ${b.spent:.4f}")
 ```
 
 ## Async Support
@@ -103,7 +101,7 @@ try:
                 messages=[{"role": "user", "content": f"Question {i}"}],
             )
 except BudgetExceededError as e:
-    print(f"Stopped at ${e.spent:.4f} after {b.call_count} calls")
+    print(f"Stopped at ${e.spent:.4f} after {b.calls_used} calls")
 ```
 
 ## Fallback Models

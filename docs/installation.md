@@ -1,11 +1,14 @@
 # Installation
 
+!!! success "Zero external dependencies"
+    Shekel requires **no API keys**, **no external services**, and **no configuration**. Install, wrap your calls in `with budget():`, and you're done.
+
 ## Requirements
 
 - Python 3.9 or higher
 - OpenAI SDK (optional) — for OpenAI models
 - Anthropic SDK (optional) — for Anthropic models
-- LiteLLM (optional) — for 100+ providers via a unified interface
+- LiteLLM (optional) — budget enforcement and circuit-breaking across 100+ providers via a unified interface
 
 ## Install Shekel
 
@@ -53,7 +56,7 @@ pip install shekel[huggingface]
 
 ### LiteLLM (100+ Providers)
 
-For access to OpenAI, Anthropic, Gemini, Cohere, Ollama, Azure, Bedrock, and 90+ more through a unified interface:
+To enforce hard spend limits and circuit-break across OpenAI, Anthropic, Gemini, Cohere, Ollama, Azure, Bedrock, and 90+ more through a unified interface:
 
 ```bash
 pip install shekel[litellm]
@@ -122,7 +125,7 @@ Shekel has zero required dependencies beyond the Python standard library. The Op
 |---------|-----------|---------|
 | `openai>=1.0.0` | Optional | Track OpenAI API costs |
 | `anthropic>=0.7.0` | Optional | Track Anthropic API costs |
-| `litellm>=1.0.0` | Optional | Track costs via LiteLLM (100+ providers) |
+| `litellm>=1.0.0` | Optional | Budget enforcement and circuit-breaking via LiteLLM (100+ providers) |
 | `google-genai>=1.0.0` | Optional | Track Google Gemini costs (native SDK) |
 | `huggingface-hub>=0.20.0` | Optional | Track HuggingFace Inference API costs |
 | `tokencost>=0.1.0` | Optional | Support 400+ models |

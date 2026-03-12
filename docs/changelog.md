@@ -4,35 +4,6 @@ All notable changes to this project are documented here. For detailed informatio
 
 ## [0.2.6] {#026}
 
-### Breaking Changes
-
-!!! danger "BREAKING CHANGES"
-
-    **`fallback` parameter changed from string to dict**
-
-    - OLD: `fallback="gpt-4o-mini"`
-    - NEW: `fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}`
-    - The `at_pct` key specifies the fraction of `max_usd` at which to switch (e.g. `0.8` = 80%)
-    - The `model` key specifies the fallback model (same provider only)
-    - Fallback shares the same `max_usd` budget — there is no separate ceiling
-
-    **`on_exceed` renamed to `on_warn`**
-
-    - OLD: `budget(max_usd=5.00, warn_at=0.8, on_exceed=my_handler)`
-    - NEW: `budget(max_usd=5.00, warn_at=0.8, on_warn=my_handler)`
-
-    **`hard_cap` parameter removed**
-
-    - The separate `hard_cap` ceiling is gone. The fallback model is subject to the same `max_usd` limit.
-    - OLD: `budget(max_usd=1.00, fallback="gpt-4o-mini", hard_cap=1.50)`
-    - NEW: `budget(max_usd=1.00, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"})`
-
-    **`persistent` parameter removed**
-
-    - Budgets always accumulate across uses. The `persistent` parameter no longer exists.
-    - OLD: `budget(max_usd=5.00, persistent=True)`
-    - NEW: `budget(max_usd=5.00)`
-
 ### New Features
 
 **`max_llm_calls` — limit budgets by call count**
@@ -45,7 +16,7 @@ All notable changes to this project are documented here. For detailed informatio
 
 - Install with `pip install shekel[litellm]`
 - Patches `litellm.completion` and `litellm.acompletion` (sync + async, including streaming)
-- Tracks costs across all 100+ providers LiteLLM supports (Gemini, Cohere, Ollama, Azure, Bedrock, Mistral, and more)
+- Enforces budgets and circuit-breaks across all 100+ providers LiteLLM supports (Gemini, Cohere, Ollama, Azure, Bedrock, Mistral, and more)
 - Model names with provider prefix (e.g. `gemini/gemini-1.5-flash`) pass through to the pricing engine
 
 ## [0.2.5] - 2026-03-11
@@ -187,26 +158,8 @@ Hierarchical budget tracking for multi-stage AI workflows:
 
 ### Changes
 
-!!! warning "BREAKING CHANGES"
-
-    **Budget Variables Now Always Accumulate**
-
-    - Previously: `budget(max_usd=10)` reset on each entry (unless `persistent=True`)
-    - Now: Same budget variable = same accumulated state (matches Python's expected behavior)
-    - Migration: Create new `Budget()` instances instead of relying on reset behavior
-
-    **Names Required When Nesting**
-
-    - Both parent and child must have `name` parameter when creating nested contexts
-    - Validation happens at child `__enter__` with clear error messages
-
-!!! deprecated "Deprecated"
-
-    **persistent Parameter**
-
-    - Shows `DeprecationWarning` when `persistent=True` is explicitly used
-    - Parameter kept for backwards compatibility but no longer has effect
-    - Will be removed in v0.3.0
+- Budget variables always accumulate across uses — same variable, same accumulated state
+- Both parent and child must have a `name` when creating nested contexts
 
 ### Fixed
 - ContextVar token management now uses proper `.reset()` instead of manual `.set(None)`

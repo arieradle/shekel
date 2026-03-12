@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "shekel"
 version = "0.2.6"
-description = "LLM cost tracking and budget enforcement. Zero config — with budget(max_usd=1.00): run_agent(). Works with LangGraph, CrewAI, raw OpenAI/Anthropic."
+description = "LLM budget enforcement and cost tracking. Zero config — with budget(max_usd=1.00): run_agent(). Works with LangGraph, CrewAI, raw OpenAI/Anthropic/Gemini."
 readme = "README.md"
 license = { file = "LICENSE" }
 authors = [{ name = "Arie Radle", email = "arie.radle@gmail.com" }]

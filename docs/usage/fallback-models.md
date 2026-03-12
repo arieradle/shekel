@@ -18,7 +18,7 @@ with budget(max_usd=1.00, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}) as b
 
 # Check if fallback was activated
 if b.model_switched:
-    print(f"Switched to {b.fallback} at ${b.switched_at_usd:.4f}")
+    print(f"Switched to {b.fallback['model']} at ${b.switched_at_usd:.4f}")
     print(f"Spent on fallback: ${b.fallback_spent:.4f}")
 ```
 

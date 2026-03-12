@@ -1,6 +1,6 @@
 # OpenAI Integration
 
-Shekel provides zero-config integration with the OpenAI Python SDK to track costs and enforce budgets.
+One `pip install` and one `with budget():` — shekel intercepts every OpenAI call automatically, enforces hard spend limits, and shows you exactly what was spent. No API keys, no SDK changes, no configuration.
 
 ## Installation
 

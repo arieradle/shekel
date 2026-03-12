@@ -1,10 +1,10 @@
 # Nested Budgets
 
-Hierarchical budget tracking for multi-stage AI workflows.
+Independent spend caps per workflow stage, with automatic rollup — a child stage can never exceed its own cap or what the parent has left.
 
 ## Overview
 
-Nested budgets allow you to track and enforce spending limits at multiple levels of your AI workflow. This is perfect for complex agents with multiple stages, where you want to:
+Nested budgets let you enforce independent spend limits at every stage of a multi-step workflow, with automatic rollup to a parent cap. You get both control and visibility:
 
 - **Control costs per stage** — Cap each phase independently
 - **Track attribution** — See exactly where money was spent

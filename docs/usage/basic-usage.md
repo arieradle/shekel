@@ -1,10 +1,10 @@
 # Basic Usage
 
-This guide covers the fundamentals of using shekel to track and control LLM API costs.
+This guide covers the fundamentals of using shekel to enforce LLM API budgets and track spend.
 
 ## Track-Only Mode
 
-The simplest use case is tracking costs without enforcing any limits:
+Use `budget()` without `max_usd` to measure spend without enforcing a hard cap:
 
 ```python
 from shekel import budget
@@ -24,7 +24,7 @@ print(f"Limit: {b.limit}")  # None in track-only mode
 ```
 
 !!! tip "Track-Only Mode"
-    When you create a budget without `max_usd`, shekel tracks spending but never raises `BudgetExceededError`. Perfect for monitoring production costs without risking service interruption.
+    Without `max_usd`, shekel records spend but never raises `BudgetExceededError`. Use this to measure baseline costs before setting a hard cap, or in production when you want visibility without the risk of interrupting service.
 
 ## Accessing Budget Information
 

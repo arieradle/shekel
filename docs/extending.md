@@ -138,7 +138,7 @@ class CohereAdapter(ProviderAdapter):
         if is_other:
             raise ValueError(
                 f"shekel: fallback model '{fallback_model}' is not a Cohere model. "
-                f"Use a Cohere model as fallback (e.g. fallback='command-r-plus')."
+                f"Use a Cohere model as fallback (e.g. fallback={{'at_pct': 0.8, 'model': 'command-r-plus'}})."
             )
 
 
@@ -161,7 +161,7 @@ def _cohere_sync_wrapper(self, *args, **kwargs):
 
     active_budget = _context.get_active_budget()
     if active_budget is not None and active_budget._using_fallback:
-        kwargs["model"] = active_budget.fallback
+        kwargs["model"] = active_budget.fallback['model']
 
     if kwargs.get("stream") is True:
         stream = original(self, *args, **kwargs)

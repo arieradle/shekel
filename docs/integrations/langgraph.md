@@ -1,6 +1,6 @@
 # LangGraph Integration
 
-Shekel works seamlessly with [LangGraph](https://github.com/langchain-ai/langgraph) to track and enforce budgets on graph-based agent workflows.
+LangGraph agents can retry indefinitely — that's what they're designed to do. Shekel adds the circuit-breaker: a hard dollar cap that fires `BudgetExceededError` the moment cumulative spend across all graph nodes crosses your limit. Zero config, works with any LangGraph graph.
 
 ## Installation
 
@@ -180,7 +180,7 @@ with budget(max_usd=0.50, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}) as b
     # Automatically switches to gpt-4o-mini at 80% of $0.50 ($0.40)
 
     if b.model_switched:
-        print(f"Switched to {b.fallback} at ${b.switched_at_usd:.4f}")
+        print(f"Switched to {b.fallback['model']} at ${b.switched_at_usd:.4f}")
 ```
 
 ## Async Graphs
