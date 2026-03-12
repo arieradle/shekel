@@ -12,11 +12,11 @@ def with_budget(
     warn_at: float | None = None,
     on_exceed: Callable[[float, float], None] | None = None,
     price_per_1k_tokens: dict[str, float] | None = None,
-    fallback: str | None = None,
+    fallback: dict[str, Any] | None = None,
     on_fallback: Callable[[float, float, str], None] | None = None,
     persistent: bool = False,
-    hard_cap: float | None = None,
     name: str | None = None,
+    max_llm_calls: int | None = None,
 ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     """Decorator that wraps a function in a budget context.
 
@@ -29,7 +29,7 @@ def with_budget(
 
     Usage::
 
-        @with_budget(max_usd=1.00, fallback="gpt-4o-mini")
+        @with_budget(max_usd=1.00, fallback={"at": 0.8, "max_usd": 2.00, "model": "gpt-4o-mini"})
         def run_agent():
             ...
 
@@ -51,8 +51,8 @@ def with_budget(
                     fallback=fallback,
                     on_fallback=on_fallback,
                     persistent=persistent,
-                    hard_cap=hard_cap,
                     name=name,
+                    max_llm_calls=max_llm_calls,
                 )
                 async with b:
                     return await fn(*args, **kwargs)
@@ -71,8 +71,8 @@ def with_budget(
                     fallback=fallback,
                     on_fallback=on_fallback,
                     persistent=persistent,
-                    hard_cap=hard_cap,
                     name=name,
+                    max_llm_calls=max_llm_calls,
                 )
                 with b:
                     return fn(*args, **kwargs)

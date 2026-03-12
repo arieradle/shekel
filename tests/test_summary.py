@@ -111,7 +111,9 @@ def test_summary_data_with_fallback() -> None:
     with patch(OPENAI_CREATE, new=fake_create):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            with budget(max_usd=0.001, fallback="gpt-4o-mini", hard_cap=10.0) as b:
+            with budget(
+                max_usd=0.001, fallback={"at": 0.8, "max_usd": 10.0, "model": "gpt-4o-mini"}
+            ) as b:
                 import openai
 
                 client = openai.OpenAI(api_key="test")
@@ -212,18 +214,17 @@ def test_summary_after_reset() -> None:
 
 
 def test_summary_data_hard_cap_default() -> None:
-    """summary_data() computes effective_hard_cap=max_usd*2 when hard_cap not set."""
-    b = budget(max_usd=1.00, fallback="gpt-4o-mini")
+    """summary_data() includes fallback_max_usd when fallback is set."""
+    b = budget(max_usd=1.00, fallback={"at": 0.8, "max_usd": 2.00, "model": "gpt-4o-mini"})
     _inject_spend(b, "gpt-4o", 0.50, 1000, 500)
 
     data = b.summary_data()
-    assert data["hard_cap"] is None
-    assert data["effective_hard_cap"] == pytest.approx(2.00)
+    assert data["fallback_max_usd"] == pytest.approx(2.00)
 
 
 def test_summary_str_shows_switched_at() -> None:
     """summary() includes 'Switched at' line when model has switched."""
-    b = budget(max_usd=0.01, fallback="gpt-4o-mini", hard_cap=10.0)
+    b = budget(max_usd=0.01, fallback={"at": 0.8, "max_usd": 10.0, "model": "gpt-4o-mini"})
     # Simulate switch by injecting state directly
     b._using_fallback = True
     b._switched_at_usd = 0.0123

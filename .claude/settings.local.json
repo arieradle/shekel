@@ -82,7 +82,19 @@
       "Bash(mkdocs build:*)",
       "Bash(black shekel/providers/ && python -m pytest tests/providers/ -q 2>&1 | tail -5)",
       "Bash(echo \"=== BLACK ===\" && black --check shekel/providers/ tests/providers/ examples/cohere_adapter_template.py 2>&1 | tail -3 && echo \"=== ISORT ===\" && isort --check-only shekel/providers/ tests/providers/ examples/cohere_adapter_template.py 2>&1 | tail -3 && echo \"=== RUFF ===\" && ruff check shekel/providers/ tests/providers/ examples/cohere_adapter_template.py 2>&1 && echo \"=== MYPY ===\" && mypy shekel/ 2>&1 | tail -3)",
-      "Bash(isort shekel/providers/ tests/providers/ examples/cohere_adapter_template.py && black shekel/providers/ tests/providers/ examples/cohere_adapter_template.py && ruff check shekel/providers/ tests/providers/ examples/cohere_adapter_template.py 2>&1)"
+      "Bash(isort shekel/providers/ tests/providers/ examples/cohere_adapter_template.py && black shekel/providers/ tests/providers/ examples/cohere_adapter_template.py && ruff check shekel/providers/ tests/providers/ examples/cohere_adapter_template.py 2>&1)",
+      "Bash(python -m pytest tests/test_call_limits.py -xvs 2>&1 | head -200)",
+      "Bash(python -m pytest tests/test_fallback.py -xvs 2>&1 | head -100)",
+      "Bash(python -m pytest tests/test_fallback.py -xvs 2>&1 | head -200)",
+      "Bash(python -m pytest tests/test_fallback.py -xvs 2>&1 | tail -50)",
+      "Bash(python -m pytest tests/test_decorator.py -xvs 2>&1 | tail -50)",
+      "Bash(python -m pytest tests/test_summary.py -xvs 2>&1 | tail -50)",
+      "Bash(python -m pytest tests/test_session_budget.py -xvs 2>&1 | tail -50)",
+      "Bash(python -m pytest tests/integrations/test_ollama_integration.py -xvs 2>&1 | tail -100)",
+      "Bash(python -m pytest tests/test_fallback.py tests/test_decorator.py tests/test_summary.py tests/test_session_budget.py tests/integrations/test_ollama_integration.py -v 2>&1 | tail -100)",
+      "Bash(python -m pytest tests/test_fallback.py tests/test_decorator.py tests/test_summary.py tests/test_session_budget.py tests/integrations/test_ollama_integration.py --tb=short 2>&1 | grep -E \"\\(PASSED|FAILED|ERROR|passed|failed\\)\" | tail -5)",
+      "Bash(python -m pytest tests/ -q --tb=no 2>&1 | tail -20)",
+      "Bash(python -m pytest tests/ -q --tb=line 2>&1 | tail -30)"
     ]
   }
 }

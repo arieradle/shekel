@@ -107,7 +107,9 @@ def test_persistent_fallback_carries_over() -> None:
             return big
         return small
 
-    session = budget(max_usd=0.001, fallback="gpt-4o-mini", persistent=True, hard_cap=10.0)
+    session = budget(
+        max_usd=0.001, fallback={"at": 0.8, "max_usd": 10.0, "model": "gpt-4o-mini"}, persistent=True
+    )
 
     with patch(OPENAI_CREATE, new=fake_create):
         import openai
@@ -168,7 +170,9 @@ def test_warn_fires_once_across_entries() -> None:
 def test_reset_clears_state() -> None:
     """reset() sets spent=0, clears _using_fallback, etc."""
     fake = make_openai_response("gpt-4o", 10_000, 5_000)
-    session = budget(max_usd=0.001, fallback="gpt-4o-mini", persistent=True, hard_cap=10.0)
+    session = budget(
+        max_usd=0.001, fallback={"at": 0.8, "max_usd": 10.0, "model": "gpt-4o-mini"}, persistent=True
+    )
 
     with patch(OPENAI_CREATE, return_value=fake):
         with warnings.catch_warnings():
@@ -275,7 +279,9 @@ def test_persistent_with_fallback_combo() -> None:
             return big
         return small
 
-    session = budget(max_usd=0.001, fallback="gpt-4o-mini", persistent=True, hard_cap=10.0)
+    session = budget(
+        max_usd=0.001, fallback={"at": 0.8, "max_usd": 10.0, "model": "gpt-4o-mini"}, persistent=True
+    )
 
     with patch(OPENAI_CREATE, new=fake_create):
         import openai

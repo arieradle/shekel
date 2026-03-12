@@ -60,16 +60,14 @@ class Budget:
         warn_at: float | None = None,
         on_exceed: Callable[[float, float], None] | None = None,
         price_per_1k_tokens: dict[str, float] | None = None,
-        # --- NEW in v0.2 ---
-        fallback: str | None = None,
+        # --- NEW in v0.2.6 (refactored fallback config) ---
+        fallback: dict[str, Any] | None = None,
         on_fallback: Callable[[float, float, str], None] | None = None,
         persistent: bool = False,  # DEPRECATED in v0.2.3
-        hard_cap: float | None = None,
         # --- NEW in v0.2.3 (nested budgets) ---
         name: str | None = None,
-        # --- NEW in v0.3 (call limits) ---
+        # --- NEW in v0.2.6 (call limits) ---
         max_llm_calls: int | None = None,
-        fallback_at_pct: float | None = None,
     ) -> None:
         # --- NEW in v0.2.3 (Decision #12): Deprecate persistent flag ---
         if persistent is not False:  # User explicitly set it
@@ -95,24 +93,59 @@ class Budget:
                     "price_per_1k_tokens must have both 'input' and 'output' keys. "
                     f"Got: {list(price_per_1k_tokens.keys())}"
                 )
+        # --- NEW in v0.2.6 (refactored fallback config) ---
+        if fallback is not None:
+            if not isinstance(fallback, dict):
+                raise ValueError(
+                    "fallback must be a dict with keys: 'at' (float), 'max_usd' (float), 'model' (str). "
+                    f"Got: {type(fallback).__name__}"
+                )
+            required_keys = {"at", "max_usd", "model"}
+            provided_keys = set(fallback.keys())
+            if not required_keys.issubset(provided_keys):
+                missing = required_keys - provided_keys
+                raise ValueError(
+                    f"fallback dict missing required keys: {missing}. "
+                    f"Required: 'at', 'max_usd', 'model'"
+                )
+
+            # Validate 'at' (activation percentage)
+            at_value = fallback["at"]
+            if not isinstance(at_value, (int, float)) or not (0.0 < at_value <= 1.0):
+                raise ValueError(
+                    f"fallback['at'] must be a fraction between 0 and 1 (exclusive 0, inclusive 1), "
+                    f"got {at_value}"
+                )
+
+            # Validate 'max_usd' (fallback spending limit)
+            max_usd_value = fallback["max_usd"]
+            if not isinstance(max_usd_value, (int, float)) or max_usd_value <= 0:
+                raise ValueError(
+                    f"fallback['max_usd'] must be positive, got {max_usd_value}"
+                )
+
+            # Validate 'model' (model name)
+            model_value = fallback["model"]
+            if not isinstance(model_value, str) or model_value == "":
+                raise ValueError(
+                    f"fallback['model'] must be a non-empty string, got {repr(model_value)}"
+                )
+
+            # Validate that fallback['max_usd'] > max_usd (primary budget must be lower)
+            if max_usd is not None and max_usd_value <= max_usd:
+                raise ValueError(
+                    f"fallback['max_usd'] (${max_usd_value:.2f}) must be greater than "
+                    f"max_usd (${max_usd:.2f})"
+                )
+
+            # Validate that at least one limit exists
+            if max_usd is None and max_llm_calls is None:
+                raise ValueError(
+                    "fallback requires either max_usd or max_llm_calls to be set"
+                )
+
         if on_fallback is not None and fallback is None:
             raise ValueError("on_fallback requires fallback to be set")
-        if fallback is not None and fallback == "":
-            raise ValueError("fallback must be a non-empty string if provided")
-        if fallback is not None and max_usd is None:
-            warnings.warn(
-                "shekel: fallback has no effect without max_usd",
-                stacklevel=2,
-            )
-        if hard_cap is not None and fallback is None:
-            warnings.warn(
-                "shekel: hard_cap has no effect without fallback",
-                stacklevel=2,
-            )
-        if hard_cap is not None and max_usd is not None and hard_cap <= max_usd:
-            raise ValueError(
-                f"hard_cap (${hard_cap:.2f}) must be greater than max_usd (${max_usd:.2f})"
-            )
 
         # --- NEW in v0.2.6 (Decision #1): Validate call limits ---
         if max_llm_calls is not None and max_llm_calls <= 0:
@@ -120,22 +153,14 @@ class Budget:
                 "max_llm_calls must be positive or None for track-only mode. "
                 f"Got: {max_llm_calls}"
             )
-        if fallback_at_pct is not None and not (0.0 < fallback_at_pct <= 1.0):
-            raise ValueError(
-                f"fallback_at_pct must be a fraction between 0 and 1 (exclusive 0, inclusive 1), "
-                f"got {fallback_at_pct}"
-            )
-        if fallback_at_pct is not None and fallback is None:
-            raise ValueError("fallback_at_pct requires fallback to be set")
 
         self.max_usd = max_usd
         self.warn_at = warn_at
         self.on_exceed = on_exceed
         self.price_per_1k_tokens = price_per_1k_tokens
-        self.fallback: str | None = fallback
+        self.fallback: dict[str, Any] | None = fallback  # Now a dict with 'at', 'max_usd', 'model'
         self.on_fallback = on_fallback
         self.persistent: bool = persistent
-        self.hard_cap: float | None = hard_cap
 
         # --- NEW in v0.2.3 (nested budgets) ---
         self.name: str | None = name
@@ -147,7 +172,6 @@ class Budget:
 
         # --- NEW in v0.2.6 (call limits) ---
         self.max_llm_calls: int | None = max_llm_calls
-        self.fallback_at_pct: float | None = fallback_at_pct
         self._effective_call_limit: int | None = max_llm_calls  # Will be auto-capped in __enter__
 
         self._ctx_token: Token[Budget | None] | None = None
@@ -393,39 +417,37 @@ class Budget:
             self._using_fallback = True
             self._switched_at_usd = self._spent
             self._emit_fallback_activated_event()
+            fallback_model = self.fallback["model"]
             if self.on_fallback is not None:
-                self.on_fallback(self._spent, effective_limit, self.fallback)
+                self.on_fallback(self._spent, effective_limit, fallback_model)
             else:
                 warnings.warn(
                     f"shekel: budget of ${effective_limit:.2f} exceeded "
                     f"(${self._spent:.4f} spent). "
-                    f"Switching to fallback model '{self.fallback}'.",
+                    f"Switching to fallback model '{fallback_model}'.",
                     stacklevel=4,
                 )
             return
 
         if self.fallback is not None and self._using_fallback:
-            # Fallback is active — enforce the hard cap.
-            # Default hard cap = effective_limit * 2 if not explicitly set (runaway protection).
-            effective_hard_cap = self.hard_cap
-            if effective_hard_cap is None:
-                effective_hard_cap = effective_limit * 2.0
+            # Fallback is active — enforce the fallback max_usd limit
+            fallback_max_usd = self.fallback["max_usd"]
 
-            if self._spent > effective_hard_cap:
+            if self._spent > fallback_max_usd:
                 self._emit_budget_exceeded_event()
                 raise BudgetExceededError(
                     self._spent,
-                    effective_hard_cap,
+                    fallback_max_usd,
                     self._last_model,
                     self._last_tokens,
                 )
 
-            # Under hard cap — warn once per entry into this branch
+            # Under fallback max — warn once per entry into this branch
+            fallback_model = self.fallback["model"]
             warnings.warn(
-                f"shekel: fallback model '{self.fallback}' has exceeded the primary budget "
+                f"shekel: fallback model '{fallback_model}' has exceeded the primary budget "
                 f"(${self._spent:.4f} spent, primary limit ${effective_limit:.2f}). "
-                f"Hard cap: ${effective_hard_cap:.2f}. "
-                f"Use hard_cap= to override.",
+                f"Fallback max: ${fallback_max_usd:.2f}.",
                 stacklevel=4,
             )
             return
@@ -438,24 +460,24 @@ class Budget:
         """Check if fallback should be activated based on call count (called BEFORE API call)."""
         # --- NEW in v0.2.6 (call limits) ---
         effective_call_limit = self._effective_call_limit
-        if effective_call_limit is None:
+        if effective_call_limit is None or self.fallback is None or self._using_fallback:
             return
 
-        # Check if we should activate fallback
-        if self.fallback_at_pct is not None and self.fallback is not None and not self._using_fallback:
-            # Calculate call threshold
-            call_threshold = int(effective_call_limit * self.fallback_at_pct)
+        fallback_at = self.fallback["at"]
 
-            # Also check USD threshold if both exist
-            usd_threshold_met = False
-            if self._effective_limit is not None:
-                usd_threshold = self._effective_limit * self.fallback_at_pct
-                usd_threshold_met = self._spent >= usd_threshold
+        # Calculate call threshold
+        call_threshold = int(effective_call_limit * fallback_at)
 
-            # Activate fallback if we've reached either threshold
-            if self._calls_made >= call_threshold or usd_threshold_met:
-                self._using_fallback = True
-                self._switched_at_usd = self._spent
+        # Also check USD threshold if both exist
+        usd_threshold_met = False
+        if self._effective_limit is not None:
+            usd_threshold = self._effective_limit * fallback_at
+            usd_threshold_met = self._spent >= usd_threshold
+
+        # Activate fallback if we've reached either threshold
+        if self._calls_made >= call_threshold or usd_threshold_met:
+            self._using_fallback = True
+            self._switched_at_usd = self._spent
 
     def _check_call_limit(self) -> None:
         """Check call limit and enforce fallback activation or hard stop."""
@@ -465,14 +487,15 @@ class Budget:
             return
 
         # Check if we should activate fallback (before hard limit)
-        if self.fallback_at_pct is not None and self.fallback is not None and not self._using_fallback:
+        if self.fallback is not None and not self._using_fallback:
+            fallback_at = self.fallback["at"]
             # Calculate call threshold
-            call_threshold = int(effective_call_limit * self.fallback_at_pct)
+            call_threshold = int(effective_call_limit * fallback_at)
 
             # Also check USD threshold if both exist
             usd_threshold_met = False
             if self._effective_limit is not None:
-                usd_threshold = self._effective_limit * self.fallback_at_pct
+                usd_threshold = self._effective_limit * fallback_at
                 usd_threshold_met = self._spent >= usd_threshold
 
             # Activate fallback if we've EXCEEDED either threshold (not just reached it)
@@ -480,12 +503,13 @@ class Budget:
                 self._using_fallback = True
                 self._switched_at_usd = self._spent
                 self._emit_fallback_activated_event()
+                fallback_model = self.fallback["model"]
                 if self.on_fallback is not None:
-                    self.on_fallback(self._spent, self._effective_limit or 0, self.fallback)
+                    self.on_fallback(self._spent, self._effective_limit or 0, fallback_model)
                 else:
                     warnings.warn(
                         f"shekel: limit approaching ({self._calls_made} / {effective_call_limit} calls). "
-                        f"Switching to fallback model '{self.fallback}'.",
+                        f"Switching to fallback model '{fallback_model}'.",
                         stacklevel=4,
                     )
                 return
@@ -505,11 +529,12 @@ class Budget:
         try:
             from shekel.integrations import AdapterRegistry
 
+            fallback_model = self.fallback["model"] if self.fallback else "unknown"
             AdapterRegistry.emit_event(
                 "on_fallback_activated",
                 {
                     "from_model": self._last_model,
-                    "to_model": self.fallback,
+                    "to_model": fallback_model,
                     "switched_at": self._switched_at_usd,
                     "cost_primary": self._switched_at_usd,
                     "cost_fallback": 0.0,  # Just activated
@@ -674,18 +699,19 @@ class Budget:
             by_model[m]["input_tokens"] += call["input_tokens"]
             by_model[m]["output_tokens"] += call["output_tokens"]
 
-        effective_hard_cap: float | None = self.hard_cap
-        if effective_hard_cap is None and self.fallback is not None and self.max_usd is not None:
-            effective_hard_cap = self.max_usd * 2.0
+        fallback_max_usd: float | None = None
+        fallback_model: str | None = None
+        if self.fallback is not None:
+            fallback_max_usd = self.fallback["max_usd"]
+            fallback_model = self.fallback["model"]
 
         return {
             "total_spent": self._spent,
             "limit": self.max_usd,
-            "hard_cap": self.hard_cap,
-            "effective_hard_cap": effective_hard_cap,
+            "fallback_max_usd": fallback_max_usd,
             "model_switched": self._using_fallback,
             "switched_at_usd": self._switched_at_usd,
-            "fallback_model": self.fallback,
+            "fallback_model": fallback_model,
             "fallback_spent": self._fallback_spent,
             "total_calls": len(self._calls),
             "calls": list(self._calls),

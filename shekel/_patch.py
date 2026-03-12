@@ -82,7 +82,7 @@ def _apply_fallback_if_needed(active_budget: Any, kwargs: dict[str, Any], provid
     if not active_budget._using_fallback or active_budget.fallback is None:
         return
 
-    fallback_model: str = active_budget.fallback
+    fallback_model: str = active_budget.fallback["model"]
     _validate_same_provider(fallback_model, provider)
     kwargs["model"] = fallback_model
 

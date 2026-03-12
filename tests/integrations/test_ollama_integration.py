@@ -108,7 +108,9 @@ class TestOllamaBudgetIntegration:
 
     def test_ollama_fallback_model_switching(self) -> None:
         """Test fallback model switching with Ollama models."""
-        with budget(max_usd=0.001, fallback="gpt-4o-mini", hard_cap=5.0) as b:  # noqa: F841
+        with budget(
+            max_usd=0.001, fallback={"at": 0.8, "max_usd": 5.0, "model": "gpt-4o-mini"}
+        ) as b:  # noqa: F841
             from shekel._patch import _record
 
             # Use known model with pricing to trigger fallback
@@ -441,8 +443,7 @@ class TestOllamaBudgetWarnings:
                 max_usd=0.10,
                 warn_at=0.5,
                 on_exceed=on_warn,
-                fallback="gpt-4o-mini",
-                hard_cap=1.0,
+                fallback={"at": 0.8, "max_usd": 1.0, "model": "gpt-4o-mini"},
                 name="warn_test",
             ) as b:  # noqa: F841
                 from shekel._patch import _record
@@ -683,9 +684,9 @@ class TestOllamaEdgeCases:
         assert "Summary" in summary
 
     def test_fallback_chain_scenario(self) -> None:
-        """Test fallback with very low hard cap."""
+        """Test fallback with very low max_usd."""
         with budget(
-            max_usd=0.001, fallback="gpt-4o-mini", hard_cap=0.005, name="fallback_chain"
+            max_usd=0.001, fallback={"at": 0.8, "max_usd": 0.005, "model": "gpt-4o-mini"}, name="fallback_chain"
         ) as b:  # noqa: F841
             from shekel._patch import _record
 

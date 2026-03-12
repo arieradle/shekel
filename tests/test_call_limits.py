@@ -89,9 +89,9 @@ def test_call_limit_with_usd_limit() -> None:
     """Both max_usd and max_llm_calls enforced; whichever is tighter."""
     fake = make_openai_response("gpt-4o", 100, 50)
     with patch(OPENAI_CREATE, return_value=fake):
-        # USD limit will be hit first (each call is expensive)
+        # USD limit will be hit first (each call costs ~$0.00075)
         with pytest.raises(BudgetExceededError):
-            with budget(max_usd=0.001, max_llm_calls=100) as b:
+            with budget(max_usd=0.0005, max_llm_calls=100) as b:
                 import openai
 
                 client = openai.OpenAI(api_key="test")
@@ -104,7 +104,7 @@ def test_call_limit_with_usd_limit() -> None:
 
 
 def test_fallback_activates_at_percentage() -> None:
-    """Fallback activates when reaching fallback_at_pct of tighter limit."""
+    """Fallback activates when reaching 'at' percentage of tighter limit."""
     fake_expensive = make_openai_response("gpt-4o", 10_000, 5_000)
     fake_cheap = make_openai_response("gpt-4o-mini", 100, 50)
     call_count = 0
@@ -124,9 +124,7 @@ def test_fallback_activates_at_percentage() -> None:
             with budget(
                 max_usd=10.00,
                 max_llm_calls=10,
-                fallback="gpt-4o-mini",
-                fallback_at_pct=0.80,
-                hard_cap=50.00,  # Prevent hard_cap from triggering
+                fallback={"at": 0.80, "max_usd": 50.00, "model": "gpt-4o-mini"},
             ) as b:
                 import openai
 
@@ -145,21 +143,34 @@ def test_fallback_activates_at_percentage() -> None:
     assert captured_models[8] == "gpt-4o-mini"
 
 
-def test_fallback_at_pct_validation() -> None:
-    """fallback_at_pct must be between 0 and 1."""
+def test_fallback_validation() -> None:
+    """Fallback dict must have valid 'at', 'max_usd', and 'model' keys."""
+    # Invalid 'at' values
     with pytest.raises(ValueError):
-        budget(max_llm_calls=10, fallback="gpt-3.5", fallback_at_pct=1.5)
+        budget(max_llm_calls=10, fallback={"at": 1.5, "max_usd": 15, "model": "gpt-3.5"})
 
     with pytest.raises(ValueError):
-        budget(max_llm_calls=10, fallback="gpt-3.5", fallback_at_pct=0.0)
+        budget(max_llm_calls=10, fallback={"at": 0.0, "max_usd": 15, "model": "gpt-3.5"})
 
     with pytest.raises(ValueError):
-        budget(max_llm_calls=10, fallback="gpt-3.5", fallback_at_pct=-0.5)
+        budget(max_llm_calls=10, fallback={"at": -0.5, "max_usd": 15, "model": "gpt-3.5"})
+
+    # Missing required keys
+    with pytest.raises(ValueError):
+        budget(max_llm_calls=10, fallback={"at": 0.80, "model": "gpt-3.5"})  # missing max_usd
+
+    # Invalid max_usd
+    with pytest.raises(ValueError):
+        budget(max_llm_calls=10, fallback={"at": 0.80, "max_usd": 0, "model": "gpt-3.5"})
+
+    # Invalid model
+    with pytest.raises(ValueError):
+        budget(max_llm_calls=10, fallback={"at": 0.80, "max_usd": 15, "model": ""})
 
     # Valid values should not raise
-    budget(max_llm_calls=10, fallback="gpt-3.5", fallback_at_pct=0.80)
-    budget(max_llm_calls=10, fallback="gpt-3.5", fallback_at_pct=1.0)
-    budget(max_llm_calls=10, fallback="gpt-3.5", fallback_at_pct=0.1)
+    budget(max_llm_calls=10, fallback={"at": 0.80, "max_usd": 15, "model": "gpt-3.5"})
+    budget(max_llm_calls=10, fallback={"at": 1.0, "max_usd": 15, "model": "gpt-3.5"})
+    budget(max_llm_calls=10, fallback={"at": 0.1, "max_usd": 15, "model": "gpt-3.5"})
 
 
 # ---------------------------------------------------------------------------
@@ -241,33 +252,32 @@ def test_streaming_counted_as_one_call() -> None:
 
 def test_min_of_both_limits() -> None:
     """Fallback triggers at min(max_usd, max_llm_calls) threshold."""
-    # Setup: max_usd = 10.0, max_llm_calls = 20
-    # 80% of max_usd = 8.0 USD
-    # 80% of max_llm_calls = 16 calls
-    # min(8.0, 16) = 8.0 USD will be reached first
-    fake_expensive = make_openai_response("gpt-4o", 10_000, 5_000)
+    # Setup: max_usd = 0.40, max_llm_calls = 20
+    # Each call costs: (100 * 0.0025/1k) + (50 * 0.010/1k) = 0.00075
+    # 80% of max_usd = 0.32 USD (requires ~427 calls, but we cap at max_llm_calls)
+    # 80% of max_llm_calls = 16 calls (requires 16 calls)
+    # So call limit threshold is reached first: fallback at 16 calls
+    fake_cheap = make_openai_response("gpt-4o", 100, 50)
     call_count = 0
 
     def fake_create(self: object, *args: object, **kwargs: object) -> object:
         nonlocal call_count
         call_count += 1
-        return fake_expensive
+        return fake_cheap
 
     with patch(OPENAI_CREATE, new=fake_create):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             with budget(
-                max_usd=10.00,
+                max_usd=0.40,
                 max_llm_calls=20,
-                fallback="gpt-4o-mini",
-                fallback_at_pct=0.80,
-                hard_cap=50.00,
+                fallback={"at": 0.80, "max_usd": 1.00, "model": "gpt-4o-mini"},
             ) as b:
                 import openai
 
                 client = openai.OpenAI(api_key="test")
-                # Make expensive calls until USD threshold is hit
-                for i in range(5):
+                # Make calls until call-count threshold is hit (16 calls at 80%)
+                for i in range(20):
                     client.chat.completions.create(model="gpt-4o", messages=[])
                     if b.model_switched:
                         break
