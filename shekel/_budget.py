@@ -353,12 +353,13 @@ class Budget:
         self._emit_fallback_activated_event()
         fallback_model = self.fallback["model"]  # type: ignore[index]
         effective_limit = self._effective_limit
+        limit_val = effective_limit if effective_limit is not None else 0
         if self.on_fallback is not None:
-            self.on_fallback(self._spent, effective_limit or 0, fallback_model)
+            self.on_fallback(self._spent, limit_val, fallback_model)
         else:
             if budget_exceeded:
                 warnings.warn(
-                    f"shekel: budget of ${effective_limit:.2f} exceeded "
+                    f"shekel: budget of ${limit_val:.2f} exceeded "
                     f"(${self._spent:.4f} spent). "
                     f"Switching to fallback model '{fallback_model}'.",
                     stacklevel=5,
@@ -366,7 +367,7 @@ class Budget:
             else:
                 warnings.warn(
                     f"shekel: approaching budget limit "
-                    f"(${self._spent:.4f} spent of ${effective_limit:.2f}). "
+                    f"(${self._spent:.4f} spent of ${limit_val:.2f}). "
                     f"Switching to fallback model '{fallback_model}'.",
                     stacklevel=5,
                 )

@@ -143,6 +143,40 @@ def test_fallback_activates_at_percentage() -> None:
     assert captured_models[8] == "gpt-4o-mini"
 
 
+def test_fallback_activates_by_call_count_only() -> None:
+    """Fallback with only max_llm_calls (no max_usd) activates at call-count threshold."""
+    fake_expensive = make_openai_response("gpt-4o", 10_000, 5_000)
+    fake_cheap = make_openai_response("gpt-4o-mini", 100, 50)
+    call_count = 0
+    captured_models: list[str] = []
+
+    def fake_create(self: object, *args: object, **kwargs: object) -> object:
+        nonlocal call_count
+        call_count += 1
+        captured_models.append(str(kwargs.get("model", "")))
+        if call_count <= 8:
+            return fake_expensive
+        return fake_cheap
+
+    with patch(OPENAI_CREATE, new=fake_create):
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            with budget(
+                max_llm_calls=10,
+                fallback={"at_pct": 0.80, "model": "gpt-4o-mini"},
+            ) as b:
+                import openai
+
+                client = openai.OpenAI(api_key="test")
+                for _ in range(8):
+                    client.chat.completions.create(model="gpt-4o", messages=[])
+                assert not b.model_switched
+                client.chat.completions.create(model="gpt-4o", messages=[])
+
+    assert b.model_switched is True
+    assert captured_models[8] == "gpt-4o-mini"
+
+
 def test_fallback_validation() -> None:
     """Fallback dict must have valid 'at' and 'model' keys."""
     # Invalid 'at' values
