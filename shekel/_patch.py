@@ -332,3 +332,89 @@ async def _wrap_anthropic_stream_async(stream: Any) -> Any:
             yield event
     finally:
         _record(input_tokens, output_tokens, model)
+
+
+# ---------------------------------------------------------------------------
+# LiteLLM sync wrapper
+# ---------------------------------------------------------------------------
+
+
+def _litellm_sync_wrapper(*args: Any, **kwargs: Any) -> Any:
+    original = _originals.get("litellm_sync")
+    if original is None:
+        raise RuntimeError("shekel: litellm original not stored")
+
+    active_budget = _context.get_active_budget()
+    if active_budget is not None:
+        _apply_fallback_if_needed(active_budget, kwargs, "litellm")
+
+    if kwargs.get("stream") is True:
+        kwargs.setdefault("stream_options", {})["include_usage"] = True
+        stream = original(*args, **kwargs)
+        return _wrap_litellm_stream(stream)
+
+    response = original(*args, **kwargs)
+    input_tokens, output_tokens, model = _extract_openai_tokens(response)
+    _record(input_tokens, output_tokens, model)
+    return response
+
+
+def _wrap_litellm_stream(stream: Any) -> Generator[Any, None, None]:
+    seen: list[tuple[int, int, str]] = []
+    try:
+        for chunk in stream:
+            if getattr(chunk, "usage", None) is not None:
+                try:
+                    it = chunk.usage.prompt_tokens or 0
+                    ot = chunk.usage.completion_tokens or 0
+                    m = getattr(chunk, "model", None) or "unknown"
+                    seen.append((it, ot, m))
+                except AttributeError:
+                    pass
+            yield chunk
+    finally:
+        it, ot, m = seen[-1] if seen else (0, 0, "unknown")
+        _record(it, ot, m)
+
+
+# ---------------------------------------------------------------------------
+# LiteLLM async wrapper
+# ---------------------------------------------------------------------------
+
+
+async def _litellm_async_wrapper(*args: Any, **kwargs: Any) -> Any:
+    original = _originals.get("litellm_async")
+    if original is None:
+        raise RuntimeError("shekel: litellm async original not stored")
+
+    active_budget = _context.get_active_budget()
+    if active_budget is not None:
+        _apply_fallback_if_needed(active_budget, kwargs, "litellm")
+
+    if kwargs.get("stream") is True:
+        kwargs.setdefault("stream_options", {})["include_usage"] = True
+        stream = await original(*args, **kwargs)
+        return _wrap_litellm_stream_async(stream)
+
+    response = await original(*args, **kwargs)
+    input_tokens, output_tokens, model = _extract_openai_tokens(response)
+    _record(input_tokens, output_tokens, model)
+    return response
+
+
+async def _wrap_litellm_stream_async(stream: Any) -> Any:
+    seen: list[tuple[int, int, str]] = []
+    try:
+        async for chunk in stream:
+            if getattr(chunk, "usage", None) is not None:
+                try:
+                    it = chunk.usage.prompt_tokens or 0
+                    ot = chunk.usage.completion_tokens or 0
+                    m = getattr(chunk, "model", None) or "unknown"
+                    seen.append((it, ot, m))
+                except AttributeError:
+                    pass
+            yield chunk
+    finally:
+        it, ot, m = seen[-1] if seen else (0, 0, "unknown")
+        _record(it, ot, m)

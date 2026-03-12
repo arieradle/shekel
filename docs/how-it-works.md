@@ -40,6 +40,10 @@ with budget(max_usd=1.00):
 - `anthropic.resources.messages.Messages.create` (sync)
 - `anthropic.resources.messages.AsyncMessages.create` (async)
 
+**LiteLLM** (when `shekel[litellm]` is installed):
+- `litellm.completion` (sync)
+- `litellm.acompletion` (async)
+
 ### Patching Implementation
 
 Shekel uses a pluggable `ProviderAdapter` pattern — each provider registers itself in `ADAPTER_REGISTRY`. `shekel/_patch.py` delegates all patching to the registry:
@@ -153,7 +157,7 @@ with budget(max_usd=5.00):
 
 Shekel extracts tokens from API responses:
 
-**OpenAI:**
+**OpenAI / LiteLLM:**
 ```python
 def _extract_openai_tokens(response):
     input_tokens = response.usage.prompt_tokens
@@ -161,6 +165,8 @@ def _extract_openai_tokens(response):
     model = response.model
     return input_tokens, output_tokens, model
 ```
+
+LiteLLM uses the same OpenAI-compatible format regardless of the underlying provider, so the same extraction logic applies.
 
 **Anthropic:**
 ```python

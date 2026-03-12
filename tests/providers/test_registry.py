@@ -285,3 +285,15 @@ class TestAdapterRegistrySingleton:
 
         anthropic_adapter = ADAPTER_REGISTRY.get_by_name("anthropic")
         assert anthropic_adapter is not None
+
+    def test_litellm_import_error_is_swallowed(self):
+        """Lines 23-24: ImportError when litellm is absent is silently ignored."""
+        import importlib
+        import sys
+        from unittest.mock import patch
+
+        with patch.dict(sys.modules, {"litellm": None, "shekel.providers.litellm": None}):
+            # Re-importing with litellm blocked must not raise
+            import shekel.providers as providers_mod
+
+            importlib.reload(providers_mod)

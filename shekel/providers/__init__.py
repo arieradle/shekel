@@ -16,10 +16,18 @@ from shekel.providers.openai import OpenAIAdapter
 ADAPTER_REGISTRY.register(OpenAIAdapter())
 ADAPTER_REGISTRY.register(AnthropicAdapter())
 
+try:
+    from shekel.providers.litellm import LiteLLMAdapter
+
+    ADAPTER_REGISTRY.register(LiteLLMAdapter())
+except ImportError:
+    pass
+
 __all__ = [
     "ADAPTER_REGISTRY",
     "ProviderAdapter",
     "ProviderRegistry",
     "OpenAIAdapter",
     "AnthropicAdapter",
+    "LiteLLMAdapter",
 ]

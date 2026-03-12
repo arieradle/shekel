@@ -3,8 +3,9 @@
 ## Requirements
 
 - Python 3.9 or higher
-- OpenAI SDK (optional) - for OpenAI models
-- Anthropic SDK (optional) - for Anthropic models
+- OpenAI SDK (optional) — for OpenAI models
+- Anthropic SDK (optional) — for Anthropic models
+- LiteLLM (optional) — for 100+ providers via a unified interface
 
 ## Install Shekel
 
@@ -32,6 +33,14 @@ If you're using models from both providers:
 
 ```bash
 pip install shekel[all]
+```
+
+### LiteLLM (100+ Providers)
+
+For access to OpenAI, Anthropic, Gemini, Cohere, Ollama, Azure, Bedrock, and 90+ more through a unified interface:
+
+```bash
+pip install shekel[litellm]
 ```
 
 ### Extended Model Support (400+ Models)
@@ -97,6 +106,7 @@ Shekel has zero required dependencies beyond the Python standard library. The Op
 |---------|-----------|---------|
 | `openai>=1.0.0` | Optional | Track OpenAI API costs |
 | `anthropic>=0.7.0` | Optional | Track Anthropic API costs |
+| `litellm>=1.0.0` | Optional | Track costs via LiteLLM (100+ providers) |
 | `tokencost>=0.1.0` | Optional | Support 400+ models |
 | `click>=8.0.0` | Optional | CLI tools |
 
@@ -116,6 +126,14 @@ If you see this error, install the Anthropic SDK:
 
 ```bash
 pip install shekel[anthropic]
+```
+
+### ImportError: No module named 'litellm'
+
+If you see this error, install LiteLLM:
+
+```bash
+pip install shekel[litellm]
 ```
 
 ### Model pricing not found

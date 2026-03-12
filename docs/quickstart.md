@@ -9,7 +9,8 @@ Choose the installation that matches your LLM provider:
 ```bash
 pip install shekel[openai]       # For OpenAI
 pip install shekel[anthropic]    # For Anthropic
-pip install shekel[all]          # For both
+pip install shekel[litellm]      # For 100+ providers via LiteLLM
+pip install shekel[all]          # For OpenAI + Anthropic + LiteLLM
 ```
 
 ## Step 2: Import and Use
@@ -236,18 +237,35 @@ print(f"\nStreaming cost: ${b.spent:.4f}")
 
 ## Working with Frameworks
 
-Shekel works automatically with any framework that uses OpenAI or Anthropic under the hood.
+Shekel works automatically with any framework that uses OpenAI, Anthropic, or LiteLLM under the hood.
+
+### LiteLLM
+
+Track costs across 100+ providers with a single adapter:
+
+```python
+import litellm
+from shekel import budget
+
+with budget(max_usd=0.50) as b:
+    response = litellm.completion(
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": "Hello!"}],
+    )
+print(f"Cost: ${b.spent:.4f}")
+```
 
 ### LangGraph
 
+Use `budget()` directly, or the convenience `budgeted_graph()` helper:
+
 ```python
-from langgraph.graph import StateGraph, END
-from shekel import budget
+from shekel.integrations.langgraph import budgeted_graph
 
 # Your graph definition here
 app = graph.compile()
 
-with budget(max_usd=0.50) as b:
+with budgeted_graph(max_usd=0.50, name="my-graph") as b:
     result = app.invoke({"question": "What is 2+2?"})
 print(f"Graph execution cost: ${b.spent:.4f}")
 ```
