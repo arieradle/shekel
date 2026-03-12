@@ -21,13 +21,55 @@ I spent $47 debugging a LangGraph retry loop. The agent kept failing, LangGraph 
 
 ---
 
-## ⚡️ What's New in v0.2.5: Extensible Provider Architecture
+## ⚡️ What's New in v0.2.6: Native Gemini & HuggingFace Support
 
-**Built an open architecture for adding new LLM providers without touching shekel's core. Validated with comprehensive integration tests.**
+**Zero-config cost tracking for Google Gemini and HuggingFace Inference API — same `with budget():` pattern, no changes needed.**
 
-### 🔧 Provider Registry Architecture
+### Google Gemini
 
-Shekel now uses a pluggable provider adapter pattern, enabling the community to add support for any LLM provider:
+```bash
+pip install shekel[gemini]
+```
+
+```python
+import google.genai as genai
+from shekel import budget
+
+client = genai.Client(api_key="...")
+
+with budget(max_usd=1.00) as b:
+    response = client.models.generate_content(
+        model="gemini-2.0-flash",
+        contents="Summarize this doc.",
+    )
+print(f"Cost: ${b.spent:.4f}")
+```
+
+Supports `generate_content` (sync) and `generate_content_stream` (streaming). Pricing for `gemini-2.0-flash`, `gemini-2.5-flash`, and `gemini-2.5-pro` is bundled.
+
+### HuggingFace Inference API
+
+```bash
+pip install shekel[huggingface]
+```
+
+```python
+from huggingface_hub import InferenceClient
+from shekel import budget
+
+client = InferenceClient(token="...")
+
+with budget(max_usd=1.00, price_per_1k_tokens={"input": 0.001, "output": 0.001}) as b:
+    response = client.chat.completions.create(
+        model="meta-llama/Llama-3.2-1B-Instruct",
+        messages=[{"role": "user", "content": "Hello!"}],
+    )
+print(f"Cost: ${b.spent:.4f}")
+```
+
+### Extensible Provider Architecture *(v0.2.5)*
+
+Add any LLM provider without touching shekel core:
 
 ```python
 from shekel.providers.base import ADAPTER_REGISTRY, ProviderAdapter
@@ -37,37 +79,23 @@ class MyProviderAdapter(ProviderAdapter):
     def name(self) -> str:
         return "myprovider"
 
-    # Implement: install_patches(), remove_patches(), extract_tokens(), wrap_stream()
     def install_patches(self) -> None: ...
     def extract_tokens(self, response) -> tuple: ...
-    # ... 5 more methods
+    # ... and 4 more methods
 
-# Register once at import time
 ADAPTER_REGISTRY.register(MyProviderAdapter())
 
-# Works everywhere automatically:
 with budget(max_usd=10.00):
     response = my_provider_client.call()  # Shekel tracks cost
 ```
 
-**What this enables:**
-- Add new providers without modifying shekel core
-- Standard interface all providers implement
-- Easy community contributions (Cohere, Replicate, vLLM, Mistral, etc.)
+### ✅ Comprehensive Integration Test Suite
 
-### ✅ Validated with Real-World Integration Tests
-
-Provider architecture validated and stress-tested with comprehensive integration test suites:
-
+- **20 OpenAI integration tests** — Sync, async, streaming, budget enforcement, callbacks, fallback, multi-turn
+- **18 Anthropic integration tests** — Sync, async, streaming, budget enforcement, callbacks, multi-turn
 - **25+ Groq API integration tests** — Custom pricing, nested budgets, streaming, concurrent calls, rate limiting
-- **30+ Google Gemini API integration tests** — Multi-turn conversations, JSON mode, function calls, token accuracy
+- **30+ Google Gemini integration tests** — Multi-turn conversations, streaming, token accuracy
 - Real API keys in CI pipeline ensure it works end-to-end
-
-### ⚙️ Production-Grade Reliability
-
-- **Exponential backoff retry logic** — Gracefully handles rate limiting and transient failures
-- **100+ integration test scenarios** — Comprehensive validation across multiple providers
-- **Concurrent test stability** — Reduced flakiness in multi-provider scenarios
 
 ---
 
@@ -133,8 +161,11 @@ with budget(max_usd=10.00, name="agent") as b:
 ```bash
 pip install shekel[openai]       # OpenAI
 pip install shekel[anthropic]    # Anthropic
+pip install shekel[gemini]       # Google Gemini (google-genai SDK)
+pip install shekel[huggingface]  # HuggingFace Inference API
 pip install shekel[langfuse]     # Langfuse observability
-pip install shekel[all]          # OpenAI + Anthropic + Langfuse
+pip install shekel[litellm]      # LiteLLM (100+ providers via proxy)
+pip install shekel[all]          # All providers + Langfuse
 pip install shekel[all-models]   # All above + tokencost (400+ model pricing)
 pip install shekel[cli]          # CLI tools (shekel estimate, shekel models)
 ```

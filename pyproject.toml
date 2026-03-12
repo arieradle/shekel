@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "shekel"
-version = "0.2.5"
+version = "0.2.6"
 description = "LLM cost tracking and budget enforcement. Zero config — with budget(max_usd=1.00): run_agent(). Works with LangGraph, CrewAI, raw OpenAI/Anthropic."
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -20,6 +20,12 @@ keywords = [
     "langchain",
     "langgraph",
     "langfuse",
+    "gemini",
+    "google-genai",
+    "huggingface",
+    "huggingface-hub",
+    "litellm",
+    "groq",
     "llm-cost-control",
     "llm-budget-control",
     "ai-cost-control",

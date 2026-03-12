@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.6] - 2026-03-12
+
 ### Added
 - **Google Gemini Provider Adapter** (`shekel/providers/gemini.py`) — Native support for the `google-genai` SDK
   - Patches `google.genai.models.Models.generate_content` (non-streaming) and `generate_content_stream` (streaming) as two separate methods
@@ -20,6 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Graceful handling when models don't return usage in streaming responses
   - Install via `pip install shekel[huggingface]`
 - **Integration tests** for both new adapters with real API calls (skip gracefully on quota errors)
+- **OpenAI integration test suite** — 20 tests covering sync, async, streaming, budget enforcement, callbacks, fallback, multi-turn conversation, and mock lifecycle
+- **Anthropic integration test suite** — 18 tests covering sync, async, streaming, budget enforcement, callbacks, multi-turn conversation, and mock lifecycle
 - **Examples**: `examples/gemini_demo.py`, `examples/huggingface_demo.py`
 - **Documentation**: `docs/integrations/gemini.md`, `docs/integrations/huggingface.md`
 
@@ -172,7 +176,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - `UnknownModelError` is kept for backwards compatibility but no longer raised internally
 
-[Unreleased]: https://github.com/arieradle/shekel/compare/v0.2.5...HEAD
+[Unreleased]: https://github.com/arieradle/shekel/compare/v0.2.6...HEAD
+[0.2.6]: https://github.com/arieradle/shekel/compare/v0.2.5...v0.2.6
 [0.2.5]: https://github.com/arieradle/shekel/compare/v0.2.4...v0.2.5
 [0.2.4]: https://github.com/arieradle/shekel/compare/v0.2.3...v0.2.4
 [0.2.3]: https://github.com/arieradle/shekel/compare/v0.2.2...v0.2.3
