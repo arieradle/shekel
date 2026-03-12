@@ -18,4 +18,3 @@ try:
 except ImportError:
     # langfuse is an optional dependency
     pass
-
