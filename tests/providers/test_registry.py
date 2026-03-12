@@ -297,3 +297,25 @@ class TestAdapterRegistrySingleton:
             import shekel.providers as providers_mod
 
             importlib.reload(providers_mod)
+
+    def test_gemini_import_error_is_swallowed(self):
+        """Lines 30-31: ImportError when google-genai is absent is silently ignored."""
+        import importlib
+        import sys
+        from unittest.mock import patch
+
+        with patch.dict(sys.modules, {"shekel.providers.gemini": None}):
+            import shekel.providers as providers_mod
+
+            importlib.reload(providers_mod)
+
+    def test_huggingface_import_error_is_swallowed(self):
+        """Lines 37-38: ImportError when huggingface-hub is absent is silently ignored."""
+        import importlib
+        import sys
+        from unittest.mock import patch
+
+        with patch.dict(sys.modules, {"shekel.providers.huggingface": None}):
+            import shekel.providers as providers_mod
+
+            importlib.reload(providers_mod)
