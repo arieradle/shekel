@@ -4,8 +4,8 @@
 [![Python versions](https://img.shields.io/pypi/pyversions/shekel)](https://pypi.org/project/shekel/)
 [![License](https://img.shields.io/pypi/l/shekel)](https://pypi.org/project/shekel/)
 [![CI](https://github.com/arieradle/shekel/actions/workflows/ci.yml/badge.svg)](https://github.com/arieradle/shekel/actions/workflows/ci.yml)
-[![Performance](https://img.shields.io/badge/perf-120%20tests-brightgreen)](https://github.com/arieradle/shekel/actions/workflows/ci.yml)
-[![Integration Tests](https://img.shields.io/badge/integration%20tests-104%20passed-brightgreen)](https://github.com/arieradle/shekel/actions/workflows/ci.yml)
+[![Unit Tests](https://img.shields.io/badge/unit%20tests-390%20passed-brightgreen)](https://github.com/arieradle/shekel/actions/workflows/ci.yml)
+[![Integration Tests](https://img.shields.io/badge/integration%20tests-274%20passed-brightgreen)](https://github.com/arieradle/shekel/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/arieradle/shekel/branch/main/graph/badge.svg)](https://codecov.io/gh/arieradle/shekel)
 [![Downloads](https://img.shields.io/pypi/dm/shekel)](https://pypi.org/project/shekel/)
 [![Documentation](https://img.shields.io/badge/docs-mkdocs-blue)](https://arieradle.github.io/shekel/)
@@ -91,11 +91,17 @@ with budget(max_usd=10.00):
 
 ### ✅ Comprehensive Integration Test Suite
 
-- **20 OpenAI integration tests** — Sync, async, streaming, budget enforcement, callbacks, fallback, multi-turn
-- **18 Anthropic integration tests** — Sync, async, streaming, budget enforcement, callbacks, multi-turn
-- **25+ Groq API integration tests** — Custom pricing, nested budgets, streaming, concurrent calls, rate limiting
-- **30+ Google Gemini integration tests** — Multi-turn conversations, streaming, token accuracy
-- Real API keys in CI pipeline ensure it works end-to-end
+274 integration tests across 7 real providers — real API keys run in CI:
+
+| Provider | Tests | Coverage |
+|----------|-------|----------|
+| OpenAI | 26 | Sync, async, streaming, budget enforcement, callbacks, fallback, multi-turn |
+| Anthropic | 24 | Sync, async, streaming, budget enforcement, callbacks, multi-turn |
+| Groq | 30 | Custom pricing, nested budgets, streaming, concurrent calls, rate limiting |
+| Google Gemini | 42 | Multi-turn, streaming, JSON mode, function calling, token accuracy |
+| HuggingFace | 12 | Sync, streaming, custom pricing, budget enforcement |
+| LangGraph | 14 | Multi-node graphs, conditional edges, budget propagation |
+| Ollama | 38 | Local inference, streaming, nested budgets |
 
 ---
 
