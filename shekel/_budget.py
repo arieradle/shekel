@@ -67,6 +67,9 @@ class Budget:
         hard_cap: float | None = None,
         # --- NEW in v0.2.3 (nested budgets) ---
         name: str | None = None,
+        # --- NEW in v0.3 (call limits) ---
+        max_llm_calls: int | None = None,
+        fallback_at_pct: float | None = None,
     ) -> None:
         # --- NEW in v0.2.3 (Decision #12): Deprecate persistent flag ---
         if persistent is not False:  # User explicitly set it
@@ -111,6 +114,20 @@ class Budget:
                 f"hard_cap (${hard_cap:.2f}) must be greater than max_usd (${max_usd:.2f})"
             )
 
+        # --- NEW in v0.2.6 (Decision #1): Validate call limits ---
+        if max_llm_calls is not None and max_llm_calls <= 0:
+            raise ValueError(
+                "max_llm_calls must be positive or None for track-only mode. "
+                f"Got: {max_llm_calls}"
+            )
+        if fallback_at_pct is not None and not (0.0 < fallback_at_pct <= 1.0):
+            raise ValueError(
+                f"fallback_at_pct must be a fraction between 0 and 1 (exclusive 0, inclusive 1), "
+                f"got {fallback_at_pct}"
+            )
+        if fallback_at_pct is not None and fallback is None:
+            raise ValueError("fallback_at_pct requires fallback to be set")
+
         self.max_usd = max_usd
         self.warn_at = warn_at
         self.on_exceed = on_exceed
@@ -128,6 +145,11 @@ class Budget:
         self._depth: int = 0
         self._effective_limit: float | None = max_usd  # Will be auto-capped in __enter__
 
+        # --- NEW in v0.2.6 (call limits) ---
+        self.max_llm_calls: int | None = max_llm_calls
+        self.fallback_at_pct: float | None = fallback_at_pct
+        self._effective_call_limit: int | None = max_llm_calls  # Will be auto-capped in __enter__
+
         self._ctx_token: Token[Budget | None] | None = None
 
         # All spend-tracking state lives here — reset on each __enter__ for non-persistent
@@ -140,6 +162,9 @@ class Budget:
         self._fallback_spent: float = 0.0
         self._switched_at_usd: float | None = None
         self._calls: list[CallRecord] = []
+
+        # --- NEW in v0.2.6 (call limit tracking) ---
+        self._calls_made: int = 0
 
     # ------------------------------------------------------------------
     # Internal state reset
@@ -220,9 +245,18 @@ class Budget:
             else:
                 # Track-only child (max_usd=None) is not capped
                 self._effective_limit = self.max_usd
+
+            # --- NEW in v0.2.6 (Decision #2b): Auto-capping for call limits ---
+            # Cap child call limit to parent's remaining calls
+            if self.max_llm_calls is not None and current_budget.calls_remaining is not None:
+                self._effective_call_limit = min(self.max_llm_calls, current_budget.calls_remaining)
+            else:
+                # Track-only child (max_llm_calls=None) is not capped
+                self._effective_call_limit = self.max_llm_calls
         else:
             # Root budget - no capping needed
             self._effective_limit = self.max_usd
+            self._effective_call_limit = self.max_llm_calls
 
         self._ctx_token = _context.set_active_budget(self)
         return self
@@ -232,6 +266,8 @@ class Budget:
         if self.parent is not None:
             # Propagate our spend to parent
             self.parent._spent += self._spent
+            # --- NEW in v0.2.6 (call limits): Propagate call count ---
+            self.parent._calls_made += self._calls_made
             # Clear parent's active_child
             self.parent.active_child = None
 
@@ -321,8 +357,11 @@ class Budget:
                 fallback=self._using_fallback,
             )
         )
+        # --- NEW in v0.2.6 (call limits) ---
+        self._calls_made += 1
         self._check_warn()
         self._check_limit()
+        self._check_call_limit()
 
     def _check_warn(self) -> None:
         effective_limit = self._effective_limit
@@ -394,6 +433,72 @@ class Budget:
         # No fallback — standard raise
         self._emit_budget_exceeded_event()
         raise BudgetExceededError(self._spent, effective_limit, self._last_model, self._last_tokens)
+
+    def _check_call_limit_for_fallback(self) -> None:
+        """Check if fallback should be activated based on call count (called BEFORE API call)."""
+        # --- NEW in v0.2.6 (call limits) ---
+        effective_call_limit = self._effective_call_limit
+        if effective_call_limit is None:
+            return
+
+        # Check if we should activate fallback
+        if self.fallback_at_pct is not None and self.fallback is not None and not self._using_fallback:
+            # Calculate call threshold
+            call_threshold = int(effective_call_limit * self.fallback_at_pct)
+
+            # Also check USD threshold if both exist
+            usd_threshold_met = False
+            if self._effective_limit is not None:
+                usd_threshold = self._effective_limit * self.fallback_at_pct
+                usd_threshold_met = self._spent >= usd_threshold
+
+            # Activate fallback if we've reached either threshold
+            if self._calls_made >= call_threshold or usd_threshold_met:
+                self._using_fallback = True
+                self._switched_at_usd = self._spent
+
+    def _check_call_limit(self) -> None:
+        """Check call limit and enforce fallback activation or hard stop."""
+        # --- NEW in v0.2.6 (call limits) ---
+        effective_call_limit = self._effective_call_limit
+        if effective_call_limit is None:
+            return
+
+        # Check if we should activate fallback (before hard limit)
+        if self.fallback_at_pct is not None and self.fallback is not None and not self._using_fallback:
+            # Calculate call threshold
+            call_threshold = int(effective_call_limit * self.fallback_at_pct)
+
+            # Also check USD threshold if both exist
+            usd_threshold_met = False
+            if self._effective_limit is not None:
+                usd_threshold = self._effective_limit * self.fallback_at_pct
+                usd_threshold_met = self._spent >= usd_threshold
+
+            # Activate fallback if we've EXCEEDED either threshold (not just reached it)
+            if self._calls_made > call_threshold or usd_threshold_met:
+                self._using_fallback = True
+                self._switched_at_usd = self._spent
+                self._emit_fallback_activated_event()
+                if self.on_fallback is not None:
+                    self.on_fallback(self._spent, self._effective_limit or 0, self.fallback)
+                else:
+                    warnings.warn(
+                        f"shekel: limit approaching ({self._calls_made} / {effective_call_limit} calls). "
+                        f"Switching to fallback model '{self.fallback}'.",
+                        stacklevel=4,
+                    )
+                return
+
+        # Check if we've exceeded the hard call limit (no fallback, or fallback is active but we're over)
+        if self._calls_made > effective_call_limit:
+            self._emit_budget_exceeded_event()
+            raise BudgetExceededError(
+                self._calls_made,
+                effective_call_limit,
+                self._last_model,
+                self._last_tokens,
+            )
 
     def _emit_fallback_activated_event(self) -> None:
         """Emit fallback activated event to adapters."""
@@ -481,6 +586,20 @@ class Budget:
     def fallback_spent(self) -> float:
         """USD spent on the fallback model (0.0 if no switch occurred)."""
         return self._fallback_spent
+
+    # --- NEW in v0.2.6 (call limits) ---
+
+    @property
+    def calls_used(self) -> int:
+        """Number of LLM calls made in this budget context."""
+        return self._calls_made
+
+    @property
+    def calls_remaining(self) -> int | None:
+        """Remaining call count (based on effective limit), or None if track-only mode."""
+        if self._effective_call_limit is None:
+            return None
+        return max(0, self._effective_call_limit - self._calls_made)
 
     # --- NEW in v0.2.3 (Decision #11): Rich introspection API ---
 
