@@ -33,8 +33,8 @@ class LiteLLMAdapter(ProviderAdapter):
             if "litellm_sync" not in _patch._originals:
                 _patch._originals["litellm_sync"] = litellm.completion
                 _patch._originals["litellm_async"] = litellm.acompletion
-                litellm.completion = _patch._litellm_sync_wrapper  # type: ignore[assignment]
-                litellm.acompletion = _patch._litellm_async_wrapper  # type: ignore[assignment]
+                litellm.completion = _patch._litellm_sync_wrapper
+                litellm.acompletion = _patch._litellm_async_wrapper
         except ImportError:
             pass
 
@@ -46,9 +46,9 @@ class LiteLLMAdapter(ProviderAdapter):
             import litellm
 
             if "litellm_sync" in _patch._originals:
-                litellm.completion = _patch._originals.pop("litellm_sync")  # type: ignore[assignment]
+                litellm.completion = _patch._originals.pop("litellm_sync")
             if "litellm_async" in _patch._originals:
-                litellm.acompletion = _patch._originals.pop("litellm_async")  # type: ignore[assignment]
+                litellm.acompletion = _patch._originals.pop("litellm_async")
         except ImportError:
             pass
 
