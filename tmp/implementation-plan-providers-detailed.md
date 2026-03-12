@@ -5,6 +5,8 @@
 **Scope:** Phase 1 (LiteLLM) as the reference flow; Phases 2–6 follow the same pattern.  
 **Version:** 0.2.6
 
+**Note:** This folder (`tmp/`) is temporary — delete it once the work is done or the plan is no longer needed.
+
 ---
 
 ## 1. Branch and repo hygiene (Bob)
