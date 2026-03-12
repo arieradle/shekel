@@ -118,6 +118,7 @@ jobs:
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          HUGGING_FACE_API: ${{ secrets.HUGGING_FACE_API }}
         run: pytest tests/integrations/ -v --cov=shekel --cov-report=xml --cov-append
 
       - name: Upload integration coverage

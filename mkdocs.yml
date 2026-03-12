@@ -119,6 +119,8 @@ nav:
     - CrewAI: integrations/crewai.md
     - OpenAI: integrations/openai.md
     - Anthropic: integrations/anthropic.md
+    - Google Gemini: integrations/gemini.md
+    - HuggingFace: integrations/huggingface.md
     - Langfuse: integrations/langfuse.md
   - Reference:
     - CLI Tools: cli.md

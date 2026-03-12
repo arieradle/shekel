@@ -45,5 +45,17 @@
   "gemini-1.5-pro": {
     "input_per_1k": 0.00125,
     "output_per_1k": 0.005
+  },
+  "gemini-2.0-flash": {
+    "input_per_1k": 0.0001,
+    "output_per_1k": 0.0004
+  },
+  "gemini-2.5-flash": {
+    "input_per_1k": 0.00015,
+    "output_per_1k": 0.0006
+  },
+  "gemini-2.5-pro": {
+    "input_per_1k": 0.00125,
+    "output_per_1k": 0.01
   }
 }

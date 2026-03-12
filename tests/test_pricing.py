@@ -274,7 +274,7 @@ def test_prices_json_schema() -> None:
 
 
 def test_list_models_returns_ten() -> None:
-    assert len(list_models()) == 10
+    assert len(list_models()) == 13
 
 
 def test_anthropic_model_in_list() -> None:

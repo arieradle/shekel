@@ -23,6 +23,20 @@ try:
 except ImportError:
     pass
 
+try:
+    from shekel.providers.gemini import GeminiAdapter
+
+    ADAPTER_REGISTRY.register(GeminiAdapter())
+except ImportError:
+    pass
+
+try:
+    from shekel.providers.huggingface import HuggingFaceAdapter
+
+    ADAPTER_REGISTRY.register(HuggingFaceAdapter())
+except ImportError:
+    pass
+
 __all__ = [
     "ADAPTER_REGISTRY",
     "ProviderAdapter",
@@ -30,4 +44,6 @@ __all__ = [
     "OpenAIAdapter",
     "AnthropicAdapter",
     "LiteLLMAdapter",
+    "GeminiAdapter",
+    "HuggingFaceAdapter",
 ]

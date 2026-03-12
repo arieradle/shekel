@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Google Gemini Provider Adapter** (`shekel/providers/gemini.py`) — Native support for the `google-genai` SDK
+  - Patches `google.genai.models.Models.generate_content` (non-streaming) and `generate_content_stream` (streaming) as two separate methods
+  - Token extraction from `response.usage_metadata.prompt_token_count` / `candidates_token_count`
+  - Model name captured from `model` kwarg before the call (not available in Gemini response objects)
+  - New pricing entries: `gemini-2.0-flash`, `gemini-2.5-flash`, `gemini-2.5-pro`
+  - Install via `pip install shekel[gemini]`
+- **HuggingFace Provider Adapter** (`shekel/providers/huggingface.py`) — Support for `huggingface_hub.InferenceClient`
+  - Patches `InferenceClient.chat_completion` (the underlying method for `.chat.completions.create`)
+  - OpenAI-compatible token extraction (`usage.prompt_tokens` / `usage.completion_tokens`)
+  - Graceful handling when models don't return usage in streaming responses
+  - Install via `pip install shekel[huggingface]`
+- **Integration tests** for both new adapters with real API calls (skip gracefully on quota errors)
+- **Examples**: `examples/gemini_demo.py`, `examples/huggingface_demo.py`
+- **Documentation**: `docs/integrations/gemini.md`, `docs/integrations/huggingface.md`
+
 ## [0.2.5] - 2026-03-11
 
 ### Added

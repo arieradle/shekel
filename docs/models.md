@@ -28,8 +28,14 @@ These models have zero-dependency pricing built into shekel:
 
 | Model | Input / 1K | Output / 1K | Use Case |
 |-------|-----------|-------------|----------|
-| **gemini-1.5-flash** | $0.0000750 | $0.000300 | Fastest, cheapest |
+| **gemini-2.5-pro** | $0.00125 | $0.01000 | Most capable Gemini |
+| **gemini-2.5-flash** | $0.0000750 | $0.000300 | Fast, cost-efficient |
+| **gemini-2.0-flash** | $0.0000750 | $0.000300 | Latest flash model |
 | **gemini-1.5-pro** | $0.00125 | $0.00500 | Balanced quality/cost |
+| **gemini-1.5-flash** | $0.0000750 | $0.000300 | Fastest, cheapest |
+
+!!! note "Native Gemini SDK support"
+    To track costs when calling Gemini via the `google-genai` SDK directly (not through LiteLLM), install `shekel[gemini]`. See [Google Gemini Integration](integrations/gemini.md).
 
 ## Version Resolution
 
