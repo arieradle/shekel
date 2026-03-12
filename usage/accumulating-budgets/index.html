@@ -1964,7 +1964,7 @@
 </span></code></pre></div>
 </div>
 <h2 id="budgets-always-accumulate">Budgets Always Accumulate<a class="headerlink" href="#budgets-always-accumulate" title="Permanent link">&para;</a></h2>
-<p>Budget variables always accumulate across multiple uses. There is no <code>persistent</code> parameter — accumulation is the only behavior.</p>
+<p>Budget variables always accumulate across multiple uses — reuse the same variable and spend adds up automatically.</p>
 <h2 id="multi-turn-conversations">Multi-Turn Conversations<a class="headerlink" href="#multi-turn-conversations" title="Permanent link">&para;</a></h2>
 <p>Perfect for chatbots and conversational agents:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">user_session</span> <span class="o">=</span> <span class="n">budget</span><span class="p">(</span><span class="n">max_usd</span><span class="o">=</span><span class="mf">2.00</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;user_chat&quot;</span><span class="p">)</span>

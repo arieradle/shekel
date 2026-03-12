@@ -1858,7 +1858,7 @@
 
 
 <h1 id="google-gemini-integration">Google Gemini Integration<a class="headerlink" href="#google-gemini-integration" title="Permanent link">&para;</a></h1>
-<p>Shekel tracks costs and enforces budgets for <a href="https://ai.google.dev/">Google Gemini</a> via the official <code>google-genai</code> Python SDK.</p>
+<p>One <code>pip install shekel[gemini]</code> and one <code>with budget():</code> — shekel intercepts every Gemini call, enforces hard spend limits, and shows you exactly what was spent. All the same budget controls (hard caps, fallback models, nested budgets, <code>BudgetExceededError</code>) work identically to OpenAI and Anthropic.</p>
 <h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>shekel<span class="o">[</span>gemini<span class="o">]</span>
 </span></code></pre></div>

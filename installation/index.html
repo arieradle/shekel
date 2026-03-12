@@ -2080,12 +2080,16 @@
 
 
 <h1 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h1>
+<div class="admonition success">
+<p class="admonition-title">Zero external dependencies</p>
+<p>Shekel requires <strong>no API keys</strong>, <strong>no external services</strong>, and <strong>no configuration</strong>. Install, wrap your calls in <code>with budget():</code>, and you're done.</p>
+</div>
 <h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Python 3.9 or higher</li>
 <li>OpenAI SDK (optional) — for OpenAI models</li>
 <li>Anthropic SDK (optional) — for Anthropic models</li>
-<li>LiteLLM (optional) — for 100+ providers via a unified interface</li>
+<li>LiteLLM (optional) — budget enforcement and circuit-breaking across 100+ providers via a unified interface</li>
 </ul>
 <h2 id="install-shekel">Install Shekel<a class="headerlink" href="#install-shekel" title="Permanent link">&para;</a></h2>
 <p>Choose the installation option that matches your LLM provider:</p>
@@ -2110,7 +2114,7 @@
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>pip<span class="w"> </span>install<span class="w"> </span>shekel<span class="o">[</span>huggingface<span class="o">]</span>
 </span></code></pre></div>
 <h3 id="litellm-100-providers">LiteLLM (100+ Providers)<a class="headerlink" href="#litellm-100-providers" title="Permanent link">&para;</a></h3>
-<p>For access to OpenAI, Anthropic, Gemini, Cohere, Ollama, Azure, Bedrock, and 90+ more through a unified interface:</p>
+<p>To enforce hard spend limits and circuit-break across OpenAI, Anthropic, Gemini, Cohere, Ollama, Azure, Bedrock, and 90+ more through a unified interface:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>pip<span class="w"> </span>install<span class="w"> </span>shekel<span class="o">[</span>litellm<span class="o">]</span>
 </span></code></pre></div>
 <h3 id="extended-model-support-400-models">Extended Model Support (400+ Models)<a class="headerlink" href="#extended-model-support-400-models" title="Permanent link">&para;</a></h3>
@@ -2167,7 +2171,7 @@
 <tr>
 <td><code>litellm&gt;=1.0.0</code></td>
 <td>Optional</td>
-<td>Track costs via LiteLLM (100+ providers)</td>
+<td>Budget enforcement and circuit-breaking via LiteLLM (100+ providers)</td>
 </tr>
 <tr>
 <td><code>google-genai&gt;=1.0.0</code></td>

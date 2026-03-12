@@ -1421,17 +1421,6 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#breaking-changes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Breaking Changes
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#new-features" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1891,17 +1880,6 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#breaking-changes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Breaking Changes
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#new-features" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2184,35 +2162,6 @@
 <h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
 <p>All notable changes to this project are documented here. For detailed information, see <a href="https://github.com/arieradle/shekel/blob/main/CHANGELOG.md">CHANGELOG.md</a> on GitHub.</p>
 <h2 id="026">[0.2.6]<a class="headerlink" href="#026" title="Permanent link">&para;</a></h2>
-<h3 id="breaking-changes">Breaking Changes<a class="headerlink" href="#breaking-changes" title="Permanent link">&para;</a></h3>
-<div class="admonition danger">
-<p class="admonition-title">BREAKING CHANGES</p>
-<p><strong><code>fallback</code> parameter changed from string to dict</strong></p>
-<ul>
-<li>OLD: <code>fallback="gpt-4o-mini"</code></li>
-<li>NEW: <code>fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}</code></li>
-<li>The <code>at_pct</code> key specifies the fraction of <code>max_usd</code> at which to switch (e.g. <code>0.8</code> = 80%)</li>
-<li>The <code>model</code> key specifies the fallback model (same provider only)</li>
-<li>Fallback shares the same <code>max_usd</code> budget — there is no separate ceiling</li>
-</ul>
-<p><strong><code>on_exceed</code> renamed to <code>on_warn</code></strong></p>
-<ul>
-<li>OLD: <code>budget(max_usd=5.00, warn_at=0.8, on_exceed=my_handler)</code></li>
-<li>NEW: <code>budget(max_usd=5.00, warn_at=0.8, on_warn=my_handler)</code></li>
-</ul>
-<p><strong><code>hard_cap</code> parameter removed</strong></p>
-<ul>
-<li>The separate <code>hard_cap</code> ceiling is gone. The fallback model is subject to the same <code>max_usd</code> limit.</li>
-<li>OLD: <code>budget(max_usd=1.00, fallback="gpt-4o-mini", hard_cap=1.50)</code></li>
-<li>NEW: <code>budget(max_usd=1.00, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"})</code></li>
-</ul>
-<p><strong><code>persistent</code> parameter removed</strong></p>
-<ul>
-<li>Budgets always accumulate across uses. The <code>persistent</code> parameter no longer exists.</li>
-<li>OLD: <code>budget(max_usd=5.00, persistent=True)</code></li>
-<li>NEW: <code>budget(max_usd=5.00)</code></li>
-</ul>
-</div>
 <h3 id="new-features">New Features<a class="headerlink" href="#new-features" title="Permanent link">&para;</a></h3>
 <p><strong><code>max_llm_calls</code> — limit budgets by call count</strong></p>
 <ul>
@@ -2224,7 +2173,7 @@
 <ul>
 <li>Install with <code>pip install shekel[litellm]</code></li>
 <li>Patches <code>litellm.completion</code> and <code>litellm.acompletion</code> (sync + async, including streaming)</li>
-<li>Tracks costs across all 100+ providers LiteLLM supports (Gemini, Cohere, Ollama, Azure, Bedrock, Mistral, and more)</li>
+<li>Enforces budgets and circuit-breaks across all 100+ providers LiteLLM supports (Gemini, Cohere, Ollama, Azure, Bedrock, Mistral, and more)</li>
 <li>Model names with provider prefix (e.g. <code>gemini/gemini-1.5-flash</code>) pass through to the pricing engine</li>
 </ul>
 <h2 id="025-2026-03-11">[0.2.5] - 2026-03-11<a class="headerlink" href="#025-2026-03-11" title="Permanent link">&para;</a></h2>
@@ -2354,29 +2303,10 @@
 <li>Spend propagation on all exceptions (money spent is money spent)</li>
 </ul>
 <h3 id="changes">Changes<a class="headerlink" href="#changes" title="Permanent link">&para;</a></h3>
-<div class="admonition warning">
-<p class="admonition-title">BREAKING CHANGES</p>
-<p><strong>Budget Variables Now Always Accumulate</strong></p>
 <ul>
-<li>Previously: <code>budget(max_usd=10)</code> reset on each entry (unless <code>persistent=True</code>)</li>
-<li>Now: Same budget variable = same accumulated state (matches Python's expected behavior)</li>
-<li>Migration: Create new <code>Budget()</code> instances instead of relying on reset behavior</li>
+<li>Budget variables always accumulate across uses — same variable, same accumulated state</li>
+<li>Both parent and child must have a <code>name</code> when creating nested contexts</li>
 </ul>
-<p><strong>Names Required When Nesting</strong></p>
-<ul>
-<li>Both parent and child must have <code>name</code> parameter when creating nested contexts</li>
-<li>Validation happens at child <code>__enter__</code> with clear error messages</li>
-</ul>
-</div>
-<div class="admonition deprecated">
-<p class="admonition-title">Deprecated</p>
-<p><strong>persistent Parameter</strong></p>
-<ul>
-<li>Shows <code>DeprecationWarning</code> when <code>persistent=True</code> is explicitly used</li>
-<li>Parameter kept for backwards compatibility but no longer has effect</li>
-<li>Will be removed in v0.3.0</li>
-</ul>
-</div>
 <h3 id="fixed">Fixed<a class="headerlink" href="#fixed" title="Permanent link">&para;</a></h3>
 <ul>
 <li>ContextVar token management now uses proper <code>.reset()</code> instead of manual <code>.set(None)</code></li>

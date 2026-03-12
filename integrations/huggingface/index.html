@@ -1836,7 +1836,7 @@
 
 
 <h1 id="huggingface-integration">HuggingFace Integration<a class="headerlink" href="#huggingface-integration" title="Permanent link">&para;</a></h1>
-<p>Shekel tracks costs and enforces budgets for <a href="https://huggingface.co/docs/inference-providers/en/index">HuggingFace Inference API</a> via the <code>huggingface-hub</code> Python SDK's <code>InferenceClient</code>.</p>
+<p>One <code>pip install shekel[huggingface]</code> and one <code>with budget():</code> — shekel intercepts every HuggingFace <code>InferenceClient</code> call, enforces hard spend limits, and shows you exactly what was spent. Hard caps, fallback models, nested budgets, and <code>BudgetExceededError</code> all work identically to OpenAI and Anthropic.</p>
 <h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>shekel<span class="o">[</span>huggingface<span class="o">]</span>
 </span></code></pre></div>

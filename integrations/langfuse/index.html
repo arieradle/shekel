@@ -1287,10 +1287,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#feature-1-real-time-cost-streaming" class="md-nav__link">
+  <a href="#feature-1-per-call-spend-streaming" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Feature #1: Real-Time Cost Streaming
+        Feature #1: Per-Call Spend Streaming
       
     </span>
   </a>
@@ -2002,10 +2002,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#feature-1-real-time-cost-streaming" class="md-nav__link">
+  <a href="#feature-1-per-call-spend-streaming" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Feature #1: Real-Time Cost Streaming
+        Feature #1: Per-Call Spend Streaming
       
     </span>
   </a>
@@ -2326,7 +2326,7 @@
 
 
 <h1 id="langfuse-integration-guide">Langfuse Integration Guide<a class="headerlink" href="#langfuse-integration-guide" title="Permanent link">&para;</a></h1>
-<p>Shekel includes built-in integration with <a href="https://langfuse.com">Langfuse</a>, an open-source LLM observability platform. This integration provides real-time cost tracking, budget hierarchy visualization, and automatic event creation for budget violations and fallback activations.</p>
+<p>Shekel includes built-in integration with <a href="https://langfuse.com">Langfuse</a>, an open-source LLM observability platform. When a budget is exceeded or a fallback is triggered, Langfuse captures the event automatically. Between those moments, per-call spend streams to Langfuse metadata so you can see exactly where your budget went and when it broke.</p>
 <h2 id="quick-start">Quick Start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
 <h3 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h3>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Install shekel with Langfuse support</span>
@@ -2362,8 +2362,8 @@
 </span><span id="__span-1-27"><a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Spent: $</span><span class="si">{</span><span class="n">b</span><span class="o">.</span><span class="n">spent</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </span></code></pre></div>
 <h2 id="features">Features<a class="headerlink" href="#features" title="Permanent link">&para;</a></h2>
-<h3 id="feature-1-real-time-cost-streaming">Feature #1: Real-Time Cost Streaming<a class="headerlink" href="#feature-1-real-time-cost-streaming" title="Permanent link">&para;</a></h3>
-<p>Every LLM call automatically updates Langfuse metadata with current cost information.</p>
+<h3 id="feature-1-per-call-spend-streaming">Feature #1: Per-Call Spend Streaming<a class="headerlink" href="#feature-1-per-call-spend-streaming" title="Permanent link">&para;</a></h3>
+<p>Every LLM call automatically updates Langfuse metadata with current spend — so you can see budget burn in real time, not just at the end.</p>
 <p><strong>What's tracked:</strong>
 - <code>shekel_spent</code>: Total USD spent so far
 - <code>shekel_limit</code>: Budget limit (or <code>null</code> for track-only mode)
@@ -2457,7 +2457,7 @@
 </span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>    <span class="c1"># Raises BudgetExceededError at $5.00</span>
 </span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>
 </span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>    <span class="k">if</span> <span class="n">b</span><span class="o">.</span><span class="n">model_switched</span><span class="p">:</span>
-</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Switched to </span><span class="si">{</span><span class="n">b</span><span class="o">.</span><span class="n">fallback</span><span class="si">}</span><span class="s2"> at $</span><span class="si">{</span><span class="n">b</span><span class="o">.</span><span class="n">switched_at_usd</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Switched to </span><span class="si">{</span><span class="n">b</span><span class="o">.</span><span class="n">fallback</span><span class="p">[</span><span class="s1">&#39;model&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> at $</span><span class="si">{</span><span class="n">b</span><span class="o">.</span><span class="n">switched_at_usd</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </span></code></pre></div>
 <p><strong>In Langfuse UI:</strong>
 - Filter events by <code>name:fallback_activated</code> and <code>level:INFO</code>

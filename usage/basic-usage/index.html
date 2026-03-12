@@ -1858,9 +1858,9 @@
 
 
 <h1 id="basic-usage">Basic Usage<a class="headerlink" href="#basic-usage" title="Permanent link">&para;</a></h1>
-<p>This guide covers the fundamentals of using shekel to track and control LLM API costs.</p>
+<p>This guide covers the fundamentals of using shekel to enforce LLM API budgets and track spend.</p>
 <h2 id="track-only-mode">Track-Only Mode<a class="headerlink" href="#track-only-mode" title="Permanent link">&para;</a></h2>
-<p>The simplest use case is tracking costs without enforcing any limits:</p>
+<p>Use <code>budget()</code> without <code>max_usd</code> to measure spend without enforcing a hard cap:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">shekel</span><span class="w"> </span><span class="kn">import</span> <span class="n">budget</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">openai</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
@@ -1878,7 +1878,7 @@
 </span></code></pre></div>
 <div class="admonition tip">
 <p class="admonition-title">Track-Only Mode</p>
-<p>When you create a budget without <code>max_usd</code>, shekel tracks spending but never raises <code>BudgetExceededError</code>. Perfect for monitoring production costs without risking service interruption.</p>
+<p>Without <code>max_usd</code>, shekel records spend but never raises <code>BudgetExceededError</code>. Use this to measure baseline costs before setting a hard cap, or in production when you want visibility without the risk of interrupting service.</p>
 </div>
 <h2 id="accessing-budget-information">Accessing Budget Information<a class="headerlink" href="#accessing-budget-information" title="Permanent link">&para;</a></h2>
 <p>The budget context manager provides several properties:</p>

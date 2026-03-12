@@ -1880,7 +1880,7 @@
 
 
 <h1 id="langgraph-integration">LangGraph Integration<a class="headerlink" href="#langgraph-integration" title="Permanent link">&para;</a></h1>
-<p>Shekel works seamlessly with <a href="https://github.com/langchain-ai/langgraph">LangGraph</a> to track and enforce budgets on graph-based agent workflows.</p>
+<p>LangGraph agents can retry indefinitely — that's what they're designed to do. Shekel adds the circuit-breaker: a hard dollar cap that fires <code>BudgetExceededError</code> the moment cumulative spend across all graph nodes crosses your limit. Zero config, works with any LangGraph graph.</p>
 <h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>shekel<span class="o">[</span>openai<span class="o">]</span><span class="w">   </span><span class="c1"># or shekel[anthropic], shekel[litellm]</span>
 </span></code></pre></div>
@@ -2040,7 +2040,7 @@
 </span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>    <span class="c1"># Automatically switches to gpt-4o-mini at 80% of $0.50 ($0.40)</span>
 </span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>
 </span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>    <span class="k">if</span> <span class="n">b</span><span class="o">.</span><span class="n">model_switched</span><span class="p">:</span>
-</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Switched to </span><span class="si">{</span><span class="n">b</span><span class="o">.</span><span class="n">fallback</span><span class="si">}</span><span class="s2"> at $</span><span class="si">{</span><span class="n">b</span><span class="o">.</span><span class="n">switched_at_usd</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Switched to </span><span class="si">{</span><span class="n">b</span><span class="o">.</span><span class="n">fallback</span><span class="p">[</span><span class="s1">&#39;model&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> at $</span><span class="si">{</span><span class="n">b</span><span class="o">.</span><span class="n">switched_at_usd</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </span></code></pre></div>
 <h2 id="async-graphs">Async Graphs<a class="headerlink" href="#async-graphs" title="Permanent link">&para;</a></h2>
 <p>Shekel works with async LangGraph:</p>

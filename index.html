@@ -1907,7 +1907,7 @@ usage quotas
 -->
 
 <h1 id="shekel">Shekel<a class="headerlink" href="#shekel" title="Permanent link">&para;</a></h1>
-<p><strong>LLM cost tracking and budget enforcement for Python. One line. Zero config.</strong></p>
+<p><strong>LLM budget enforcement and cost tracking for Python. One line. Zero config.</strong></p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">with</span> <span class="n">budget</span><span class="p">(</span><span class="n">max_usd</span><span class="o">=</span><span class="mf">1.00</span><span class="p">):</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">run_my_agent</span><span class="p">()</span>  <span class="c1"># raises BudgetExceededError if spend exceeds $1.00</span>
 </span></code></pre></div>
@@ -1955,9 +1955,9 @@ usage quotas
 </span></code></pre></div>
 </li>
 <li>
-<p><span class="twemoji lg middle"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m21.9 8.9-1.7 1-4-6.9 1.7-1zm-12.1-1 3 5.2 6.1-3.5-3-5.2zm1.6 4.8-2-3.5-4.3 2.5 2 3.5zm-9.3 1.9 1 1.7 2.6-1.5-1-1.7zm10-.6-.3-.4-4.3 2.5.3.4c.2.3.5.6.8.8L7 22h2l1.4-4.3h.1L12 22h2l-1.9-5.6c.5-.7.5-1.6 0-2.4"/></svg></span> <strong>Langfuse Observability</strong></p>
+<p><span class="twemoji lg middle"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m21.9 8.9-1.7 1-4-6.9 1.7-1zm-12.1-1 3 5.2 6.1-3.5-3-5.2zm1.6 4.8-2-3.5-4.3 2.5 2 3.5zm-9.3 1.9 1 1.7 2.6-1.5-1-1.7zm10-.6-.3-.4-4.3 2.5.3.4c.2.3.5.6.8.8L7 22h2l1.4-4.3h.1L12 22h2l-1.9-5.6c.5-.7.5-1.6 0-2.4"/></svg></span> <strong>Langfuse Integration</strong></p>
 <hr />
-<p>Real-time cost tracking, budget visualization, and event logging in Langfuse.</p>
+<p>Circuit-break events, per-call spend streaming, and budget hierarchy in Langfuse — see exactly where your budget breaks.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">shekel.integrations.langfuse</span><span class="w"> </span><span class="kn">import</span> <span class="n">LangfuseAdapter</span>
 </span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
 </span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">adapter</span> <span class="o">=</span> <span class="n">LangfuseAdapter</span><span class="p">(</span><span class="n">client</span><span class="o">=</span><span class="n">lf</span><span class="p">)</span>
@@ -2080,28 +2080,27 @@ usage quotas
 </table>
 <hr />
 <h2 id="whats-new-in-v026">What's New in v0.2.6<a class="headerlink" href="#whats-new-in-v026" title="Permanent link">&para;</a></h2>
-<p><strong>Breaking-Change Release</strong> — Cleaner API with dict-based fallback, renamed callbacks, removed deprecated parameters, new call-count budgets, LiteLLM support, and a LangGraph convenience helper.</p>
 <div class="grid cards">
 <ul>
 <li>
-<p><span class="twemoji lg middle"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m21 9-4-4v3h-7v2h7v3M7 11l-4 4 4 4v-3h7v-2H7z"/></svg></span> <strong><a href="changelog/#026">Dict Fallback</a></strong></p>
+<p><span class="twemoji lg middle"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m21 9-4-4v3h-7v2h7v3M7 11l-4 4 4 4v-3h7v-2H7z"/></svg></span> <strong><a href="changelog/#026">Smart Fallback</a></strong></p>
 <hr />
-<p><code>fallback</code> is now a dict: <code>{"at_pct": 0.8, "model": "gpt-4o-mini"}</code>. Fallback shares the same <code>max_usd</code> budget — no separate ceiling.</p>
+<p><code>fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}</code> — automatically switch to a cheaper model instead of crashing. Fallback shares the same <code>max_usd</code> budget.</p>
 </li>
 <li>
-<p><span class="twemoji lg middle"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 21h4c0 1.1-.9 2-2 2s-2-.9-2-2m11-2v1H3v-1l2-2v-6c0-3.1 2-5.8 5-6.7V4c0-1.1.9-2 2-2s2 .9 2 2v.3c3 .9 5 3.6 5 6.7v6zm-4-8c0-2.8-2.2-5-5-5s-5 2.2-5 5v7h10z"/></svg></span> <strong><a href="changelog/#026">Renamed Callback</a></strong></p>
+<p><span class="twemoji lg middle"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 21h4c0 1.1-.9 2-2 2s-2-.9-2-2m11-2v1H3v-1l2-2v-6c0-3.1 2-5.8 5-6.7V4c0-1.1.9-2 2-2s2 .9 2 2v.3c3 .9 5 3.6 5 6.7v6zm-4-8c0-2.8-2.2-5-5-5s-5 2.2-5 5v7h10z"/></svg></span> <strong><a href="changelog/#026">Early Warning Callbacks</a></strong></p>
 <hr />
-<p><code>on_exceed</code> renamed to <code>on_warn</code>. <code>persistent</code> and <code>hard_cap</code> parameters removed.</p>
+<p><code>on_warn</code> callback fires at <code>warn_at</code> threshold before the budget is exhausted.</p>
 </li>
 <li>
 <p><span class="twemoji lg middle"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2m0 2v12h7V6zm16 12V6h-1.24c.24.54.19 1.07.19 1.13-.07.67-.54 1.37-.71 1.62l-2.33 2.55 3.32-.02.01 1.22-5.2-.03-.04-1s3.05-3.23 3.2-3.52c.14-.28.71-1.95-.7-1.95-1.23.05-1.09 1.3-1.09 1.3l-1.54.01s.01-.66.38-1.31H13v12h2.58l-.01-.86.97-.01s.91-.16.92-1.05c.04-1-.81-1-.96-1-.13 0-1.07.05-1.07.87h-1.52s.04-2.06 2.59-2.06c2.6 0 2.46 2.02 2.46 2.02s.04 1.25-1.11 1.72l.52.37zM8.92 16h-1.5v-5.8l-1.8.56V9.53l3.14-1.12h.16z"/></svg></span> <strong><a href="changelog/#026">Call-Count Budgets</a></strong></p>
 <hr />
-<p>New <code>max_llm_calls</code> parameter limits by number of LLM API calls, combinable with <code>max_usd</code>.</p>
+<p><code>max_llm_calls=50</code> caps by number of LLM API calls, combinable with <code>max_usd</code>.</p>
 </li>
 <li>
 <p><span class="twemoji lg middle"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 11h-3.18C14.4 9.84 13.3 9 12 9s-2.4.84-2.82 2H6c-.33 0-2-.1-2-2V8c0-1.83 1.54-2 2-2h10.18C16.6 7.16 17.7 8 19 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3c-1.3 0-2.4.84-2.82 2H6C4.39 4 2 5.06 2 8v1c0 2.94 2.39 4 4 4h3.18c.42 1.16 1.52 2 2.82 2s2.4-.84 2.82-2H18c.33 0 2 .1 2 2v1c0 1.83-1.54 2-2 2H7.82C7.4 16.84 6.3 16 5 16a3 3 0 0 0-3 3 3 3 0 0 0 3 3c1.3 0 2.4-.84 2.82-2H18c1.61 0 4-1.07 4-4v-1c0-2.93-2.39-4-4-4m1-7a1 1 0 0 1 1 1 1 1 0 0 1-1 1 1 1 0 0 1-1-1 1 1 0 0 1 1-1M5 20a1 1 0 0 1-1-1 1 1 0 0 1 1-1 1 1 0 0 1 1 1 1 1 0 0 1-1 1"/></svg></span> <strong><a href="integrations/litellm/">LiteLLM Support</a></strong></p>
 <hr />
-<p>Native adapter for LiteLLM — track costs across 100+ providers (Gemini, Cohere, Ollama, Azure, Bedrock…) with zero extra code.</p>
+<p>Native adapter for LiteLLM — hard budget caps and circuit-breaking across 100+ providers (Gemini, Cohere, Ollama, Azure, Bedrock…). One limit, every provider.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="n">pip</span> <span class="n">install</span> <span class="n">shekel</span><span class="p">[</span><span class="n">litellm</span><span class="p">]</span>
 </span></code></pre></div>
 </li>
@@ -2136,7 +2135,7 @@ usage quotas
 <hr />
 <h2 id="supported-models">Supported Models<a class="headerlink" href="#supported-models" title="Permanent link">&para;</a></h2>
 <p>Built-in pricing for GPT-4o, GPT-4o-mini, o1, Claude 3.5 Sonnet, Claude 3 Haiku, Gemini 1.5, and more.</p>
-<p>Install <code>shekel[litellm]</code> to track costs across 100+ providers through LiteLLM's unified interface.</p>
+<p>Install <code>shekel[litellm]</code> to enforce hard spend limits across 100+ providers through LiteLLM's unified interface.</p>
 <p>Install <code>shekel[all-models]</code> for 400+ models via <a href="https://github.com/AgentOps-AI/tokencost">tokencost</a>.</p>
 <p><a href="models/">See full model list →</a></p>
 <hr />
