@@ -252,3 +252,41 @@ async def test_async_track_only_no_exception() -> None:
 
     assert b.spent > 0.0
     assert b.limit is None
+
+
+# ---------------------------------------------------------------------------
+# _record edge cases
+# ---------------------------------------------------------------------------
+
+
+def test_record_with_no_active_budget_is_noop() -> None:
+    """_record outside a budget() context returns silently."""
+    from shekel._patch import _record
+
+    _record(100, 50, "gpt-4o")
+
+
+def test_record_swallows_pricing_exception() -> None:
+    """If calculate_cost raises, cost falls back to 0.0 rather than crashing."""
+    from unittest.mock import patch
+
+    from shekel._patch import _record
+
+    with budget(max_usd=1.0) as b:
+        with patch("shekel._pricing.calculate_cost", side_effect=RuntimeError("bad")):
+            _record(100, 50, "gpt-4o")
+        assert b.spent == pytest.approx(0.0)
+
+
+def test_record_swallows_adapter_emit_exception() -> None:
+    """If AdapterRegistry.emit_event raises, the exception is swallowed."""
+    from unittest.mock import patch
+
+    from shekel._patch import _record
+
+    with budget(max_usd=1.0):
+        with patch(
+            "shekel.integrations.AdapterRegistry.emit_event",
+            side_effect=RuntimeError("adapter crash"),
+        ):
+            _record(100, 50, "gpt-4o-mini")  # must not raise
