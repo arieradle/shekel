@@ -124,7 +124,7 @@ def test_fallback_activates_at_percentage() -> None:
             with budget(
                 max_usd=10.00,
                 max_llm_calls=10,
-                fallback={"at": 0.80, "max_usd": 50.00, "model": "gpt-4o-mini"},
+                fallback={"at": 0.80, "model": "gpt-4o-mini"},
             ) as b:
                 import openai
 
@@ -144,33 +144,32 @@ def test_fallback_activates_at_percentage() -> None:
 
 
 def test_fallback_validation() -> None:
-    """Fallback dict must have valid 'at', 'max_usd', and 'model' keys."""
+    """Fallback dict must have valid 'at' and 'model' keys."""
     # Invalid 'at' values
     with pytest.raises(ValueError):
-        budget(max_llm_calls=10, fallback={"at": 1.5, "max_usd": 15, "model": "gpt-3.5"})
+        budget(max_llm_calls=10, fallback={"at": 1.5, "model": "gpt-3.5"})
 
     with pytest.raises(ValueError):
-        budget(max_llm_calls=10, fallback={"at": 0.0, "max_usd": 15, "model": "gpt-3.5"})
+        budget(max_llm_calls=10, fallback={"at": 0.0, "model": "gpt-3.5"})
 
     with pytest.raises(ValueError):
-        budget(max_llm_calls=10, fallback={"at": -0.5, "max_usd": 15, "model": "gpt-3.5"})
+        budget(max_llm_calls=10, fallback={"at": -0.5, "model": "gpt-3.5"})
 
     # Missing required keys
     with pytest.raises(ValueError):
-        budget(max_llm_calls=10, fallback={"at": 0.80, "model": "gpt-3.5"})  # missing max_usd
+        budget(max_llm_calls=10, fallback={"at": 0.80})  # missing model
 
-    # Invalid max_usd
     with pytest.raises(ValueError):
-        budget(max_llm_calls=10, fallback={"at": 0.80, "max_usd": 0, "model": "gpt-3.5"})
+        budget(max_llm_calls=10, fallback={"model": "gpt-3.5"})  # missing at
 
     # Invalid model
     with pytest.raises(ValueError):
-        budget(max_llm_calls=10, fallback={"at": 0.80, "max_usd": 15, "model": ""})
+        budget(max_llm_calls=10, fallback={"at": 0.80, "model": ""})
 
     # Valid values should not raise
-    budget(max_llm_calls=10, fallback={"at": 0.80, "max_usd": 15, "model": "gpt-3.5"})
-    budget(max_llm_calls=10, fallback={"at": 1.0, "max_usd": 15, "model": "gpt-3.5"})
-    budget(max_llm_calls=10, fallback={"at": 0.1, "max_usd": 15, "model": "gpt-3.5"})
+    budget(max_llm_calls=10, fallback={"at": 0.80, "model": "gpt-3.5"})
+    budget(max_llm_calls=10, fallback={"at": 1.0, "model": "gpt-3.5"})
+    budget(max_llm_calls=10, fallback={"at": 0.1, "model": "gpt-3.5"})
 
 
 # ---------------------------------------------------------------------------
@@ -271,7 +270,7 @@ def test_min_of_both_limits() -> None:
             with budget(
                 max_usd=0.40,
                 max_llm_calls=20,
-                fallback={"at": 0.80, "max_usd": 1.00, "model": "gpt-4o-mini"},
+                fallback={"at": 0.80, "model": "gpt-4o-mini"},
             ) as b:
                 import openai
 

@@ -85,14 +85,14 @@ class TestCoreIntegration:
         AdapterRegistry.register(adapter)
 
         with budget(
-            max_usd=0.001,
-            fallback={"at": 0.8, "max_usd": 10.0, "model": "gpt-4o-mini"},
+            max_usd=0.1,
+            fallback={"at": 0.8, "model": "gpt-4o-mini"},
             name="fallback_test",
         ):
             from shekel._patch import _record
 
             # First call exceeds limit, triggers fallback
-            _record(input_tokens=1000, output_tokens=500, model="gpt-4o")
+            _record(input_tokens=10000, output_tokens=5000, model="gpt-4o")
 
             # Continue with fallback
             _record(input_tokens=100, output_tokens=50, model="gpt-4o-mini")
@@ -245,7 +245,7 @@ class TestEmitEventExceptionSwallowing:
             # Should not raise — exception is swallowed by _emit_fallback_event
             with budget(
                 max_usd=0.001,
-                fallback={"at": 0.8, "max_usd": 10.0, "model": "gpt-4o-mini"},
+                fallback={"at": 0.8, "model": "gpt-4o-mini"},
                 name="test",
             ):
                 from shekel._patch import _record

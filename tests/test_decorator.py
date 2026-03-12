@@ -118,7 +118,7 @@ def test_fallback_works_in_decorator() -> None:
             return first_response
         return second_response
 
-    @with_budget(max_usd=0.001, fallback={"at": 0.8, "max_usd": 10.0, "model": "gpt-4o-mini"})
+    @with_budget(max_usd=0.1, fallback={"at": 0.8, "model": "gpt-4o-mini"})
     def run() -> None:
         import openai
 

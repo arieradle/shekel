@@ -97,16 +97,16 @@ class Budget:
         if fallback is not None:
             if not isinstance(fallback, dict):
                 raise ValueError(
-                    "fallback must be a dict with keys: 'at' (float), 'max_usd' (float), 'model' (str). "
+                    "fallback must be a dict with keys: 'at' (float), 'model' (str). "
                     f"Got: {type(fallback).__name__}"
                 )
-            required_keys = {"at", "max_usd", "model"}
+            required_keys = {"at", "model"}
             provided_keys = set(fallback.keys())
             if not required_keys.issubset(provided_keys):
                 missing = required_keys - provided_keys
                 raise ValueError(
                     f"fallback dict missing required keys: {missing}. "
-                    f"Required: 'at', 'max_usd', 'model'"
+                    f"Required: 'at', 'model'"
                 )
 
             # Validate 'at' (activation percentage)
@@ -117,25 +117,11 @@ class Budget:
                     f"got {at_value}"
                 )
 
-            # Validate 'max_usd' (fallback spending limit)
-            max_usd_value = fallback["max_usd"]
-            if not isinstance(max_usd_value, (int, float)) or max_usd_value <= 0:
-                raise ValueError(
-                    f"fallback['max_usd'] must be positive, got {max_usd_value}"
-                )
-
             # Validate 'model' (model name)
             model_value = fallback["model"]
             if not isinstance(model_value, str) or model_value == "":
                 raise ValueError(
                     f"fallback['model'] must be a non-empty string, got {repr(model_value)}"
-                )
-
-            # Validate that fallback['max_usd'] > max_usd (primary budget must be lower)
-            if max_usd is not None and max_usd_value <= max_usd:
-                raise ValueError(
-                    f"fallback['max_usd'] (${max_usd_value:.2f}) must be greater than "
-                    f"max_usd (${max_usd:.2f})"
                 )
 
             # Validate that at least one limit exists
@@ -409,52 +395,44 @@ class Budget:
         effective_limit = self._effective_limit
         if effective_limit is None:
             return
-        if self._spent <= effective_limit:
-            return
 
-        if self.fallback is not None and not self._using_fallback:
-            # Activate fallback instead of raising
-            self._using_fallback = True
-            self._switched_at_usd = self._spent
-            self._emit_fallback_activated_event()
-            fallback_model = self.fallback["model"]
-            if self.on_fallback is not None:
-                self.on_fallback(self._spent, effective_limit, fallback_model)
-            else:
-                warnings.warn(
-                    f"shekel: budget of ${effective_limit:.2f} exceeded "
-                    f"(${self._spent:.4f} spent). "
-                    f"Switching to fallback model '{fallback_model}'.",
-                    stacklevel=4,
-                )
-            return
+        # Determine if we should activate fallback or raise
+        budget_exceeded = self._spent > effective_limit
+        fallback_threshold_met = (
+            self.fallback is not None
+            and self._spent >= effective_limit * self.fallback["at"]
+        )
 
-        if self.fallback is not None and self._using_fallback:
-            # Fallback is active — enforce the fallback max_usd limit
-            fallback_max_usd = self.fallback["max_usd"]
+        if budget_exceeded or fallback_threshold_met:
+            # Exceeded limit or reached fallback threshold
+            if self.fallback is not None and not self._using_fallback:
+                # Activate fallback instead of raising
+                self._using_fallback = True
+                self._switched_at_usd = self._spent
+                self._emit_fallback_activated_event()
+                fallback_model = self.fallback["model"]
+                if self.on_fallback is not None:
+                    self.on_fallback(self._spent, effective_limit, fallback_model)
+                else:
+                    if budget_exceeded:
+                        warnings.warn(
+                            f"shekel: budget of ${effective_limit:.2f} exceeded "
+                            f"(${self._spent:.4f} spent). "
+                            f"Switching to fallback model '{fallback_model}'.",
+                            stacklevel=4,
+                        )
+                    else:
+                        warnings.warn(
+                            f"shekel: approaching budget limit (${self._spent:.4f} spent of ${effective_limit:.2f}). "
+                            f"Switching to fallback model '{fallback_model}'.",
+                            stacklevel=4,
+                        )
+                return
 
-            if self._spent > fallback_max_usd:
+            # No fallback available and limit exceeded
+            if budget_exceeded:
                 self._emit_budget_exceeded_event()
-                raise BudgetExceededError(
-                    self._spent,
-                    fallback_max_usd,
-                    self._last_model,
-                    self._last_tokens,
-                )
-
-            # Under fallback max — warn once per entry into this branch
-            fallback_model = self.fallback["model"]
-            warnings.warn(
-                f"shekel: fallback model '{fallback_model}' has exceeded the primary budget "
-                f"(${self._spent:.4f} spent, primary limit ${effective_limit:.2f}). "
-                f"Fallback max: ${fallback_max_usd:.2f}.",
-                stacklevel=4,
-            )
-            return
-
-        # No fallback — standard raise
-        self._emit_budget_exceeded_event()
-        raise BudgetExceededError(self._spent, effective_limit, self._last_model, self._last_tokens)
+                raise BudgetExceededError(self._spent, effective_limit, self._last_model, self._last_tokens)
 
     def _check_call_limit_for_fallback(self) -> None:
         """Check if fallback should be activated based on call count (called BEFORE API call)."""
@@ -699,16 +677,13 @@ class Budget:
             by_model[m]["input_tokens"] += call["input_tokens"]
             by_model[m]["output_tokens"] += call["output_tokens"]
 
-        fallback_max_usd: float | None = None
         fallback_model: str | None = None
         if self.fallback is not None:
-            fallback_max_usd = self.fallback["max_usd"]
             fallback_model = self.fallback["model"]
 
         return {
             "total_spent": self._spent,
             "limit": self.max_usd,
-            "fallback_max_usd": fallback_max_usd,
             "model_switched": self._using_fallback,
             "switched_at_usd": self._switched_at_usd,
             "fallback_model": fallback_model,

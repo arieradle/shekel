@@ -94,7 +94,16 @@
       "Bash(python -m pytest tests/test_fallback.py tests/test_decorator.py tests/test_summary.py tests/test_session_budget.py tests/integrations/test_ollama_integration.py -v 2>&1 | tail -100)",
       "Bash(python -m pytest tests/test_fallback.py tests/test_decorator.py tests/test_summary.py tests/test_session_budget.py tests/integrations/test_ollama_integration.py --tb=short 2>&1 | grep -E \"\\(PASSED|FAILED|ERROR|passed|failed\\)\" | tail -5)",
       "Bash(python -m pytest tests/ -q --tb=no 2>&1 | tail -20)",
-      "Bash(python -m pytest tests/ -q --tb=line 2>&1 | tail -30)"
+      "Bash(python -m pytest tests/ -q --tb=line 2>&1 | tail -30)",
+      "Bash(python -m pytest tests/ -q --tb=no 2>&1 | tail -30)",
+      "Bash(python -m pytest tests/test_fallback.py::test_fallback_model_rewritten_in_kwargs -xvs 2>&1 | tail -50)",
+      "Bash(python -m pytest tests/test_fallback.py -xvs 2>&1 | head -150)",
+      "Bash(python -m pytest tests/test_fallback.py::test_fallback_model_rewritten_in_kwargs -xvs 2>&1 | grep -A 20 \"AssertionError\")",
+      "Bash(python -m pytest tests/test_fallback.py::test_fallback_model_rewritten_in_kwargs -xvs 2>&1 | tail -30)",
+      "Bash(python -m pytest tests/test_fallback.py::test_fallback_model_rewritten_in_kwargs tests/test_fallback.py::test_fallback_spent_tracks_separately -xvs 2>&1 | tail -20)",
+      "Bash(python -m pytest tests/test_fallback.py::test_fallback_model_rewritten_in_kwargs -xvs 2>&1 | tail -20)",
+      "Bash(python -m pytest tests/ -q --tb=no 2>&1 | tail -10)",
+      "Bash(python -m pytest tests/test_fallback.py::test_fallback_small_call_within_budget -xvs 2>&1 | grep -A 5 \"assert\")"
     ]
   }
 }
