@@ -114,11 +114,12 @@ nav:
     - Streaming: usage/streaming.md
     - Decorators: usage/decorators.md
   - Integrations:
-    - Langfuse: integrations/langfuse.md
+    - LiteLLM: integrations/litellm.md
     - LangGraph: integrations/langgraph.md
     - CrewAI: integrations/crewai.md
     - OpenAI: integrations/openai.md
     - Anthropic: integrations/anthropic.md
+    - Langfuse: integrations/langfuse.md
   - Reference:
     - CLI Tools: cli.md
     - API Reference: api-reference.md

@@ -63,7 +63,8 @@ openai = ["openai>=1.0.0"]
 anthropic = ["anthropic>=0.7.0"]
 langfuse = ["langfuse>=2.0.0"]
 langgraph = ["langgraph>=0.1.0"]
-all = ["openai>=1.0.0", "anthropic>=0.7.0", "langfuse>=2.0.0", "langgraph>=0.1.0"]
+litellm = ["litellm>=1.0.0"]
+all = ["openai>=1.0.0", "anthropic>=0.7.0", "langfuse>=2.0.0", "langgraph>=0.1.0", "litellm>=1.0.0"]
 all-models = ["openai>=1.0.0", "anthropic>=0.7.0", "langfuse>=2.0.0", "tokencost>=0.1.0"]
 cli = ["click>=8.0.0"]
 dev = [
@@ -103,14 +104,17 @@ benchmark_warmup = false
 [tool.black]
 line-length = 100
 target-version = ["py39"]
+exclude = "examples/"
 
 [tool.isort]
 profile = "black"
 line_length = 100
+skip_glob = ["examples/*"]
 
 [tool.ruff]
 target-version = "py39"
 line-length = 100
+exclude = ["examples"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP"]
@@ -131,4 +135,8 @@ ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = "langgraph"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "litellm"
 ignore_missing_imports = true

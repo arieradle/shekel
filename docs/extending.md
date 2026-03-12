@@ -67,7 +67,7 @@ assert cost == 0.005  # (1000/1000 * 0.002) + (500/1000 * 0.006)
 
 ## Supporting New LLM Providers
 
-Shekel uses a pluggable `ProviderAdapter` pattern. To add support for a new provider (e.g., Cohere, Mistral), implement `ProviderAdapter` and register it — no changes to core Shekel code required.
+Shekel uses a pluggable `ProviderAdapter` pattern. Built-in adapters cover **OpenAI**, **Anthropic**, and **LiteLLM** (which in turn routes to 100+ providers). To add support for a provider not covered by LiteLLM (e.g., a proprietary API or a very new SDK), implement `ProviderAdapter` and register it — no changes to core Shekel code required.
 
 ### The ProviderAdapter Interface
 

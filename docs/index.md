@@ -111,7 +111,7 @@ I built shekel so you don't have to learn that lesson yourself.
 
     ---
 
-    Works with LangGraph, CrewAI, AutoGen, LlamaIndex, Haystack, and any framework that calls OpenAI or Anthropic.
+    Works with LangGraph, CrewAI, AutoGen, LlamaIndex, Haystack, and any framework that calls OpenAI, Anthropic, or LiteLLM.
 
 -   :material-web:{ .lg .middle } **Async & Streaming**
 
@@ -142,6 +142,12 @@ I built shekel so you don't have to learn that lesson yourself.
 
     ```bash
     pip install shekel[anthropic]
+    ```
+
+=== "LiteLLM (100+ providers)"
+
+    ```bash
+    pip install shekel[litellm]
     ```
 
 === "Both"
@@ -217,7 +223,7 @@ print(f"Remaining: ${b.remaining:.4f}")
 
 ## What's New in v0.2.6
 
-**Breaking-Change Release** — Cleaner API with dict-based fallback, renamed callbacks, removed deprecated parameters, and new call-count budgets.
+**Breaking-Change Release** — Cleaner API with dict-based fallback, renamed callbacks, removed deprecated parameters, new call-count budgets, LiteLLM support, and a LangGraph convenience helper.
 
 <div class="grid cards" markdown>
 
@@ -238,6 +244,28 @@ print(f"Remaining: ${b.remaining:.4f}")
     ---
 
     New `max_llm_calls` parameter limits by number of LLM API calls, combinable with `max_usd`.
+
+-   :material-transit-connection-variant:{ .lg .middle } **[LiteLLM Support](integrations/litellm.md)**
+
+    ---
+
+    Native adapter for LiteLLM — track costs across 100+ providers (Gemini, Cohere, Ollama, Azure, Bedrock…) with zero extra code.
+
+    ```python
+    pip install shekel[litellm]
+    ```
+
+-   :material-graph:{ .lg .middle } **[LangGraph Helper](integrations/langgraph.md)**
+
+    ---
+
+    New `budgeted_graph()` context manager for cleaner LangGraph integration.
+
+    ```python
+    from shekel.integrations.langgraph import budgeted_graph
+    with budgeted_graph(max_usd=0.50) as b:
+        result = app.invoke(state)
+    ```
 
 </div>
 
@@ -278,6 +306,8 @@ print(f"Remaining: ${b.remaining:.4f}")
 ## Supported Models
 
 Built-in pricing for GPT-4o, GPT-4o-mini, o1, Claude 3.5 Sonnet, Claude 3 Haiku, Gemini 1.5, and more.
+
+Install `shekel[litellm]` to track costs across 100+ providers through LiteLLM's unified interface.
 
 Install `shekel[all-models]` for 400+ models via [tokencost](https://github.com/AgentOps-AI/tokencost).
 
