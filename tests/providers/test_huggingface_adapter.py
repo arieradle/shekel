@@ -407,3 +407,54 @@ class TestHuggingFacePatching(ProviderTestBase):
                 adapter.install_patches()
             except Exception:
                 pass  # ImportError is acceptable
+
+    def test_remove_patches_safe_with_missing_import(self) -> None:
+        """Lines 61-62: remove_patches() catches ImportError when huggingface-hub unavailable."""
+        from shekel.providers.huggingface import HuggingFaceAdapter
+
+        adapter = HuggingFaceAdapter()
+        with patch.dict(
+            "sys.modules",
+            {
+                "huggingface_hub": None,
+                "huggingface_hub.inference": None,
+                "huggingface_hub.inference._client": None,
+            },
+        ):
+            adapter.remove_patches()  # must not raise
+
+
+# ---------------------------------------------------------------------------
+# TestHuggingFaceWrapStreamAttributeError
+# ---------------------------------------------------------------------------
+
+
+class TestHuggingFaceWrapStreamAttributeError(ProviderTestBase):
+    """Test wrap_stream() handles chunks with broken usage attributes."""
+
+    def test_wrap_stream_swallows_usage_attribute_error(self) -> None:
+        """Lines 101-102: chunk whose usage attrs raise AttributeError is skipped."""
+        from unittest.mock import MagicMock
+
+        from shekel.providers.huggingface import HuggingFaceAdapter
+
+        adapter = HuggingFaceAdapter()
+
+        class BrokenUsage:
+            def __getattr__(self, name: str) -> None:
+                raise AttributeError(name)
+
+        def stream() -> Any:  # type: ignore[return]
+            chunk = MagicMock()
+            chunk.usage = BrokenUsage()
+            yield chunk
+
+        gen = adapter.wrap_stream(stream())
+        try:
+            while True:
+                next(gen)
+        except StopIteration as e:
+            it, ot, model = e.value
+        assert it == 0
+        assert ot == 0
+        assert model == "unknown"

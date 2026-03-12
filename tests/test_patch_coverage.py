@@ -401,3 +401,314 @@ async def test_wrap_litellm_stream_async_no_usage_fallback():
         async for _ in _wrap_litellm_stream_async(stream()):
             pass
     assert b.spent == pytest.approx(0.0)
+
+
+# ---------------------------------------------------------------------------
+# _validate_same_provider — gemini / huggingface branches (lines 77, 83)
+# ---------------------------------------------------------------------------
+
+
+def test_validate_same_provider_gemini_rejects_non_gemini():
+    """Line 77: gemini provider + non-gemini fallback raises ValueError."""
+    from shekel._patch import _validate_same_provider
+
+    with pytest.raises(ValueError, match="Gemini"):
+        _validate_same_provider("gpt-4o", "gemini")
+
+
+def test_validate_same_provider_huggingface_rejects_openai():
+    """Line 83: huggingface provider + openai fallback raises ValueError."""
+    from shekel._patch import _validate_same_provider
+
+    with pytest.raises(ValueError, match="HuggingFace"):
+        _validate_same_provider("gpt-4o", "huggingface")
+
+
+def test_validate_same_provider_huggingface_rejects_anthropic():
+    """Line 83: huggingface provider + anthropic fallback raises ValueError."""
+    from shekel._patch import _validate_same_provider
+
+    with pytest.raises(ValueError, match="HuggingFace"):
+        _validate_same_provider("claude-3-haiku-20240307", "huggingface")
+
+
+def test_validate_same_provider_huggingface_rejects_gemini():
+    """Line 83: huggingface provider + gemini fallback raises ValueError."""
+    from shekel._patch import _validate_same_provider
+
+    with pytest.raises(ValueError, match="HuggingFace"):
+        _validate_same_provider("gemini-2.0-flash", "huggingface")
+
+
+# ---------------------------------------------------------------------------
+# _gemini_sync_wrapper (lines 442-458)
+# ---------------------------------------------------------------------------
+
+
+def test_gemini_sync_wrapper_raises_if_no_original():
+    """Line 444: RuntimeError when gemini_sync not in _originals."""
+    from shekel._patch import _gemini_sync_wrapper
+
+    with patch("shekel._patch._originals", {}):
+        with pytest.raises(RuntimeError, match="gemini original not stored"):
+            _gemini_sync_wrapper(None)
+
+
+def test_gemini_sync_wrapper_records_tokens():
+    """Lines 447-458: wrapper records tokens through an active budget."""
+    from shekel import budget
+    from shekel._patch import _gemini_sync_wrapper
+
+    class MockUsage:
+        prompt_token_count = 100
+        candidates_token_count = 50
+
+    class MockResponse:
+        usage_metadata = MockUsage()
+
+    def fake_sync(self: object, *args: object, **kwargs: object) -> MockResponse:
+        return MockResponse()
+
+    def fake_stream(self: object, *args: object, **kwargs: object) -> MockResponse:
+        return MockResponse()
+
+    # Include both gemini_sync and gemini_stream so install_patches() skips re-install
+    with patch.dict(
+        "shekel._patch._originals",
+        {"gemini_sync": fake_sync, "gemini_stream": fake_stream},
+    ):
+        with budget(max_usd=1.0) as b:
+            result = _gemini_sync_wrapper(None, model="gemini-2.0-flash")
+
+    assert isinstance(result, MockResponse)
+    assert b.spent > 0
+
+
+def test_gemini_sync_wrapper_no_budget():
+    """Lines 447-458: wrapper works with no active budget context."""
+    from shekel._patch import _gemini_sync_wrapper
+
+    class MockUsage:
+        prompt_token_count = 10
+        candidates_token_count = 5
+
+    class MockResponse:
+        usage_metadata = MockUsage()
+
+    def fake_original(self: object, *args: object, **kwargs: object) -> MockResponse:
+        return MockResponse()
+
+    with patch.dict("shekel._patch._originals", {"gemini_sync": fake_original}):
+        result = _gemini_sync_wrapper(None, model="gemini-2.0-flash")
+
+    assert isinstance(result, MockResponse)
+
+
+# ---------------------------------------------------------------------------
+# _gemini_stream_wrapper (lines 462-474)
+# ---------------------------------------------------------------------------
+
+
+def test_gemini_stream_wrapper_raises_if_no_original():
+    """Line 464: RuntimeError when gemini_stream not in _originals."""
+    from shekel._patch import _gemini_stream_wrapper
+
+    with patch("shekel._patch._originals", {}):
+        with pytest.raises(RuntimeError, match="gemini stream original not stored"):
+            list(_gemini_stream_wrapper(None))
+
+
+def test_gemini_stream_wrapper_yields_chunks():
+    """Lines 466-474: stream wrapper yields chunks from the original generator."""
+    from shekel import budget
+    from shekel._patch import _gemini_stream_wrapper
+
+    class MockChunk:
+        usage_metadata = None
+
+    def fake_sync(self: object, *args: object, **kwargs: object) -> None:
+        return None
+
+    def fake_stream(self: object, *args: object, **kwargs: object):  # type: ignore[return]
+        yield MockChunk()
+        yield MockChunk()
+
+    # Include both keys so budget's install_patches() skips re-installing
+    with patch.dict(
+        "shekel._patch._originals",
+        {"gemini_sync": fake_sync, "gemini_stream": fake_stream},
+    ):
+        with budget(max_usd=1.0):
+            chunks = list(_gemini_stream_wrapper(None, model="gemini-2.0-flash"))
+
+    assert len(chunks) == 2
+
+
+# ---------------------------------------------------------------------------
+# _wrap_gemini_stream (lines 478-495)
+# ---------------------------------------------------------------------------
+
+
+def test_wrap_gemini_stream_swallows_usage_attribute_error():
+    """Lines 487-488: chunk whose usage_metadata attrs raise AttributeError is handled."""
+    from shekel._patch import _wrap_gemini_stream
+
+    class BrokenUsage:
+        def __getattr__(self, name: str) -> None:
+            raise AttributeError(name)
+
+    def stream():  # type: ignore[return]
+        chunk = MagicMock()
+        chunk.usage_metadata = BrokenUsage()
+        yield chunk
+
+    list(_wrap_gemini_stream(stream(), "gemini-2.0-flash"))  # must not raise
+
+
+def test_wrap_gemini_stream_records_usage():
+    """Lines 484-486: usage_metadata tokens are captured and recorded."""
+    from shekel import budget
+    from shekel._patch import _wrap_gemini_stream
+
+    class MockUsage:
+        prompt_token_count = 50
+        candidates_token_count = 25
+
+    class MockChunk:
+        usage_metadata = MockUsage()
+
+    def stream():  # type: ignore[return]
+        yield MockChunk()
+
+    # Include both gemini keys so install_patches() is skipped inside budget context
+    with patch.dict(
+        "shekel._patch._originals",
+        {"gemini_sync": object(), "gemini_stream": object()},
+    ):
+        with budget(max_usd=1.0) as b:
+            list(_wrap_gemini_stream(stream(), "gemini-2.0-flash"))
+
+    assert b.spent > 0
+
+
+# ---------------------------------------------------------------------------
+# _extract_gemini_tokens (lines 499-507)
+# ---------------------------------------------------------------------------
+
+
+def test_extract_gemini_tokens_attribute_error():
+    """Lines 506-507: response with no attributes returns (0, 0, 'unknown')."""
+    from shekel._patch import _extract_gemini_tokens
+
+    response = MagicMock(spec=[])  # no attributes
+    assert _extract_gemini_tokens(response) == (0, 0, "unknown")
+
+
+def test_extract_gemini_tokens_none_usage():
+    """Lines 501-502: response.usage_metadata is None returns (0, 0, 'unknown')."""
+    from shekel._patch import _extract_gemini_tokens
+
+    response = MagicMock()
+    response.usage_metadata = None
+    assert _extract_gemini_tokens(response) == (0, 0, "unknown")
+
+
+# ---------------------------------------------------------------------------
+# _huggingface_sync_wrapper (lines 516-531)
+# ---------------------------------------------------------------------------
+
+
+def test_huggingface_sync_wrapper_raises_if_no_original():
+    """Line 518: RuntimeError when huggingface_sync not in _originals."""
+    from shekel._patch import _huggingface_sync_wrapper
+
+    with patch("shekel._patch._originals", {}):
+        with pytest.raises(RuntimeError, match="huggingface original not stored"):
+            _huggingface_sync_wrapper(None)
+
+
+def test_huggingface_sync_wrapper_records_tokens():
+    """Lines 520-531: non-stream path records tokens through active budget."""
+    from shekel import budget
+    from shekel._patch import _huggingface_sync_wrapper
+
+    class MockUsage:
+        prompt_tokens = 80
+        completion_tokens = 40
+
+    class MockResponse:
+        model = "HuggingFaceH4/zephyr-7b-beta"
+        usage = MockUsage()
+
+    def fake_original(self: object, *args: object, **kwargs: object) -> MockResponse:
+        return MockResponse()
+
+    # Include the key so install_patches() skips re-install inside budget context
+    with patch.dict("shekel._patch._originals", {"huggingface_sync": fake_original}):
+        with budget(max_usd=1.0, price_per_1k_tokens={"input": 0.001, "output": 0.001}) as b:
+            result = _huggingface_sync_wrapper(None)
+
+    assert isinstance(result, MockResponse)
+    assert b.spent > 0
+
+
+def test_huggingface_sync_wrapper_stream_path():
+    """Lines 524-526: stream=True returns a generator."""
+    from shekel._patch import _huggingface_sync_wrapper
+
+    class MockChunk:
+        usage = None
+
+    def fake_original(self: object, *args: object, **kwargs: object):  # type: ignore[return]
+        yield MockChunk()
+
+    with patch.dict("shekel._patch._originals", {"huggingface_sync": fake_original}):
+        gen = _huggingface_sync_wrapper(None, stream=True)
+        chunks = list(gen)
+
+    assert len(chunks) == 1
+
+
+# ---------------------------------------------------------------------------
+# _wrap_huggingface_stream (lines 535-550)
+# ---------------------------------------------------------------------------
+
+
+def test_wrap_huggingface_stream_swallows_usage_attribute_error():
+    """Lines 545-546: chunk whose usage attrs raise AttributeError is handled."""
+    from shekel._patch import _wrap_huggingface_stream
+
+    class BrokenUsage:
+        def __getattr__(self, name: str) -> None:
+            raise AttributeError(name)
+
+    def stream():  # type: ignore[return]
+        chunk = MagicMock()
+        chunk.usage = BrokenUsage()
+        yield chunk
+
+    list(_wrap_huggingface_stream(stream()))  # must not raise
+
+
+def test_wrap_huggingface_stream_records_usage():
+    """Lines 541-544: usage tokens are captured and recorded."""
+    from shekel import budget
+    from shekel._patch import _wrap_huggingface_stream
+
+    class MockUsage:
+        prompt_tokens = 60
+        completion_tokens = 30
+
+    class MockChunk:
+        model = "HuggingFaceH4/zephyr-7b-beta"
+        usage = MockUsage()
+
+    def stream():  # type: ignore[return]
+        yield MockChunk()
+
+    # Prevent install_patches() from overwriting _originals inside budget context
+    with patch.dict("shekel._patch._originals", {"huggingface_sync": object()}):
+        with budget(max_usd=1.0, price_per_1k_tokens={"input": 0.001, "output": 0.001}) as b:
+            list(_wrap_huggingface_stream(stream()))
+
+    assert b.spent > 0

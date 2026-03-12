@@ -406,3 +406,49 @@ class TestGeminiPatching(ProviderTestBase):
                 adapter.install_patches()
             except Exception:
                 pass  # ImportError is acceptable
+
+    def test_remove_patches_safe_with_missing_import(self) -> None:
+        """Lines 59-60: remove_patches() catches ImportError when google-genai unavailable."""
+        from shekel.providers.gemini import GeminiAdapter
+
+        adapter = GeminiAdapter()
+        with patch.dict(
+            "sys.modules", {"google": None, "google.genai": None, "google.genai.models": None}
+        ):
+            adapter.remove_patches()  # must not raise
+
+
+# ---------------------------------------------------------------------------
+# TestGeminiWrapStreamAttributeError
+# ---------------------------------------------------------------------------
+
+
+class TestGeminiWrapStreamAttributeError(ProviderTestBase):
+    """Test wrap_stream() handles chunks with broken usage_metadata attributes."""
+
+    def test_wrap_stream_swallows_usage_attribute_error(self) -> None:
+        """Lines 95-96: chunk whose usage_metadata attrs raise AttributeError is skipped."""
+        from unittest.mock import MagicMock
+
+        from shekel.providers.gemini import GeminiAdapter
+
+        adapter = GeminiAdapter()
+
+        class BrokenUsage:
+            def __getattr__(self, name: str) -> None:
+                raise AttributeError(name)
+
+        def stream() -> Any:  # type: ignore[return]
+            chunk = MagicMock()
+            chunk.usage_metadata = BrokenUsage()
+            yield chunk
+
+        gen = adapter.wrap_stream(stream())
+        try:
+            while True:
+                next(gen)
+        except StopIteration as e:
+            it, ot, model = e.value
+        assert it == 0
+        assert ot == 0
+        assert model == "unknown"
