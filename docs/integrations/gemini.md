@@ -1,6 +1,6 @@
 # Google Gemini Integration
 
-Shekel tracks costs and enforces budgets for [Google Gemini](https://ai.google.dev/) via the official `google-genai` Python SDK.
+One `pip install shekel[gemini]` and one `with budget():` — shekel intercepts every Gemini call, enforces hard spend limits, and shows you exactly what was spent. All the same budget controls (hard caps, fallback models, nested budgets, `BudgetExceededError`) work identically to OpenAI and Anthropic.
 
 ## Installation
 

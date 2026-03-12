@@ -116,6 +116,8 @@ jobs:
 
       - name: Integration Tests (pytest)
         env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           HUGGING_FACE_API: ${{ secrets.HUGGING_FACE_API }}

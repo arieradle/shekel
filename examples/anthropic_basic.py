@@ -42,7 +42,7 @@ def main() -> None:
     # 2. Fallback to cheaper model
     # ------------------------------------------------------------------
     print("\n=== Fallback model ===")
-    with budget(max_usd=0.001, fallback="claude-3-haiku-20240307") as b:
+    with budget(max_usd=0.001, fallback={"at_pct": 0.8, "model": "claude-3-haiku-20240307"}) as b:
         message = client.messages.create(
             model="claude-3-5-sonnet-20241022",
             max_tokens=50,

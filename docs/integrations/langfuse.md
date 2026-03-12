@@ -1,6 +1,6 @@
 # Langfuse Integration Guide
 
-Shekel includes built-in integration with [Langfuse](https://langfuse.com), an open-source LLM observability platform. This integration provides real-time cost tracking, budget hierarchy visualization, and automatic event creation for budget violations and fallback activations.
+Shekel includes built-in integration with [Langfuse](https://langfuse.com), an open-source LLM observability platform. When a budget is exceeded or a fallback is triggered, Langfuse captures the event automatically. Between those moments, per-call spend streams to Langfuse metadata so you can see exactly where your budget went and when it broke.
 
 ## Quick Start
 
@@ -45,9 +45,9 @@ with budget(max_usd=5.00, name="user-query") as b:
 
 ## Features
 
-### Feature #1: Real-Time Cost Streaming
+### Feature #1: Per-Call Spend Streaming
 
-Every LLM call automatically updates Langfuse metadata with current cost information.
+Every LLM call automatically updates Langfuse metadata with current spend — so you can see budget burn in real time, not just at the end.
 
 **What's tracked:**
 - `shekel_spent`: Total USD spent so far
@@ -168,7 +168,7 @@ with budget(max_usd=5.00, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}, name
     # Raises BudgetExceededError at $5.00
 
     if b.model_switched:
-        print(f"Switched to {b.fallback} at ${b.switched_at_usd:.2f}")
+        print(f"Switched to {b.fallback['model']} at ${b.switched_at_usd:.2f}")
 ```
 
 **In Langfuse UI:**

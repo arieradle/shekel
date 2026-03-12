@@ -48,7 +48,7 @@ print(f"Total session: ${session.spent:.4f}")  # $1.05
 
 ## Budgets Always Accumulate
 
-Budget variables always accumulate across multiple uses. There is no `persistent` parameter — accumulation is the only behavior.
+Budget variables always accumulate across multiple uses — reuse the same variable and spend adds up automatically.
 
 ## Multi-Turn Conversations
 

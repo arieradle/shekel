@@ -33,7 +33,7 @@ def _cohere_sync_wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
 
     active_budget = _context.get_active_budget()
     if active_budget is not None and active_budget._using_fallback and active_budget.fallback:
-        kwargs["model"] = active_budget.fallback
+        kwargs["model"] = active_budget.fallback['model']
 
     if kwargs.get("stream") is True:
         stream = original(self, *args, **kwargs)
@@ -79,7 +79,7 @@ async def _cohere_async_wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
 
     active_budget = _context.get_active_budget()
     if active_budget is not None and active_budget._using_fallback and active_budget.fallback:
-        kwargs["model"] = active_budget.fallback
+        kwargs["model"] = active_budget.fallback['model']
 
     response = await original(self, *args, **kwargs)
     adapter = ADAPTER_REGISTRY.get_by_name("cohere")
@@ -185,5 +185,5 @@ class CohereAdapter(ProviderAdapter):
             raise ValueError(
                 f"shekel: fallback model '{fallback_model}' is not a Cohere model. "
                 f"Cross-provider fallback is not supported. "
-                f"Use a Cohere model as fallback (e.g. fallback='command-r-plus')."
+                f"Use a Cohere model as fallback (e.g. fallback={{'at_pct': 0.8, 'model': 'command-r-plus'}})."
             )

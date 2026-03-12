@@ -25,7 +25,7 @@ usage quotas
 
 # Shekel
 
-**LLM cost tracking and budget enforcement for Python. One line. Zero config.**
+**LLM budget enforcement and cost tracking for Python. One line. Zero config.**
 
 ```python
 with budget(max_usd=1.00):
@@ -93,11 +93,11 @@ I built shekel so you don't have to learn that lesson yourself.
             run_analysis()
     ```
 
--   :material-telescope:{ .lg .middle } **Langfuse Observability**
+-   :material-telescope:{ .lg .middle } **Langfuse Integration**
 
     ---
 
-    Real-time cost tracking, budget visualization, and event logging in Langfuse.
+    Circuit-break events, per-call spend streaming, and budget hierarchy in Langfuse — see exactly where your budget breaks.
 
     ```python
     from shekel.integrations.langfuse import LangfuseAdapter
@@ -223,33 +223,31 @@ print(f"Remaining: ${b.remaining:.4f}")
 
 ## What's New in v0.2.6
 
-**Breaking-Change Release** — Cleaner API with dict-based fallback, renamed callbacks, removed deprecated parameters, new call-count budgets, LiteLLM support, and a LangGraph convenience helper.
-
 <div class="grid cards" markdown>
 
--   :material-swap-horizontal:{ .lg .middle } **[Dict Fallback](changelog.md#026)**
+-   :material-swap-horizontal:{ .lg .middle } **[Smart Fallback](changelog.md#026)**
 
     ---
 
-    `fallback` is now a dict: `{"at_pct": 0.8, "model": "gpt-4o-mini"}`. Fallback shares the same `max_usd` budget — no separate ceiling.
+    `fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}` — automatically switch to a cheaper model instead of crashing. Fallback shares the same `max_usd` budget.
 
--   :material-bell-outline:{ .lg .middle } **[Renamed Callback](changelog.md#026)**
+-   :material-bell-outline:{ .lg .middle } **[Early Warning Callbacks](changelog.md#026)**
 
     ---
 
-    `on_exceed` renamed to `on_warn`. `persistent` and `hard_cap` parameters removed.
+    `on_warn` callback fires at `warn_at` threshold before the budget is exhausted.
 
 -   :material-counter:{ .lg .middle } **[Call-Count Budgets](changelog.md#026)**
 
     ---
 
-    New `max_llm_calls` parameter limits by number of LLM API calls, combinable with `max_usd`.
+    `max_llm_calls=50` caps by number of LLM API calls, combinable with `max_usd`.
 
 -   :material-transit-connection-variant:{ .lg .middle } **[LiteLLM Support](integrations/litellm.md)**
 
     ---
 
-    Native adapter for LiteLLM — track costs across 100+ providers (Gemini, Cohere, Ollama, Azure, Bedrock…) with zero extra code.
+    Native adapter for LiteLLM — hard budget caps and circuit-breaking across 100+ providers (Gemini, Cohere, Ollama, Azure, Bedrock…). One limit, every provider.
 
     ```python
     pip install shekel[litellm]
@@ -295,7 +293,7 @@ print(f"Remaining: ${b.remaining:.4f}")
 
 Built-in pricing for GPT-4o, GPT-4o-mini, o1, Claude 3.5 Sonnet, Claude 3 Haiku, Gemini 1.5, and more.
 
-Install `shekel[litellm]` to track costs across 100+ providers through LiteLLM's unified interface.
+Install `shekel[litellm]` to enforce hard spend limits across 100+ providers through LiteLLM's unified interface.
 
 Install `shekel[all-models]` for 400+ models via [tokencost](https://github.com/AgentOps-AI/tokencost).
 

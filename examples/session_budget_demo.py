@@ -31,7 +31,7 @@ def main() -> None:
     # ------------------------------------------------------------------
     print("=== Multi-turn session budget ===")
 
-    session = budget(max_usd=0.20, persistent=True, warn_at=0.8)
+    session = budget(max_usd=0.20, warn_at=0.8)
     messages = [{"role": "system", "content": "You are a helpful assistant. Be concise."}]
 
     questions = [
@@ -65,7 +65,7 @@ def main() -> None:
     # ------------------------------------------------------------------
     print("\n=== Multi-step pipeline ===")
 
-    pipeline_budget = budget(max_usd=0.30, persistent=True)
+    pipeline_budget = budget(max_usd=0.30)
 
     def step(name: str, prompt: str) -> str:
         with pipeline_budget:

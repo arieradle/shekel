@@ -269,7 +269,7 @@ The next API call automatically uses the fallback:
 def _apply_fallback_if_needed(budget, kwargs, provider):
     if budget._using_fallback:
         # Rewrite model parameter
-        kwargs["model"] = budget.fallback
+        kwargs["model"] = budget.fallback['model']
 ```
 
 ## Zero Config

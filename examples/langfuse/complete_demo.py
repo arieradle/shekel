@@ -144,14 +144,12 @@ def demo_fallback_annotations(client):
 
     with budget(
         max_usd=0.01,  # Very low to trigger fallback quickly
-        fallback="gpt-4o-mini",
-        hard_cap=0.50,
+        fallback={"at_pct": 0.8, "model": "gpt-4o-mini"},
         name="fallback-demo",
     ) as b:
         print("Primary model: gpt-4o")
-        print(f"Fallback model: {b.fallback}")
+        print(f"Fallback model: {b.fallback['model']}")
         print(f"Primary budget: ${b.max_usd:.4f}")
-        print(f"Hard cap: ${b.hard_cap:.4f}")
 
         # Make calls until fallback triggers
         for i in range(5):
@@ -163,12 +161,12 @@ def demo_fallback_annotations(client):
 
                 if b.model_switched and i > 0:
                     print(f"\n🔄 Fallback activated at ${b.switched_at_usd:.4f}!")
-                    print(f"   Now using: {b.fallback}")
+                    print(f"   Now using: {b.fallback['model']}")
                     break
 
                 print(f"  Call {i+1}: ${b.spent:.4f} (model: gpt-4o)")
             except BudgetExceededError:
-                print(f"\n🛑 Hard cap reached at ${b.spent:.4f}")
+                print(f"\n🛑 Budget exceeded at ${b.spent:.4f}")
                 break
 
         print(f"\n💰 Final cost: ${b.spent:.4f}")

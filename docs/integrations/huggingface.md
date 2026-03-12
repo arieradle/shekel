@@ -1,6 +1,6 @@
 # HuggingFace Integration
 
-Shekel tracks costs and enforces budgets for [HuggingFace Inference API](https://huggingface.co/docs/inference-providers/en/index) via the `huggingface-hub` Python SDK's `InferenceClient`.
+One `pip install shekel[huggingface]` and one `with budget():` — shekel intercepts every HuggingFace `InferenceClient` call, enforces hard spend limits, and shows you exactly what was spent. Hard caps, fallback models, nested budgets, and `BudgetExceededError` all work identically to OpenAI and Anthropic.
 
 ## Installation
 
