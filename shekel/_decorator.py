@@ -14,22 +14,18 @@ def with_budget(
     price_per_1k_tokens: dict[str, float] | None = None,
     fallback: dict[str, Any] | None = None,
     on_fallback: Callable[[float, float, str], None] | None = None,
-    persistent: bool = False,
     name: str | None = None,
     max_llm_calls: int | None = None,
 ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     """Decorator that wraps a function in a budget context.
 
     Accepts the same parameters as budget(), including ``name`` for use in
-    nested budget hierarchies.
-
-    A fresh Budget object is created on each function call. If you need a shared
-    session budget across multiple calls, use ``budget(persistent=True)`` as a
-    context manager directly.
+    nested budget hierarchies. A fresh Budget object is created on each
+    function call.
 
     Usage::
 
-        @with_budget(max_usd=1.00, fallback={"at": 0.8, "max_usd": 2.00, "model": "gpt-4o-mini"})
+        @with_budget(max_usd=1.00, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"})
         def run_agent():
             ...
 
@@ -50,7 +46,6 @@ def with_budget(
                     price_per_1k_tokens=price_per_1k_tokens,
                     fallback=fallback,
                     on_fallback=on_fallback,
-                    persistent=persistent,
                     name=name,
                     max_llm_calls=max_llm_calls,
                 )
@@ -70,7 +65,6 @@ def with_budget(
                     price_per_1k_tokens=price_per_1k_tokens,
                     fallback=fallback,
                     on_fallback=on_fallback,
-                    persistent=persistent,
                     name=name,
                     max_llm_calls=max_llm_calls,
                 )

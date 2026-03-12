@@ -124,7 +124,7 @@ def test_fallback_activates_at_percentage() -> None:
             with budget(
                 max_usd=10.00,
                 max_llm_calls=10,
-                fallback={"at": 0.80, "model": "gpt-4o-mini"},
+                fallback={"at_pct": 0.80, "model": "gpt-4o-mini"},
             ) as b:
                 import openai
 
@@ -147,29 +147,29 @@ def test_fallback_validation() -> None:
     """Fallback dict must have valid 'at' and 'model' keys."""
     # Invalid 'at' values
     with pytest.raises(ValueError):
-        budget(max_llm_calls=10, fallback={"at": 1.5, "model": "gpt-3.5"})
+        budget(max_llm_calls=10, fallback={"at_pct": 1.5, "model": "gpt-3.5"})
 
     with pytest.raises(ValueError):
-        budget(max_llm_calls=10, fallback={"at": 0.0, "model": "gpt-3.5"})
+        budget(max_llm_calls=10, fallback={"at_pct": 0.0, "model": "gpt-3.5"})
 
     with pytest.raises(ValueError):
-        budget(max_llm_calls=10, fallback={"at": -0.5, "model": "gpt-3.5"})
+        budget(max_llm_calls=10, fallback={"at_pct": -0.5, "model": "gpt-3.5"})
 
     # Missing required keys
     with pytest.raises(ValueError):
-        budget(max_llm_calls=10, fallback={"at": 0.80})  # missing model
+        budget(max_llm_calls=10, fallback={"at_pct": 0.80})  # missing model
 
     with pytest.raises(ValueError):
         budget(max_llm_calls=10, fallback={"model": "gpt-3.5"})  # missing at
 
     # Invalid model
     with pytest.raises(ValueError):
-        budget(max_llm_calls=10, fallback={"at": 0.80, "model": ""})
+        budget(max_llm_calls=10, fallback={"at_pct": 0.80, "model": ""})
 
     # Valid values should not raise
-    budget(max_llm_calls=10, fallback={"at": 0.80, "model": "gpt-3.5"})
-    budget(max_llm_calls=10, fallback={"at": 1.0, "model": "gpt-3.5"})
-    budget(max_llm_calls=10, fallback={"at": 0.1, "model": "gpt-3.5"})
+    budget(max_llm_calls=10, fallback={"at_pct": 0.80, "model": "gpt-3.5"})
+    budget(max_llm_calls=10, fallback={"at_pct": 1.0, "model": "gpt-3.5"})
+    budget(max_llm_calls=10, fallback={"at_pct": 0.1, "model": "gpt-3.5"})
 
 
 # ---------------------------------------------------------------------------
@@ -270,7 +270,7 @@ def test_min_of_both_limits() -> None:
             with budget(
                 max_usd=0.40,
                 max_llm_calls=20,
-                fallback={"at": 0.80, "model": "gpt-4o-mini"},
+                fallback={"at_pct": 0.80, "model": "gpt-4o-mini"},
             ) as b:
                 import openai
 

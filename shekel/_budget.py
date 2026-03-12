@@ -63,21 +63,11 @@ class Budget:
         # --- NEW in v0.2.6 (refactored fallback config) ---
         fallback: dict[str, Any] | None = None,
         on_fallback: Callable[[float, float, str], None] | None = None,
-        persistent: bool = False,  # DEPRECATED in v0.2.3
         # --- NEW in v0.2.3 (nested budgets) ---
         name: str | None = None,
         # --- NEW in v0.2.6 (call limits) ---
         max_llm_calls: int | None = None,
     ) -> None:
-        # --- NEW in v0.2.3 (Decision #12): Deprecate persistent flag ---
-        if persistent is not False:  # User explicitly set it
-            warnings.warn(
-                "The 'persistent' parameter is deprecated in v0.2.3. "
-                "Budget variables now always accumulate across multiple 'with' blocks. "
-                "To start fresh, create a new Budget instance.",
-                DeprecationWarning,
-                stacklevel=2,
-            )
 
         # --- NEW in v0.2.3 (Decision #24): Validate zero/negative budgets ---
         if max_usd is not None and max_usd <= 0:
@@ -97,20 +87,20 @@ class Budget:
         if fallback is not None:
             if not isinstance(fallback, dict):
                 raise ValueError(
-                    "fallback must be a dict with keys: 'at' (float), 'model' (str). "
+                    "fallback must be a dict with keys: 'at_pct' (float), 'model' (str). "
                     f"Got: {type(fallback).__name__}"
                 )
-            required_keys = {"at", "model"}
+            required_keys = {"at_pct", "model"}
             provided_keys = set(fallback.keys())
             if not required_keys.issubset(provided_keys):
                 missing = required_keys - provided_keys
                 raise ValueError(
                     f"fallback dict missing required keys: {missing}. "
-                    f"Required: 'at', 'model'"
+                    f"Required: 'at_pct', 'model'"
                 )
 
             # Validate 'at' (activation percentage)
-            at_value = fallback["at"]
+            at_value = fallback["at_pct"]
             if not isinstance(at_value, (int, float)) or not (0.0 < at_value <= 1.0):
                 raise ValueError(
                     f"fallback['at'] must be a fraction between 0 and 1 (exclusive 0, inclusive 1), "
@@ -146,7 +136,6 @@ class Budget:
         self.price_per_1k_tokens = price_per_1k_tokens
         self.fallback: dict[str, Any] | None = fallback  # Now a dict with 'at', 'max_usd', 'model'
         self.on_fallback = on_fallback
-        self.persistent: bool = persistent
 
         # --- NEW in v0.2.3 (nested budgets) ---
         self.name: str | None = name
@@ -400,7 +389,7 @@ class Budget:
         budget_exceeded = self._spent > effective_limit
         fallback_threshold_met = (
             self.fallback is not None
-            and self._spent >= effective_limit * self.fallback["at"]
+            and self._spent >= effective_limit * self.fallback["at_pct"]
         )
 
         if budget_exceeded or fallback_threshold_met:
@@ -441,7 +430,7 @@ class Budget:
         if effective_call_limit is None or self.fallback is None or self._using_fallback:
             return
 
-        fallback_at = self.fallback["at"]
+        fallback_at = self.fallback["at_pct"]
 
         # Calculate call threshold
         call_threshold = int(effective_call_limit * fallback_at)
@@ -466,7 +455,7 @@ class Budget:
 
         # Check if we should activate fallback (before hard limit)
         if self.fallback is not None and not self._using_fallback:
-            fallback_at = self.fallback["at"]
+            fallback_at = self.fallback["at_pct"]
             # Calculate call threshold
             call_threshold = int(effective_call_limit * fallback_at)
 

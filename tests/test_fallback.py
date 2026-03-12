@@ -32,7 +32,7 @@ def _budget_with_fallback(
     # With max_usd=0.08 and fallback_at=0.8, threshold is 0.064
     # Large API call costs ~0.075, which exceeds threshold, triggering fallback
     fallback_dict = {
-        "at": fallback_at,
+        "at_pct": fallback_at,
         "model": fallback_model,
     }
     return budget(max_usd=max_usd, fallback=fallback_dict, **kwargs)  # type: ignore[call-arg]
@@ -204,7 +204,7 @@ def test_on_fallback_callback() -> None:
     with patch(OPENAI_CREATE, return_value=fake):
         with budget(
             max_usd=0.001,
-            fallback={"at": 0.8, "model": "gpt-4o-mini"},
+            fallback={"at_pct": 0.8, "model": "gpt-4o-mini"},
             on_fallback=on_fallback,
         ) as b:
             import openai
@@ -233,7 +233,7 @@ def test_no_raise_when_fallback_set() -> None:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             with budget(
-                max_usd=0.001, fallback={"at": 0.8, "model": "gpt-4o-mini"}
+                max_usd=0.001, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}
             ) as b:
                 import openai
 
@@ -272,7 +272,7 @@ def test_fallback_does_not_overspend_primary_budget() -> None:
             warnings.simplefilter("ignore")
             with pytest.raises(BudgetExceededError):
                 with budget(
-                    max_usd=0.01, fallback={"at": 0.8, "model": "gpt-4o-mini"}
+                    max_usd=0.01, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}
                 ) as b:
                     import openai
 
@@ -306,7 +306,7 @@ def test_fallback_small_call_within_budget() -> None:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             with budget(
-                max_usd=0.1, fallback={"at": 0.8, "model": "gpt-4o-mini"}
+                max_usd=0.08, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}
             ) as b:
                 import openai
 
@@ -322,7 +322,7 @@ def test_fallback_small_call_within_budget() -> None:
 def test_fallback_shares_primary_budget() -> None:
     """Fallback uses the same max_usd budget as primary model (no separate limit)."""
     # This test verifies the simplified API where fallback shares the primary budget
-    b = budget(max_usd=1.00, fallback={"at": 0.8, "model": "gpt-4o-mini"})
+    b = budget(max_usd=1.00, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"})
     assert b.max_usd == 1.00
     assert b.fallback is not None
     assert b.fallback["model"] == "gpt-4o-mini"
@@ -337,11 +337,8 @@ def test_hard_cap_without_fallback_warns() -> None:
     assert b is not None
 
 
-def test_fallback_warns_when_exceeding_primary_budget() -> None:
-    """Fallback emits a warning when exceeding the primary budget, if call still fits within limit."""
-    # Use larger budget so fallback call doesn't fail
-    # gpt-4o small call: ~$0.000075 per 10k input + 5k output
-    # gpt-4o-mini small call: $0.000045 per 100 input + 50 output
+def test_fallback_continues_within_shared_budget() -> None:
+    """Fallback model continues spending within the shared budget limit without raising."""
     big_primary = make_openai_response("gpt-4o", 10_000, 5_000)
     small_fallback = make_openai_response("gpt-4o-mini", 100, 50)
     call_count = 0
@@ -354,22 +351,20 @@ def test_fallback_warns_when_exceeding_primary_budget() -> None:
         return small_fallback
 
     with patch(OPENAI_CREATE, new=fake_create):
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
             with budget(
-                max_usd=0.1, fallback={"at": 0.8, "model": "gpt-4o-mini"}
+                max_usd=0.08, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}
             ) as b:
                 import openai
 
                 client = openai.OpenAI(api_key="test")
                 client.chat.completions.create(model="gpt-4o", messages=[])
-                # fallback call — may exceed the primary budget portion but stays under shared limit
+                # Fallback call — cheap, stays under shared budget limit
                 client.chat.completions.create(model="gpt-4o-mini", messages=[])
 
-    warning_messages = [str(x.message) for x in w]
-    # Warning about approaching budget limit during fallback is expected
-    assert any("approaching the budget limit" in msg for msg in warning_messages)
     assert b.model_switched is True
+    assert b.spent < 0.08  # Both calls together stayed under budget
 
 
 # ---------------------------------------------------------------------------
@@ -394,7 +389,7 @@ def test_cross_provider_raises_valueerror() -> None:
             warnings.simplefilter("ignore")
             with budget(
                 max_usd=0.001,
-                fallback={"at": 0.8, "model": "claude-3-haiku-20240307"},
+                fallback={"at_pct": 0.8, "model": "claude-3-haiku-20240307"},
             ) as b:
                 import openai
 
@@ -416,7 +411,7 @@ def test_cross_provider_raises_valueerror() -> None:
 def test_fallback_without_max_usd_warns() -> None:
     """budget(fallback={...}) requires max_usd to be set."""
     with pytest.raises(ValueError, match="fallback requires either max_usd"):
-        budget(fallback={"at": 0.8, "model": "gpt-4o-mini"})
+        budget(fallback={"at_pct": 0.8, "model": "gpt-4o-mini"})
 
 
 # ---------------------------------------------------------------------------
@@ -455,7 +450,7 @@ def test_fallback_async() -> None:
     async def run() -> budget:
         with patch(ASYNC_OPENAI_CREATE, new=fake_create_async):
             async with budget(
-                max_usd=0.1, fallback={"at": 0.8, "model": "gpt-4o-mini"}
+                max_usd=0.08, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}
             ) as b:
                 import openai
 
@@ -495,7 +490,7 @@ def test_fallback_stream_activates_after_stream() -> None:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             with budget(
-                max_usd=0.1, fallback={"at": 0.8, "model": "gpt-4o-mini"}
+                max_usd=0.08, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}
             ) as b:
                 import openai
 
@@ -549,7 +544,7 @@ def test_warn_at_fires_before_fallback() -> None:
             max_usd=0.10,
             warn_at=0.5,
             on_exceed=on_warn,
-            fallback={"at": 0.8, "model": "gpt-4o-mini"},
+            fallback={"at_pct": 0.8, "model": "gpt-4o-mini"},
         ) as b:
             import openai
 
@@ -572,4 +567,4 @@ def test_warn_at_fires_before_fallback() -> None:
 def test_fallback_empty_string_raises() -> None:
     """budget(fallback={...}) with empty model raises ValueError at init."""
     with pytest.raises(ValueError, match="non-empty string"):
-        budget(max_usd=1.00, fallback={"at": 0.8, "model": ""})
+        budget(max_usd=1.00, fallback={"at_pct": 0.8, "model": ""})

@@ -112,7 +112,7 @@ def test_summary_data_with_fallback() -> None:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             with budget(
-                max_usd=0.1, fallback={"at": 0.8, "model": "gpt-4o-mini"}
+                max_usd=0.08, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}
             ) as b:
                 import openai
 
@@ -194,7 +194,7 @@ def test_summary_data_method() -> None:
 
 def test_summary_after_reset() -> None:
     """After reset(), summary_data() shows zero state."""
-    b = budget(max_usd=1.00, persistent=True)
+    b = budget(max_usd=1.00)
     _inject_spend(b, "gpt-4o", 0.10, 1000, 500)
     assert b.summary_data()["total_calls"] == 1
 
@@ -215,7 +215,7 @@ def test_summary_after_reset() -> None:
 
 def test_summary_data_fallback_shares_budget() -> None:
     """summary_data() shows that fallback shares the primary budget limit."""
-    b = budget(max_usd=1.00, fallback={"at": 0.8, "model": "gpt-4o-mini"})
+    b = budget(max_usd=1.00, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"})
     _inject_spend(b, "gpt-4o", 0.50, 1000, 500)
 
     data = b.summary_data()
@@ -227,7 +227,7 @@ def test_summary_data_fallback_shares_budget() -> None:
 
 def test_summary_str_shows_switched_at() -> None:
     """summary() includes 'Switched at' line when model has switched."""
-    b = budget(max_usd=0.01, fallback={"at": 0.8, "model": "gpt-4o-mini"})
+    b = budget(max_usd=0.01, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"})
     # Simulate switch by injecting state directly
     b._using_fallback = True
     b._switched_at_usd = 0.0123

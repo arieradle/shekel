@@ -53,7 +53,7 @@ def test_persistent_accumulates() -> None:
     """persistent=True: spend accumulates across 3 entries."""
     fake = make_openai_response("gpt-4o", 500, 200)
     expected_per_call = calculate_cost("gpt-4o", 500, 200)
-    session = budget(max_usd=5.00, persistent=True)
+    session = budget(max_usd=5.00)
 
     with patch(OPENAI_CREATE, return_value=fake):
         import openai
@@ -75,7 +75,7 @@ def test_persistent_remaining_decreases() -> None:
     """remaining decreases correctly across entries."""
     fake = make_openai_response("gpt-4o", 500, 200)
     expected_per_call = calculate_cost("gpt-4o", 500, 200)
-    session = budget(max_usd=5.00, persistent=True)
+    session = budget(max_usd=5.00)
 
     with patch(OPENAI_CREATE, return_value=fake):
         import openai
@@ -108,7 +108,7 @@ def test_persistent_fallback_carries_over() -> None:
         return small
 
     session = budget(
-        max_usd=0.1, fallback={"at": 0.8, "model": "gpt-4o-mini"}, persistent=True
+        max_usd=0.08, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}
     )
 
     with patch(OPENAI_CREATE, new=fake_create):
@@ -149,7 +149,7 @@ def test_warn_fires_once_across_entries() -> None:
     # Call 1: $0.0325 — above threshold → warn fires
     # Calls 2-5: above threshold, but warn already fired
     fake = make_openai_response("gpt-4o", 5000, 2000)
-    session = budget(max_usd=0.50, warn_at=0.05, on_exceed=on_warn, persistent=True)
+    session = budget(max_usd=0.50, warn_at=0.05, on_exceed=on_warn)
 
     with patch(OPENAI_CREATE, return_value=fake):
         import openai
@@ -171,7 +171,7 @@ def test_reset_clears_state() -> None:
     """reset() sets spent=0, clears _using_fallback, etc."""
     fake = make_openai_response("gpt-4o", 10_000, 5_000)
     session = budget(
-        max_usd=0.1, fallback={"at": 0.8, "model": "gpt-4o-mini"}, persistent=True
+        max_usd=0.08, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}
     )
 
     with patch(OPENAI_CREATE, return_value=fake):
@@ -201,7 +201,7 @@ def test_reset_clears_state() -> None:
 
 def test_reset_inside_block_raises() -> None:
     """reset() inside with session: raises RuntimeError."""
-    session = budget(max_usd=1.00, persistent=True)
+    session = budget(max_usd=1.00)
     with pytest.raises(RuntimeError, match="cannot be called inside an active with-block"):
         with session:
             session.reset()
@@ -216,7 +216,7 @@ def test_persistent_async() -> None:
     """Async context manager accumulates correctly."""
     fake = make_openai_response("gpt-4o", 500, 200)
     expected_per_call = calculate_cost("gpt-4o", 500, 200)
-    session = budget(max_usd=5.00, persistent=True)
+    session = budget(max_usd=5.00)
 
     async def run() -> None:
         async def fake_create_async(self: object, *args: object, **kwargs: object) -> object:
@@ -240,10 +240,9 @@ def test_persistent_async() -> None:
 
 
 def test_budget_always_accumulates() -> None:
-    """v0.2.3: All budgets accumulate (persistent flag is deprecated)."""
+    """v0.2.6: All budgets accumulate across entries (persistent param removed)."""
     fake = make_openai_response("gpt-4o", 500, 200)
     b = budget(max_usd=1.00)
-    assert b.persistent is False  # Default value
 
     with patch(OPENAI_CREATE, return_value=fake):
         import openai
@@ -280,7 +279,7 @@ def test_persistent_with_fallback_combo() -> None:
         return small
 
     session = budget(
-        max_usd=0.1, fallback={"at": 0.8, "model": "gpt-4o-mini"}, persistent=True
+        max_usd=0.08, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}
     )
 
     with patch(OPENAI_CREATE, new=fake_create):

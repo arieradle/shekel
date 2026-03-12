@@ -109,7 +109,7 @@ class TestOllamaBudgetIntegration:
     def test_ollama_fallback_model_switching(self) -> None:
         """Test fallback model switching with Ollama models."""
         with budget(
-            max_usd=0.1, fallback={"at": 0.8, "model": "gpt-4o-mini"}
+            max_usd=0.08, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}
         ) as b:  # noqa: F841
             from shekel._patch import _record
 
@@ -443,7 +443,7 @@ class TestOllamaBudgetWarnings:
                 max_usd=0.10,
                 warn_at=0.5,
                 on_exceed=on_warn,
-                fallback={"at": 0.8, "model": "gpt-4o-mini"},
+                fallback={"at_pct": 0.8, "model": "gpt-4o-mini"},
                 name="warn_test",
             ) as b:  # noqa: F841
                 from shekel._patch import _record
@@ -686,7 +686,7 @@ class TestOllamaEdgeCases:
     def test_fallback_chain_scenario(self) -> None:
         """Test fallback with low max_usd and high token usage."""
         with budget(
-            max_usd=0.1, fallback={"at": 0.8, "model": "gpt-4o-mini"}, name="fallback_chain"
+            max_usd=0.08, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}, name="fallback_chain"
         ) as b:  # noqa: F841
             from shekel._patch import _record
 
