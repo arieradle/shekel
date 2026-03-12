@@ -44,7 +44,7 @@ I built shekel so you don't have to learn that lesson yourself.
 
 ## Features
 
-<div class="grid cards" markdown>
+<div class="grid cards single-col" markdown>
 
 -   :material-lightning-bolt:{ .lg .middle } **Zero Config**
 
