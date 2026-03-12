@@ -18,3 +18,8 @@ try:
 except ImportError:
     # langfuse is an optional dependency
     pass
+
+# LangGraph integration helper
+from shekel.integrations import langgraph  # noqa: F401
+
+__all__.append("langgraph")
