@@ -255,18 +255,6 @@ print(f"Remaining: ${b.remaining:.4f}")
     pip install shekel[litellm]
     ```
 
--   :material-graph:{ .lg .middle } **[LangGraph Helper](integrations/langgraph.md)**
-
-    ---
-
-    New `budgeted_graph()` context manager for cleaner LangGraph integration.
-
-    ```python
-    from shekel.integrations.langgraph import budgeted_graph
-    with budgeted_graph(max_usd=0.50) as b:
-        result = app.invoke(state)
-    ```
-
 </div>
 
 ---

@@ -257,15 +257,15 @@ print(f"Cost: ${b.spent:.4f}")
 
 ### LangGraph
 
-Use `budget()` directly, or the convenience `budgeted_graph()` helper:
+Shekel works with LangGraph out of the box — just wrap with `budget()`:
 
 ```python
-from shekel.integrations.langgraph import budgeted_graph
+from shekel import budget
 
 # Your graph definition here
 app = graph.compile()
 
-with budgeted_graph(max_usd=0.50, name="my-graph") as b:
+with budget(max_usd=0.50, name="my-graph") as b:
     result = app.invoke({"question": "What is 2+2?"})
 print(f"Graph execution cost: ${b.spent:.4f}")
 ```

@@ -48,12 +48,6 @@ All notable changes to this project are documented here. For detailed informatio
 - Tracks costs across all 100+ providers LiteLLM supports (Gemini, Cohere, Ollama, Azure, Bedrock, Mistral, and more)
 - Model names with provider prefix (e.g. `gemini/gemini-1.5-flash`) pass through to the pricing engine
 
-**LangGraph integration helper**
-
-- `from shekel.integrations.langgraph import budgeted_graph`
-- `budgeted_graph(max_usd, **kwargs)` — convenience context manager wrapping `budget()` for LangGraph workflows
-- Install with `pip install shekel[langgraph]`
-
 ## [0.2.5] - 2026-03-11
 
 ### 🔧 Extensible Provider Architecture
