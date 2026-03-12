@@ -176,6 +176,45 @@ with budget(max_usd=5.00, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}):
 - Complex reasoning tasks
 - When you want the best possible answer but have budget constraints
 
+## Combining USD and Call-Count Limits
+
+You can set both `max_usd` and `max_llm_calls` at the same time. Shekel applies `at_pct` to **both** limits independently — whichever threshold is reached first triggers the fallback:
+
+```python
+with budget(
+    max_usd=5.00,
+    max_llm_calls=20,
+    fallback={"at_pct": 0.8, "model": "gpt-4o-mini"},
+) as b:
+    run_my_agent()
+# Fallback activates at: $4.00 (80% of $5.00) OR 16 calls (80% of 20) — whichever comes first
+```
+
+**First-wins rule:** if your agent makes many cheap calls, it may hit the call-count threshold (`16 calls`) long before reaching the USD threshold (`$4.00`). Conversely, a few expensive calls may hit the USD threshold first. Design your thresholds with this in mind.
+
+!!! tip "Tight call limits"
+    If you want the call limit to be the primary circuit-breaker, set `max_usd` high (or omit it) and rely on `max_llm_calls` alone:
+    ```python
+    with budget(max_llm_calls=20, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}) as b:
+        run_my_agent()
+    # Switches at call 16, hard-stops at call 21
+    ```
+
+## `at_pct=1.0` — Reactive Fallback
+
+Setting `at_pct=1.0` means the fallback activates only **after** a call pushes spend past `max_usd` — not proactively before it:
+
+```python
+with budget(max_usd=1.00, fallback={"at_pct": 1.0, "model": "gpt-4o-mini"}) as b:
+    run_my_agent()
+# No early switch — switches to gpt-4o-mini only after spending exceeds $1.00
+# Then continues on gpt-4o-mini until BudgetExceededError (if still over limit)
+```
+
+**When to use `at_pct=1.0`:** when you want the primary model for as long as possible and only want a safety net to avoid a hard crash. The first call that exceeds the limit triggers the switch; subsequent calls use the cheaper model.
+
+**When NOT to use it:** if your goal is proactive cost control, use a lower threshold like `0.8`. With `at_pct=1.0` you've already exceeded your budget before the switch happens.
+
 ## Same-Provider Requirement
 
 Fallback models must be from the same provider:
@@ -243,7 +282,7 @@ Output:
 │  ...
 ├────────────────────────────────────────────────────────────┤
 │  gpt-4o: 14 calls  $2.0140
-│  gpt-4o-mini: 11 calls  $0.5290
+│  gpt-4o-mini: 11 calls (fallback)  $0.5290
 │  Switched at: $2.0140
 └────────────────────────────────────────────────────────────┘
 ```

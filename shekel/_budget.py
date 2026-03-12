@@ -573,19 +573,23 @@ class Budget:
 
     def summary_data(self) -> dict[str, object]:
         """Return structured spend data as a dict."""
+        fallback_model: str | None = self.fallback["model"] if self.fallback is not None else None
+
         by_model: dict[str, dict[str, Any]] = {}
         for call in self._calls:
             m = call["model"]
             if m not in by_model:
-                by_model[m] = {"calls": 0, "cost": 0.0, "input_tokens": 0, "output_tokens": 0}
+                by_model[m] = {
+                    "calls": 0,
+                    "cost": 0.0,
+                    "input_tokens": 0,
+                    "output_tokens": 0,
+                    "fallback": m == fallback_model,
+                }
             by_model[m]["calls"] += 1
             by_model[m]["cost"] += call["cost"]
             by_model[m]["input_tokens"] += call["input_tokens"]
             by_model[m]["output_tokens"] += call["output_tokens"]
-
-        fallback_model: str | None = None
-        if self.fallback is not None:
-            fallback_model = self.fallback["model"]
 
         return {
             "total_spent": self._spent,
@@ -651,9 +655,11 @@ class Budget:
                     f"${call['cost']:>9.4f}{fallback_marker}"
                 )
 
+        fallback_model_name: str | None = self.fallback["model"] if self.fallback is not None else None
         lines.append("├" + "─" * width + "┤")
         for model, stats in by_model.items():
-            lines.append(f"│  {model}: {stats['calls']} calls  ${stats['cost']:.4f}")
+            role = " (fallback)" if model == fallback_model_name and model_switched else ""
+            lines.append(f"│  {model}: {stats['calls']} calls{role}  ${stats['cost']:.4f}")
 
         if model_switched and switched_at is not None:
             lines.append(f"│  Switched at: ${switched_at:.4f}")
