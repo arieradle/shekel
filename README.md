@@ -200,7 +200,7 @@ print(f"Session total: ${session.spent:.2f}")  # $3.50
 
 ---
 
-## 🌳 Nested Budgets (v0.2.3)
+## 🌳 Nested Budgets
 
 Perfect for **multi-stage agents**, **research workflows**, and **production AI pipelines**.
 
@@ -469,45 +469,6 @@ Any framework that calls `openai` or `anthropic` under the hood works automatica
 - **Hierarchical tracking** — Parent/child relationships track spend propagation automatically
 - **Ref-counted patching** — Nested contexts patch only once
 - **Zero config** — No API keys, no external services
-
----
-
-## Migration Guide (v0.2.2 → v0.2.3)
-
-### Breaking Changes
-
-**Budget variables now accumulate by default:**
-
-```python
-# v0.2.2: Budget reset on each entry
-b = budget(max_usd=10.00)
-with b: spend_1()  # Spends $2
-with b: spend_2()  # Was $0, now spends $2 more
-# v0.2.2: b.spent == $2
-# v0.2.3: b.spent == $4  ⚠️ ACCUMULATES!
-```
-
-**Migration:**
-- If you relied on reset behavior: Create new `budget()` instances instead
-- If you used `persistent=True`: Remove it (now the default)
-
-**Names required for nesting:**
-
-```python
-# v0.2.3: Names required when nesting
-with budget(max_usd=10, name="parent"):    # ✅ Required
-    with budget(max_usd=5, name="child"):  # ✅ Required
-        work()
-```
-
-### New Features
-
-- ✅ Nested budgets with automatic propagation
-- ✅ Auto-capping to parent's remaining budget
-- ✅ `tree()` method for visual hierarchy
-- ✅ `spent_direct` and `spent_by_children` properties
-- ✅ `full_name` for hierarchical naming
-- ✅ Max nesting depth of 5 levels
 
 ---
 
