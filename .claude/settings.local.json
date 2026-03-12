@@ -103,7 +103,15 @@
       "Bash(python -m pytest tests/test_fallback.py::test_fallback_model_rewritten_in_kwargs tests/test_fallback.py::test_fallback_spent_tracks_separately -xvs 2>&1 | tail -20)",
       "Bash(python -m pytest tests/test_fallback.py::test_fallback_model_rewritten_in_kwargs -xvs 2>&1 | tail -20)",
       "Bash(python -m pytest tests/ -q --tb=no 2>&1 | tail -10)",
-      "Bash(python -m pytest tests/test_fallback.py::test_fallback_small_call_within_budget -xvs 2>&1 | grep -A 5 \"assert\")"
+      "Bash(python -m pytest tests/test_fallback.py::test_fallback_small_call_within_budget -xvs 2>&1 | grep -A 5 \"assert\")",
+      "Bash(GIT_EDITOR=true git merge --continue)",
+      "Bash(python -m ruff check . 2>&1)",
+      "Bash(python -m mypy shekel/ 2>&1)",
+      "Bash(python -m black --check . 2>&1)",
+      "Bash(python -m isort --check-only . 2>&1)",
+      "Bash(python -m pytest --cov=shekel --cov-report=term-missing 2>&1)",
+      "Bash(python -c \"\nimport yaml, os\nwith open\\('/mnt/c/Users/elish/code/shekel/mkdocs.yml'\\) as f:\n    cfg = yaml.safe_load\\(f\\)\n\ndef extract_paths\\(nav\\):\n    for item in nav:\n        if isinstance\\(item, dict\\):\n            for k, v in item.items\\(\\):\n                if isinstance\\(v, str\\):\n                    yield v\n                elif isinstance\\(v, list\\):\n                    yield from extract_paths\\(v\\)\n\nmissing = []\nfor path in extract_paths\\(cfg['nav']\\):\n    full = f'/mnt/c/Users/elish/code/shekel/docs/{path}'\n    if not os.path.exists\\(full\\):\n        missing.append\\(path\\)\n\nif missing:\n    print\\('MISSING:', missing\\)\nelse:\n    print\\('All nav files exist.'\\)\n\")",
+      "Bash(python -m mypy shekel/ --verbose 2>&1 | grep \"_pytest\" | head -10)"
     ]
   }
 }

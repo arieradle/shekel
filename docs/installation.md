@@ -43,20 +43,6 @@ For access to OpenAI, Anthropic, Gemini, Cohere, Ollama, Azure, Bedrock, and 90+
 pip install shekel[litellm]
 ```
 
-### LangGraph
-
-For the `budgeted_graph()` convenience helper with LangGraph:
-
-```bash
-pip install shekel[langgraph]
-```
-
-Or combined with your LLM provider:
-
-```bash
-pip install shekel[langgraph,openai]
-```
-
 ### Extended Model Support (400+ Models)
 
 For support of 400+ models via [tokencost](https://github.com/AgentOps-AI/tokencost):
@@ -121,7 +107,6 @@ Shekel has zero required dependencies beyond the Python standard library. The Op
 | `openai>=1.0.0` | Optional | Track OpenAI API costs |
 | `anthropic>=0.7.0` | Optional | Track Anthropic API costs |
 | `litellm>=1.0.0` | Optional | Track costs via LiteLLM (100+ providers) |
-| `langgraph>=0.1.0` | Optional | `budgeted_graph()` convenience helper for LangGraph |
 | `tokencost>=0.1.0` | Optional | Support 400+ models |
 | `click>=8.0.0` | Optional | CLI tools |
 
@@ -149,14 +134,6 @@ If you see this error, install LiteLLM:
 
 ```bash
 pip install shekel[litellm]
-```
-
-### ImportError: No module named 'langgraph'
-
-If you see this error when using `budgeted_graph()`, install LangGraph:
-
-```bash
-pip install shekel[langgraph]
 ```
 
 ### Model pricing not found

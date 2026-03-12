@@ -1,17 +1,17 @@
-# Requires: pip install shekel[langgraph,openai]
+# Requires: pip install shekel[openai]
 """
-LangGraph demo: budget enforcement with the budgeted_graph() helper.
+LangGraph demo: budget enforcement with shekel.
+
+Shekel works with LangGraph out of the box — just wrap with budget().
+All LLM calls inside graph nodes are automatically tracked.
 
 Shows three patterns:
-1. budgeted_graph() convenience helper (recommended)
-2. budget() directly — equivalent but more verbose
-3. Fallback model when budget threshold is reached
+1. Basic budget enforcement
+2. Fallback model when budget threshold is reached
+3. Nested budgets for multi-node graphs
 """
 
 import os
-
-from shekel import BudgetExceededError, budget
-from shekel.integrations.langgraph import budgeted_graph
 
 
 def main() -> None:
@@ -21,13 +21,15 @@ def main() -> None:
         from typing_extensions import TypedDict
     except ImportError as e:
         print(f"Missing dependency: {e}")
-        print("Run: pip install shekel[langgraph,openai] typing_extensions")
+        print("Run: pip install shekel[openai] langgraph typing_extensions")
         return
 
     api_key = os.environ.get("OPENAI_API_KEY")
     if not api_key:
         print("Set OPENAI_API_KEY to run this demo.")
         return
+
+    from shekel import BudgetExceededError, budget
 
     client = openai.OpenAI(api_key=api_key)
 
@@ -50,11 +52,11 @@ def main() -> None:
     app = graph.compile()
 
     # ------------------------------------------------------------------
-    # 1. budgeted_graph() — recommended convenience helper
+    # 1. Basic budget enforcement
     # ------------------------------------------------------------------
-    print("=== budgeted_graph() helper ===")
+    print("=== Basic budget enforcement ===")
     try:
-        with budgeted_graph(max_usd=0.10, name="demo", warn_at=0.8) as b:
+        with budget(max_usd=0.10, name="demo", warn_at=0.8) as b:
             result = app.invoke({"question": "What is 2+2?", "answer": ""})
             print(f"Answer: {result['answer']}")
             print(f"Spent: ${b.spent:.4f} / ${b.limit:.2f}")
@@ -62,22 +64,10 @@ def main() -> None:
         print(f"Budget exceeded: {e}")
 
     # ------------------------------------------------------------------
-    # 2. budget() directly — same result, more explicit
-    # ------------------------------------------------------------------
-    print("\n=== budget() directly ===")
-    try:
-        with budget(max_usd=0.10) as b:
-            result = app.invoke({"question": "Name a planet.", "answer": ""})
-            print(f"Answer: {result['answer']}")
-            print(f"Spent: ${b.spent:.4f}")
-    except BudgetExceededError as e:
-        print(f"Budget exceeded: {e}")
-
-    # ------------------------------------------------------------------
-    # 3. Fallback model when threshold is reached
+    # 2. Fallback model when threshold is reached
     # ------------------------------------------------------------------
     print("\n=== Fallback model ===")
-    with budgeted_graph(
+    with budget(
         max_usd=0.001,
         name="fallback-demo",
         fallback={"at_pct": 0.5, "model": "gpt-4o-mini"},
