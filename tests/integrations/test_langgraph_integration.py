@@ -72,5 +72,6 @@ class TestBudgetedGraphRecordsCost:
             with budgeted_graph(max_usd=1.0) as b:
                 # Simulate what the openai wrapper does
                 from shekel._patch import _record
+
                 _record(100, 50, "gpt-4o-mini")
                 assert b.spent > 0
