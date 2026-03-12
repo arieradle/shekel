@@ -1117,6 +1117,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../integrations/gemini/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Google Gemini
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations/huggingface/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    HuggingFace
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../integrations/langfuse/" class="md-nav__link">
         
   
@@ -2015,10 +2071,22 @@
 </thead>
 <tbody>
 <tr>
-<td><strong>gemini-1.5-flash</strong></td>
+<td><strong>gemini-2.5-pro</strong></td>
+<td>$0.00125</td>
+<td>$0.01000</td>
+<td>Most capable Gemini</td>
+</tr>
+<tr>
+<td><strong>gemini-2.5-flash</strong></td>
 <td>$0.0000750</td>
 <td>$0.000300</td>
-<td>Fastest, cheapest</td>
+<td>Fast, cost-efficient</td>
+</tr>
+<tr>
+<td><strong>gemini-2.0-flash</strong></td>
+<td>$0.0000750</td>
+<td>$0.000300</td>
+<td>Latest flash model</td>
 </tr>
 <tr>
 <td><strong>gemini-1.5-pro</strong></td>
@@ -2026,8 +2094,18 @@
 <td>$0.00500</td>
 <td>Balanced quality/cost</td>
 </tr>
+<tr>
+<td><strong>gemini-1.5-flash</strong></td>
+<td>$0.0000750</td>
+<td>$0.000300</td>
+<td>Fastest, cheapest</td>
+</tr>
 </tbody>
 </table>
+<div class="admonition note">
+<p class="admonition-title">Native Gemini SDK support</p>
+<p>To track costs when calling Gemini via the <code>google-genai</code> SDK directly (not through LiteLLM), install <code>shekel[gemini]</code>. See <a href="../integrations/gemini/">Google Gemini Integration</a>.</p>
+</div>
 <h2 id="version-resolution">Version Resolution<a class="headerlink" href="#version-resolution" title="Permanent link">&para;</a></h2>
 <p>Shekel automatically resolves versioned model names:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># All of these resolve to &quot;gpt-4o&quot; pricing</span>

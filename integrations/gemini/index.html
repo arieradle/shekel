@@ -12,31 +12,31 @@
         <meta name="author" content="Arie Radle">
       
       
-        <link rel="canonical" href="https://arieradle.github.io/shekel/installation/">
+        <link rel="canonical" href="https://arieradle.github.io/shekel/integrations/gemini/">
       
       
-        <link rel="prev" href="..">
+        <link rel="prev" href="../anthropic/">
       
       
-        <link rel="next" href="../quickstart/">
+        <link rel="next" href="../huggingface/">
       
       
         
       
       
-      <link rel="icon" href="../assets/images/favicon.png">
+      <link rel="icon" href="../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.5">
     
     
       
-        <title>Installation - Shekel</title>
+        <title>Google Gemini - Shekel</title>
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
       
         
-        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
   
@@ -120,7 +120,7 @@
       
     
     
-    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
   
@@ -157,7 +157,7 @@
   <!-- Additional SEO -->
   <meta name="robots" content="index, follow">
   <meta name="googlebot" content="index, follow">
-  <link rel="canonical" href="https://arieradle.github.io/shekel/installation/">
+  <link rel="canonical" href="https://arieradle.github.io/shekel/integrations/gemini/">
 
   <!-- Schema.org markup for Google -->
   <script type="application/ld+json">
@@ -199,7 +199,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#installation" class="md-skip">
+        <a href="#google-gemini-integration" class="md-skip">
           Skip to content
         </a>
       
@@ -217,7 +217,7 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href=".." title="Shekel" class="md-header__button md-logo" aria-label="Shekel" data-md-component="logo">
+    <a href="../.." title="Shekel" class="md-header__button md-logo" aria-label="Shekel" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -237,7 +237,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Installation
+              Google Gemini
             
           </span>
         </div>
@@ -355,7 +355,7 @@
   
   
     <li class="md-tabs__item">
-      <a href=".." class="md-tabs__link">
+      <a href="../.." class="md-tabs__link">
         
   
   
@@ -372,13 +372,11 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="./" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../../installation/" class="md-tabs__link">
           
   
   
@@ -398,7 +396,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../usage/basic-usage/" class="md-tabs__link">
+        <a href="../../usage/basic-usage/" class="md-tabs__link">
           
   
   
@@ -414,11 +412,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../integrations/litellm/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../litellm/" class="md-tabs__link">
           
   
   
@@ -438,7 +438,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../cli/" class="md-tabs__link">
+        <a href="../../cli/" class="md-tabs__link">
           
   
   
@@ -458,7 +458,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../how-it-works/" class="md-tabs__link">
+        <a href="../../how-it-works/" class="md-tabs__link">
           
   
   
@@ -492,7 +492,7 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href=".." title="Shekel" class="md-nav__button md-logo" aria-label="Shekel" data-md-component="logo">
+    <a href="../.." title="Shekel" class="md-nav__button md-logo" aria-label="Shekel" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -522,7 +522,7 @@
   
   
     <li class="md-nav__item">
-      <a href=".." class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         
   
   
@@ -546,31 +546,28 @@
       
   
   
-    
   
   
-  
     
     
     
     
-      
-        
-        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
         
           
-          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
             
   
   
@@ -588,7 +585,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             
@@ -603,37 +600,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Installation
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../installation/" class="md-nav__link">
         
   
   
@@ -649,258 +619,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#requirements" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Requirements
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#install-shekel" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Install Shekel
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Install Shekel">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#openai-only" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        OpenAI Only
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#anthropic-only" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Anthropic Only
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#both-openai-and-anthropic" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Both OpenAI and Anthropic
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#google-gemini" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Google Gemini
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#huggingface-inference-api" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HuggingFace Inference API
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#litellm-100-providers" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        LiteLLM (100+ Providers)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#extended-model-support-400-models" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Extended Model Support (400+ Models)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#cli-tools" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        CLI Tools
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#development-installation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Development Installation
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#verify-installation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Verify Installation
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#no-api-keys-required" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        No API Keys Required
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#minimal-dependencies" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Minimal Dependencies
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#troubleshooting" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Troubleshooting
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Troubleshooting">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#importerror-no-module-named-openai" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        ImportError: No module named 'openai'
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#importerror-no-module-named-anthropic" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        ImportError: No module named 'anthropic'
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#importerror-no-module-named-litellm" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        ImportError: No module named 'litellm'
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#model-pricing-not-found" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Model pricing not found
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#next-steps" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Next Steps
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -913,7 +631,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../quickstart/" class="md-nav__link">
+      <a href="../../quickstart/" class="md-nav__link">
         
   
   
@@ -1002,7 +720,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../usage/basic-usage/" class="md-nav__link">
+      <a href="../../usage/basic-usage/" class="md-nav__link">
         
   
   
@@ -1030,7 +748,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../usage/nested-budgets/" class="md-nav__link">
+      <a href="../../usage/nested-budgets/" class="md-nav__link">
         
   
   
@@ -1058,7 +776,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../usage/budget-enforcement/" class="md-nav__link">
+      <a href="../../usage/budget-enforcement/" class="md-nav__link">
         
   
   
@@ -1086,7 +804,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../usage/fallback-models/" class="md-nav__link">
+      <a href="../../usage/fallback-models/" class="md-nav__link">
         
   
   
@@ -1114,7 +832,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../usage/accumulating-budgets/" class="md-nav__link">
+      <a href="../../usage/accumulating-budgets/" class="md-nav__link">
         
   
   
@@ -1142,7 +860,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../usage/streaming/" class="md-nav__link">
+      <a href="../../usage/streaming/" class="md-nav__link">
         
   
   
@@ -1170,7 +888,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../usage/decorators/" class="md-nav__link">
+      <a href="../../usage/decorators/" class="md-nav__link">
         
   
   
@@ -1202,28 +920,31 @@
       
   
   
+    
   
   
+  
     
     
     
     
+      
+        
+        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
         
           
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
-        
-          
-          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
             
   
   
@@ -1241,7 +962,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1259,7 +980,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../integrations/litellm/" class="md-nav__link">
+      <a href="../litellm/" class="md-nav__link">
         
   
   
@@ -1287,7 +1008,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../integrations/langgraph/" class="md-nav__link">
+      <a href="../langgraph/" class="md-nav__link">
         
   
   
@@ -1315,7 +1036,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../integrations/crewai/" class="md-nav__link">
+      <a href="../crewai/" class="md-nav__link">
         
   
   
@@ -1343,7 +1064,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../integrations/openai/" class="md-nav__link">
+      <a href="../openai/" class="md-nav__link">
         
   
   
@@ -1371,7 +1092,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../integrations/anthropic/" class="md-nav__link">
+      <a href="../anthropic/" class="md-nav__link">
         
   
   
@@ -1396,10 +1117,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../integrations/gemini/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Google Gemini
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1415,6 +1163,147 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Installation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-a-dedicated-adapter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why a dedicated adapter?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#basic-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Basic Integration
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#streaming" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Streaming
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nested-budgets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Nested Budgets
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fallback-models" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fallback Models
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#budget-enforcement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Budget Enforcement
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#supported-models-and-pricing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Supported Models and Pricing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#custom-pricing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom Pricing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tips-for-gemini-shekel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tips for Gemini + Shekel
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Next Steps
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1427,7 +1316,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../integrations/huggingface/" class="md-nav__link">
+      <a href="../huggingface/" class="md-nav__link">
         
   
   
@@ -1455,7 +1344,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../integrations/langfuse/" class="md-nav__link">
+      <a href="../langfuse/" class="md-nav__link">
         
   
   
@@ -1544,7 +1433,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../cli/" class="md-nav__link">
+      <a href="../../cli/" class="md-nav__link">
         
   
   
@@ -1572,7 +1461,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api-reference/" class="md-nav__link">
+      <a href="../../api-reference/" class="md-nav__link">
         
   
   
@@ -1600,7 +1489,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../models/" class="md-nav__link">
+      <a href="../../models/" class="md-nav__link">
         
   
   
@@ -1628,7 +1517,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../changelog/" class="md-nav__link">
+      <a href="../../changelog/" class="md-nav__link">
         
   
   
@@ -1717,7 +1606,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../how-it-works/" class="md-nav__link">
+      <a href="../../how-it-works/" class="md-nav__link">
         
   
   
@@ -1745,7 +1634,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../extending/" class="md-nav__link">
+      <a href="../../extending/" class="md-nav__link">
         
   
   
@@ -1773,7 +1662,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../contributing/" class="md-nav__link">
+      <a href="../../contributing/" class="md-nav__link">
         
   
   
@@ -1828,10 +1717,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#requirements" class="md-nav__link">
+  <a href="#installation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Requirements
+        Installation
       
     </span>
   </a>
@@ -1839,126 +1728,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#install-shekel" class="md-nav__link">
+  <a href="#why-a-dedicated-adapter" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Install Shekel
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Install Shekel">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#openai-only" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        OpenAI Only
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#anthropic-only" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Anthropic Only
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#both-openai-and-anthropic" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Both OpenAI and Anthropic
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#google-gemini" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Google Gemini
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#huggingface-inference-api" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HuggingFace Inference API
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#litellm-100-providers" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        LiteLLM (100+ Providers)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#extended-model-support-400-models" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Extended Model Support (400+ Models)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#cli-tools" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        CLI Tools
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#development-installation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Development Installation
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#verify-installation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Verify Installation
+        Why a dedicated adapter?
       
     </span>
   </a>
@@ -1966,10 +1739,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#no-api-keys-required" class="md-nav__link">
+  <a href="#basic-integration" class="md-nav__link">
     <span class="md-ellipsis">
       
-        No API Keys Required
+        Basic Integration
       
     </span>
   </a>
@@ -1977,10 +1750,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#minimal-dependencies" class="md-nav__link">
+  <a href="#streaming" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Minimal Dependencies
+        Streaming
       
     </span>
   </a>
@@ -1988,63 +1761,68 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#troubleshooting" class="md-nav__link">
+  <a href="#nested-budgets" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Troubleshooting
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Troubleshooting">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#importerror-no-module-named-openai" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        ImportError: No module named 'openai'
+        Nested Budgets
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#importerror-no-module-named-anthropic" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#fallback-models" class="md-nav__link">
     <span class="md-ellipsis">
       
-        ImportError: No module named 'anthropic'
+        Fallback Models
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#importerror-no-module-named-litellm" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#budget-enforcement" class="md-nav__link">
     <span class="md-ellipsis">
       
-        ImportError: No module named 'litellm'
+        Budget Enforcement
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#model-pricing-not-found" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#supported-models-and-pricing" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Model pricing not found
+        Supported Models and Pricing
       
     </span>
   </a>
   
 </li>
-        
-      </ul>
-    </nav>
+      
+        <li class="md-nav__item">
+  <a href="#custom-pricing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom Pricing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tips-for-gemini-shekel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tips for Gemini + Shekel
+      
+    </span>
+  </a>
   
 </li>
       
@@ -2079,143 +1857,165 @@
   
 
 
-<h1 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h1>
-<h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permanent link">&para;</a></h2>
+<h1 id="google-gemini-integration">Google Gemini Integration<a class="headerlink" href="#google-gemini-integration" title="Permanent link">&para;</a></h1>
+<p>Shekel tracks costs and enforces budgets for <a href="https://ai.google.dev/">Google Gemini</a> via the official <code>google-genai</code> Python SDK.</p>
+<h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>shekel<span class="o">[</span>gemini<span class="o">]</span>
+</span></code></pre></div>
+<h2 id="why-a-dedicated-adapter">Why a dedicated adapter?<a class="headerlink" href="#why-a-dedicated-adapter" title="Permanent link">&para;</a></h2>
+<p>Unlike OpenAI and Anthropic, Gemini uses its own SDK (<code>google-genai</code>) that makes direct API calls — it does <strong>not</strong> route through the OpenAI SDK. Without a dedicated adapter, <code>budget()</code> would be completely blind to Gemini spend.</p>
+<p>Shekel's <code>GeminiAdapter</code> patches two methods at runtime:</p>
 <ul>
-<li>Python 3.9 or higher</li>
-<li>OpenAI SDK (optional) — for OpenAI models</li>
-<li>Anthropic SDK (optional) — for Anthropic models</li>
-<li>LiteLLM (optional) — for 100+ providers via a unified interface</li>
+<li><code>google.genai.models.Models.generate_content</code> — non-streaming calls</li>
+<li><code>google.genai.models.Models.generate_content_stream</code> — streaming calls</li>
 </ul>
-<h2 id="install-shekel">Install Shekel<a class="headerlink" href="#install-shekel" title="Permanent link">&para;</a></h2>
-<p>Choose the installation option that matches your LLM provider:</p>
-<h3 id="openai-only">OpenAI Only<a class="headerlink" href="#openai-only" title="Permanent link">&para;</a></h3>
-<p>If you're only using OpenAI models (GPT-4o, GPT-4o-mini, o1, etc.):</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>shekel<span class="o">[</span>openai<span class="o">]</span>
+<p>All other Shekel features (nested budgets, fallback models, <code>BudgetExceededError</code>) work identically.</p>
+<h2 id="basic-integration">Basic Integration<a class="headerlink" href="#basic-integration" title="Permanent link">&para;</a></h2>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">google.genai</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">genai</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">shekel</span><span class="w"> </span><span class="kn">import</span> <span class="n">budget</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">client</span> <span class="o">=</span> <span class="n">genai</span><span class="o">.</span><span class="n">Client</span><span class="p">(</span><span class="n">api_key</span><span class="o">=</span><span class="s2">&quot;your-gemini-key&quot;</span><span class="p">)</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="k">with</span> <span class="n">budget</span><span class="p">(</span><span class="n">max_usd</span><span class="o">=</span><span class="mf">1.00</span><span class="p">)</span> <span class="k">as</span> <span class="n">b</span><span class="p">:</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">generate_content</span><span class="p">(</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>        <span class="n">model</span><span class="o">=</span><span class="s2">&quot;gemini-2.0-flash-lite&quot;</span><span class="p">,</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>        <span class="n">contents</span><span class="o">=</span><span class="s2">&quot;Explain quantum computing in one sentence.&quot;</span><span class="p">,</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>    <span class="p">)</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">candidates</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">content</span><span class="o">.</span><span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Cost: $</span><span class="si">{</span><span class="n">b</span><span class="o">.</span><span class="n">spent</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </span></code></pre></div>
-<h3 id="anthropic-only">Anthropic Only<a class="headerlink" href="#anthropic-only" title="Permanent link">&para;</a></h3>
-<p>If you're only using Anthropic models (Claude 3.5 Sonnet, Claude 3 Haiku, etc.):</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>pip<span class="w"> </span>install<span class="w"> </span>shekel<span class="o">[</span>anthropic<span class="o">]</span>
+<h2 id="streaming">Streaming<a class="headerlink" href="#streaming" title="Permanent link">&para;</a></h2>
+<p>Gemini streaming uses a <strong>separate method</strong> (<code>generate_content_stream</code>) rather than a <code>stream=True</code> kwarg — Shekel patches both:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">with</span> <span class="n">budget</span><span class="p">(</span><span class="n">max_usd</span><span class="o">=</span><span class="mf">1.00</span><span class="p">)</span> <span class="k">as</span> <span class="n">b</span><span class="p">:</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="n">client</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">generate_content_stream</span><span class="p">(</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>        <span class="n">model</span><span class="o">=</span><span class="s2">&quot;gemini-2.0-flash-lite&quot;</span><span class="p">,</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>        <span class="n">contents</span><span class="o">=</span><span class="s2">&quot;List three benefits of Python.&quot;</span><span class="p">,</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="p">):</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>        <span class="k">if</span> <span class="n">chunk</span><span class="o">.</span><span class="n">candidates</span><span class="p">:</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>            <span class="nb">print</span><span class="p">(</span><span class="n">chunk</span><span class="o">.</span><span class="n">candidates</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">content</span><span class="o">.</span><span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">text</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    <span class="nb">print</span><span class="p">()</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Cost: $</span><span class="si">{</span><span class="n">b</span><span class="o">.</span><span class="n">spent</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </span></code></pre></div>
-<h3 id="both-openai-and-anthropic">Both OpenAI and Anthropic<a class="headerlink" href="#both-openai-and-anthropic" title="Permanent link">&para;</a></h3>
-<p>If you're using models from both providers:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>pip<span class="w"> </span>install<span class="w"> </span>shekel<span class="o">[</span>all<span class="o">]</span>
+<h2 id="nested-budgets">Nested Budgets<a class="headerlink" href="#nested-budgets" title="Permanent link">&para;</a></h2>
+<p>Track costs across multi-step Gemini workflows:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">with</span> <span class="n">budget</span><span class="p">(</span><span class="n">max_usd</span><span class="o">=</span><span class="mf">5.00</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;pipeline&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">total</span><span class="p">:</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="k">with</span> <span class="n">budget</span><span class="p">(</span><span class="n">max_usd</span><span class="o">=</span><span class="mf">1.00</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;research&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">research</span><span class="p">:</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>        <span class="n">client</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">generate_content</span><span class="p">(</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>            <span class="n">model</span><span class="o">=</span><span class="s2">&quot;gemini-2.0-flash-lite&quot;</span><span class="p">,</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>            <span class="n">contents</span><span class="o">=</span><span class="s2">&quot;Summarise recent AI trends.&quot;</span><span class="p">,</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>        <span class="p">)</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>    <span class="k">with</span> <span class="n">budget</span><span class="p">(</span><span class="n">max_usd</span><span class="o">=</span><span class="mf">2.00</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;analysis&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">analysis</span><span class="p">:</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>        <span class="n">client</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">generate_content</span><span class="p">(</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>            <span class="n">model</span><span class="o">=</span><span class="s2">&quot;gemini-2.0-flash&quot;</span><span class="p">,</span>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>            <span class="n">contents</span><span class="o">=</span><span class="s2">&quot;Analyse the implications of those trends.&quot;</span><span class="p">,</span>
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>        <span class="p">)</span>
+</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>
+</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Research: $</span><span class="si">{</span><span class="n">research</span><span class="o">.</span><span class="n">spent</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Analysis: $</span><span class="si">{</span><span class="n">analysis</span><span class="o">.</span><span class="n">spent</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Total:    $</span><span class="si">{</span><span class="n">total</span><span class="o">.</span><span class="n">spent</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="__span-3-17"><a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a><span class="nb">print</span><span class="p">(</span><span class="n">total</span><span class="o">.</span><span class="n">tree</span><span class="p">())</span>
 </span></code></pre></div>
-<h3 id="google-gemini">Google Gemini<a class="headerlink" href="#google-gemini" title="Permanent link">&para;</a></h3>
-<p>For Google Gemini via the <code>google-genai</code> SDK:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>pip<span class="w"> </span>install<span class="w"> </span>shekel<span class="o">[</span>gemini<span class="o">]</span>
+<h2 id="fallback-models">Fallback Models<a class="headerlink" href="#fallback-models" title="Permanent link">&para;</a></h2>
+<p>Switch to a cheaper Gemini model when spend reaches a threshold:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">with</span> <span class="n">budget</span><span class="p">(</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    <span class="n">max_usd</span><span class="o">=</span><span class="mf">0.50</span><span class="p">,</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="n">fallback</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;at_pct&quot;</span><span class="p">:</span> <span class="mf">0.8</span><span class="p">,</span> <span class="s2">&quot;model&quot;</span><span class="p">:</span> <span class="s2">&quot;gemini-2.0-flash-lite&quot;</span><span class="p">},</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="p">)</span> <span class="k">as</span> <span class="n">b</span><span class="p">:</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>    <span class="c1"># Starts with gemini-2.0-flash; auto-switches at 80% ($0.40)</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>    <span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">generate_content</span><span class="p">(</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>        <span class="n">model</span><span class="o">=</span><span class="s2">&quot;gemini-2.0-flash&quot;</span><span class="p">,</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>        <span class="n">contents</span><span class="o">=</span><span class="s2">&quot;Write a detailed market analysis.&quot;</span><span class="p">,</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>    <span class="p">)</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="k">if</span> <span class="n">b</span><span class="o">.</span><span class="n">model_switched</span><span class="p">:</span>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Switched to fallback at $</span><span class="si">{</span><span class="n">b</span><span class="o">.</span><span class="n">switched_at_usd</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </span></code></pre></div>
-<h3 id="huggingface-inference-api">HuggingFace Inference API<a class="headerlink" href="#huggingface-inference-api" title="Permanent link">&para;</a></h3>
-<p>For HuggingFace's <code>InferenceClient</code>:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>pip<span class="w"> </span>install<span class="w"> </span>shekel<span class="o">[</span>huggingface<span class="o">]</span>
+<div class="admonition note">
+<p class="admonition-title">Same-provider fallback only</p>
+<p>Fallback must be another Gemini model. Cross-provider fallback (e.g. Gemini → GPT-4o) is not supported.</p>
+</div>
+<h2 id="budget-enforcement">Budget Enforcement<a class="headerlink" href="#budget-enforcement" title="Permanent link">&para;</a></h2>
+<p>Stop a runaway Gemini loop automatically:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">shekel</span><span class="w"> </span><span class="kn">import</span> <span class="n">BudgetExceededError</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="k">try</span><span class="p">:</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>    <span class="k">with</span> <span class="n">budget</span><span class="p">(</span><span class="n">max_usd</span><span class="o">=</span><span class="mf">2.00</span><span class="p">)</span> <span class="k">as</span> <span class="n">b</span><span class="p">:</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">100</span><span class="p">):</span>  <span class="c1"># Shekel stops this when budget runs out</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>            <span class="n">client</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">generate_content</span><span class="p">(</span>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>                <span class="n">model</span><span class="o">=</span><span class="s2">&quot;gemini-2.0-flash-lite&quot;</span><span class="p">,</span>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>                <span class="n">contents</span><span class="o">=</span><span class="s2">&quot;Analyse this document.&quot;</span><span class="p">,</span>
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>            <span class="p">)</span>
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="k">except</span> <span class="n">BudgetExceededError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Stopped at $</span><span class="si">{</span><span class="n">e</span><span class="o">.</span><span class="n">spent</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> — saved the rest of the budget.&quot;</span><span class="p">)</span>
 </span></code></pre></div>
-<h3 id="litellm-100-providers">LiteLLM (100+ Providers)<a class="headerlink" href="#litellm-100-providers" title="Permanent link">&para;</a></h3>
-<p>For access to OpenAI, Anthropic, Gemini, Cohere, Ollama, Azure, Bedrock, and 90+ more through a unified interface:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>pip<span class="w"> </span>install<span class="w"> </span>shekel<span class="o">[</span>litellm<span class="o">]</span>
-</span></code></pre></div>
-<h3 id="extended-model-support-400-models">Extended Model Support (400+ Models)<a class="headerlink" href="#extended-model-support-400-models" title="Permanent link">&para;</a></h3>
-<p>For support of 400+ models via <a href="https://github.com/AgentOps-AI/tokencost">tokencost</a>:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>pip<span class="w"> </span>install<span class="w"> </span>shekel<span class="o">[</span>all-models<span class="o">]</span>
-</span></code></pre></div>
-<p>This includes models from Google (Gemini), Cohere, AI21, Aleph Alpha, and many more.</p>
-<h3 id="cli-tools">CLI Tools<a class="headerlink" href="#cli-tools" title="Permanent link">&para;</a></h3>
-<p>To use the <code>shekel</code> command-line tools:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>pip<span class="w"> </span>install<span class="w"> </span>shekel<span class="o">[</span>cli<span class="o">]</span>
-</span></code></pre></div>
-<p>This enables commands like:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>shekel<span class="w"> </span>estimate<span class="w"> </span>--model<span class="w"> </span>gpt-4o<span class="w"> </span>--input-tokens<span class="w"> </span><span class="m">1000</span><span class="w"> </span>--output-tokens<span class="w"> </span><span class="m">500</span>
-</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>shekel<span class="w"> </span>models
-</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>shekel<span class="w"> </span>models<span class="w"> </span>--provider<span class="w"> </span>openai
-</span></code></pre></div>
-<h3 id="development-installation">Development Installation<a class="headerlink" href="#development-installation" title="Permanent link">&para;</a></h3>
-<p>If you want to contribute to shekel or modify the source:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/arieradle/shekel
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="nb">cd</span><span class="w"> </span>shekel
-</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;.[all-models,dev]&quot;</span>
-</span></code></pre></div>
-<p>This installs shekel in editable mode with all development dependencies.</p>
-<h2 id="verify-installation">Verify Installation<a class="headerlink" href="#verify-installation" title="Permanent link">&para;</a></h2>
-<p>After installation, verify that shekel is installed correctly:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">shekel</span>
-</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="nb">print</span><span class="p">(</span><span class="n">shekel</span><span class="o">.</span><span class="n">__version__</span><span class="p">)</span>
-</span></code></pre></div>
-<p>You should see the version number printed (e.g., <code>0.2.2</code>).</p>
-<h2 id="no-api-keys-required">No API Keys Required<a class="headerlink" href="#no-api-keys-required" title="Permanent link">&para;</a></h2>
-<p>Unlike other cost tracking tools, shekel requires <strong>no API keys</strong> and <strong>no external services</strong>. It works by monkey-patching the OpenAI and Anthropic SDKs to track token usage and calculate costs locally.</p>
-<p>Your existing API keys for OpenAI or Anthropic work as-is — shekel doesn't interfere with authentication.</p>
-<h2 id="minimal-dependencies">Minimal Dependencies<a class="headerlink" href="#minimal-dependencies" title="Permanent link">&para;</a></h2>
-<p>Shekel has zero required dependencies beyond the Python standard library. The OpenAI and Anthropic SDKs are optional — install only what you need.</p>
+<h2 id="supported-models-and-pricing">Supported Models and Pricing<a class="headerlink" href="#supported-models-and-pricing" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
-<th>Package</th>
-<th>Required?</th>
-<th>Purpose</th>
+<th>Model</th>
+<th>Input (per 1k tokens)</th>
+<th>Output (per 1k tokens)</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>openai&gt;=1.0.0</code></td>
-<td>Optional</td>
-<td>Track OpenAI API costs</td>
+<td><code>gemini-2.5-pro</code></td>
+<td>$0.00125</td>
+<td>$0.01000</td>
 </tr>
 <tr>
-<td><code>anthropic&gt;=0.7.0</code></td>
-<td>Optional</td>
-<td>Track Anthropic API costs</td>
+<td><code>gemini-2.5-flash</code></td>
+<td>$0.000075</td>
+<td>$0.00030</td>
 </tr>
 <tr>
-<td><code>litellm&gt;=1.0.0</code></td>
-<td>Optional</td>
-<td>Track costs via LiteLLM (100+ providers)</td>
+<td><code>gemini-2.0-flash</code></td>
+<td>$0.000075</td>
+<td>$0.00030</td>
 </tr>
 <tr>
-<td><code>google-genai&gt;=1.0.0</code></td>
-<td>Optional</td>
-<td>Track Google Gemini costs (native SDK)</td>
+<td><code>gemini-2.0-flash-lite</code></td>
+<td>$0.000075</td>
+<td>$0.00030</td>
 </tr>
 <tr>
-<td><code>huggingface-hub&gt;=0.20.0</code></td>
-<td>Optional</td>
-<td>Track HuggingFace Inference API costs</td>
+<td><code>gemini-1.5-pro</code></td>
+<td>$0.00125</td>
+<td>$0.00500</td>
 </tr>
 <tr>
-<td><code>tokencost&gt;=0.1.0</code></td>
-<td>Optional</td>
-<td>Support 400+ models</td>
-</tr>
-<tr>
-<td><code>click&gt;=8.0.0</code></td>
-<td>Optional</td>
-<td>CLI tools</td>
+<td><code>gemini-1.5-flash</code></td>
+<td>$0.000075</td>
+<td>$0.00030</td>
 </tr>
 </tbody>
 </table>
-<h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
-<h3 id="importerror-no-module-named-openai">ImportError: No module named 'openai'<a class="headerlink" href="#importerror-no-module-named-openai" title="Permanent link">&para;</a></h3>
-<p>If you see this error, install the OpenAI SDK:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>pip<span class="w"> </span>install<span class="w"> </span>shekel<span class="o">[</span>openai<span class="o">]</span>
+<p>Shekel uses prefix matching, so <code>gemini-2.0-flash-001</code> and similar versioned names resolve automatically.</p>
+<h2 id="custom-pricing">Custom Pricing<a class="headerlink" href="#custom-pricing" title="Permanent link">&para;</a></h2>
+<p>For models not in the pricing table, pass <code>price_per_1k_tokens</code>:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">with</span> <span class="n">budget</span><span class="p">(</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>    <span class="n">max_usd</span><span class="o">=</span><span class="mf">1.00</span><span class="p">,</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>    <span class="n">price_per_1k_tokens</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;input&quot;</span><span class="p">:</span> <span class="mf">0.0001</span><span class="p">,</span> <span class="s2">&quot;output&quot;</span><span class="p">:</span> <span class="mf">0.0003</span><span class="p">},</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="p">)</span> <span class="k">as</span> <span class="n">b</span><span class="p">:</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>    <span class="n">client</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">generate_content</span><span class="p">(</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>        <span class="n">model</span><span class="o">=</span><span class="s2">&quot;gemini-3-flash-preview&quot;</span><span class="p">,</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>        <span class="n">contents</span><span class="o">=</span><span class="s2">&quot;Hello.&quot;</span><span class="p">,</span>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>    <span class="p">)</span>
 </span></code></pre></div>
-<h3 id="importerror-no-module-named-anthropic">ImportError: No module named 'anthropic'<a class="headerlink" href="#importerror-no-module-named-anthropic" title="Permanent link">&para;</a></h3>
-<p>If you see this error, install the Anthropic SDK:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>pip<span class="w"> </span>install<span class="w"> </span>shekel<span class="o">[</span>anthropic<span class="o">]</span>
-</span></code></pre></div>
-<h3 id="importerror-no-module-named-litellm">ImportError: No module named 'litellm'<a class="headerlink" href="#importerror-no-module-named-litellm" title="Permanent link">&para;</a></h3>
-<p>If you see this error, install LiteLLM:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>pip<span class="w"> </span>install<span class="w"> </span>shekel<span class="o">[</span>litellm<span class="o">]</span>
-</span></code></pre></div>
-<h3 id="model-pricing-not-found">Model pricing not found<a class="headerlink" href="#model-pricing-not-found" title="Permanent link">&para;</a></h3>
-<p>For models not in shekel's built-in pricing table:</p>
+<h2 id="tips-for-gemini-shekel">Tips for Gemini + Shekel<a class="headerlink" href="#tips-for-gemini-shekel" title="Permanent link">&para;</a></h2>
 <ol>
-<li>Install extended model support: <code>pip install shekel[all-models]</code></li>
-<li>Or provide custom pricing: <code>budget(price_per_1k_tokens={"input": 0.001, "output": 0.003})</code></li>
+<li><strong>Use <code>generate_content_stream</code> for long responses</strong> — streaming lets you stop mid-generation if the budget is hit</li>
+<li><strong>Wrap at the workflow level</strong>, not per-call, for accurate total cost tracking</li>
+<li><strong>Set <code>warn_at=0.8</code></strong> to log a warning before the budget cap triggers</li>
+<li><strong>Gemini free tier has per-minute limits</strong> — use exponential backoff for production workloads</li>
 </ol>
-<p>See <a href="../extending/">Extending Shekel</a> for more details.</p>
 <h2 id="next-steps">Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="../quickstart/">Quick Start Guide</a> - Get started with basic examples</li>
-<li><a href="../usage/basic-usage/">Basic Usage</a> - Learn the fundamentals</li>
-<li><a href="../api-reference/">API Reference</a> - Full API documentation</li>
+<li><a href="../huggingface/">HuggingFace Integration</a></li>
+<li><a href="../../usage/nested-budgets/">Nested Budgets</a></li>
+<li><a href="../../usage/fallback-models/">Fallback Models</a></li>
+<li><a href="../../extending/">Extending Shekel</a></li>
 </ul>
 
 
@@ -2300,10 +2100,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.code.annotate"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.code.annotate"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
       
     
   </body>
