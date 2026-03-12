@@ -253,6 +253,26 @@ print(f"Remaining: ${b.remaining:.4f}")
     pip install shekel[litellm]
     ```
 
+-   :material-google:{ .lg .middle } **[Google Gemini](integrations/gemini.md)**
+
+    ---
+
+    Native adapter for the `google-genai` SDK — enforce budgets on `generate_content` and streaming. Pricing bundled for Gemini 2.0 Flash, 2.5 Flash, and 2.5 Pro.
+
+    ```python
+    pip install shekel[gemini]
+    ```
+
+-   :material-robot:{ .lg .middle } **[HuggingFace Inference API](integrations/huggingface.md)**
+
+    ---
+
+    Native adapter for `huggingface-hub` — budget enforcement for any model on the HuggingFace Inference API, sync and streaming.
+
+    ```python
+    pip install shekel[huggingface]
+    ```
+
 </div>
 
 ---
