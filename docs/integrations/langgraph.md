@@ -5,7 +5,13 @@ Shekel works seamlessly with [LangGraph](https://github.com/langchain-ai/langgra
 ## Installation
 
 ```bash
-pip install shekel[openai] "langgraph>=0.2"
+pip install shekel[langgraph]
+```
+
+Or combined with your LLM provider:
+
+```bash
+pip install shekel[langgraph,openai]
 ```
 
 ## Convenience Helper

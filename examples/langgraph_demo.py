@@ -1,4 +1,4 @@
-# Requires: pip install shekel[openai] "langgraph>=0.2"
+# Requires: pip install shekel[langgraph,openai]
 """
 LangGraph demo: budget enforcement with the budgeted_graph() helper.
 
@@ -21,7 +21,7 @@ def main() -> None:
         from typing_extensions import TypedDict
     except ImportError as e:
         print(f"Missing dependency: {e}")
-        print("Run: pip install shekel[openai] 'langgraph>=0.2' typing_extensions")
+        print("Run: pip install shekel[langgraph,openai] typing_extensions")
         return
 
     api_key = os.environ.get("OPENAI_API_KEY")
