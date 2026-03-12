@@ -416,7 +416,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../integrations/langfuse/" class="md-tabs__link">
+        <a href="../integrations/litellm/" class="md-tabs__link">
           
   
   
@@ -977,14 +977,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../integrations/langfuse/" class="md-nav__link">
+      <a href="../integrations/litellm/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Langfuse
+    LiteLLM
   
 
     
@@ -1097,6 +1097,34 @@
     
   
     Anthropic
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations/langfuse/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Langfuse
   
 
     
@@ -2135,6 +2163,19 @@
 <li><code>budget(max_llm_calls=50)</code> raises <code>BudgetExceededError</code> after 50 LLM API calls</li>
 <li>Can be combined with <code>max_usd</code>: <code>budget(max_usd=1.00, max_llm_calls=20)</code></li>
 <li>Works with fallback: <code>budget(max_usd=1.00, max_llm_calls=20, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"})</code></li>
+</ul>
+<p><strong>LiteLLM provider adapter</strong></p>
+<ul>
+<li>Install with <code>pip install shekel[litellm]</code></li>
+<li>Patches <code>litellm.completion</code> and <code>litellm.acompletion</code> (sync + async, including streaming)</li>
+<li>Tracks costs across all 100+ providers LiteLLM supports (Gemini, Cohere, Ollama, Azure, Bedrock, Mistral, and more)</li>
+<li>Model names with provider prefix (e.g. <code>gemini/gemini-1.5-flash</code>) pass through to the pricing engine</li>
+</ul>
+<p><strong>LangGraph integration helper</strong></p>
+<ul>
+<li><code>from shekel.integrations.langgraph import budgeted_graph</code></li>
+<li><code>budgeted_graph(max_usd, **kwargs)</code> — convenience context manager wrapping <code>budget()</code> for LangGraph workflows</li>
+<li>Install with <code>pip install shekel[langgraph]</code></li>
 </ul>
 <h2 id="025-2026-03-11">[0.2.5] - 2026-03-11<a class="headerlink" href="#025-2026-03-11" title="Permanent link">&para;</a></h2>
 <h3 id="extensible-provider-architecture">🔧 Extensible Provider Architecture<a class="headerlink" href="#extensible-provider-architecture" title="Permanent link">&para;</a></h3>

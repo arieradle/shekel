@@ -416,7 +416,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../integrations/langfuse/" class="md-tabs__link">
+        <a href="../integrations/litellm/" class="md-tabs__link">
           
   
   
@@ -977,14 +977,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../integrations/langfuse/" class="md-nav__link">
+      <a href="../integrations/litellm/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Langfuse
+    LiteLLM
   
 
     
@@ -1097,6 +1097,34 @@
     
   
     Anthropic
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations/langfuse/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Langfuse
   
 
     
@@ -2096,7 +2124,7 @@
 <li>Submit PR</li>
 </ol>
 <h2 id="supporting-new-llm-providers">Supporting New LLM Providers<a class="headerlink" href="#supporting-new-llm-providers" title="Permanent link">&para;</a></h2>
-<p>Shekel uses a pluggable <code>ProviderAdapter</code> pattern. To add support for a new provider (e.g., Cohere, Mistral), implement <code>ProviderAdapter</code> and register it — no changes to core Shekel code required.</p>
+<p>Shekel uses a pluggable <code>ProviderAdapter</code> pattern. Built-in adapters cover <strong>OpenAI</strong>, <strong>Anthropic</strong>, and <strong>LiteLLM</strong> (which in turn routes to 100+ providers). To add support for a provider not covered by LiteLLM (e.g., a proprietary API or a very new SDK), implement <code>ProviderAdapter</code> and register it — no changes to core Shekel code required.</p>
 <h3 id="the-provideradapter-interface">The ProviderAdapter Interface<a class="headerlink" href="#the-provideradapter-interface" title="Permanent link">&para;</a></h3>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">shekel.providers.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProviderAdapter</span><span class="p">,</span> <span class="n">ADAPTER_REGISTRY</span>
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Generator</span>

@@ -418,7 +418,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../integrations/langfuse/" class="md-tabs__link">
+        <a href="../integrations/litellm/" class="md-tabs__link">
           
   
   
@@ -722,6 +722,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#litellm-100-providers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LiteLLM (100+ Providers)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#extended-model-support-400-models" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -820,6 +831,17 @@
     <span class="md-ellipsis">
       
         ImportError: No module named 'anthropic'
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#importerror-no-module-named-litellm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ImportError: No module named 'litellm'
       
     </span>
   </a>
@@ -1215,14 +1237,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../integrations/langfuse/" class="md-nav__link">
+      <a href="../integrations/litellm/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Langfuse
+    LiteLLM
   
 
     
@@ -1335,6 +1357,34 @@
     
   
     Anthropic
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations/langfuse/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Langfuse
   
 
     
@@ -1756,6 +1806,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#litellm-100-providers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LiteLLM (100+ Providers)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#extended-model-support-400-models" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1861,6 +1922,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#importerror-no-module-named-litellm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ImportError: No module named 'litellm'
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#model-pricing-not-found" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1911,8 +1983,9 @@
 <h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Python 3.9 or higher</li>
-<li>OpenAI SDK (optional) - for OpenAI models</li>
-<li>Anthropic SDK (optional) - for Anthropic models</li>
+<li>OpenAI SDK (optional) — for OpenAI models</li>
+<li>Anthropic SDK (optional) — for Anthropic models</li>
+<li>LiteLLM (optional) — for 100+ providers via a unified interface</li>
 </ul>
 <h2 id="install-shekel">Install Shekel<a class="headerlink" href="#install-shekel" title="Permanent link">&para;</a></h2>
 <p>Choose the installation option that matches your LLM provider:</p>
@@ -1928,31 +2001,35 @@
 <p>If you're using models from both providers:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>pip<span class="w"> </span>install<span class="w"> </span>shekel<span class="o">[</span>all<span class="o">]</span>
 </span></code></pre></div>
+<h3 id="litellm-100-providers">LiteLLM (100+ Providers)<a class="headerlink" href="#litellm-100-providers" title="Permanent link">&para;</a></h3>
+<p>For access to OpenAI, Anthropic, Gemini, Cohere, Ollama, Azure, Bedrock, and 90+ more through a unified interface:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>pip<span class="w"> </span>install<span class="w"> </span>shekel<span class="o">[</span>litellm<span class="o">]</span>
+</span></code></pre></div>
 <h3 id="extended-model-support-400-models">Extended Model Support (400+ Models)<a class="headerlink" href="#extended-model-support-400-models" title="Permanent link">&para;</a></h3>
 <p>For support of 400+ models via <a href="https://github.com/AgentOps-AI/tokencost">tokencost</a>:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>pip<span class="w"> </span>install<span class="w"> </span>shekel<span class="o">[</span>all-models<span class="o">]</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>pip<span class="w"> </span>install<span class="w"> </span>shekel<span class="o">[</span>all-models<span class="o">]</span>
 </span></code></pre></div>
 <p>This includes models from Google (Gemini), Cohere, AI21, Aleph Alpha, and many more.</p>
 <h3 id="cli-tools">CLI Tools<a class="headerlink" href="#cli-tools" title="Permanent link">&para;</a></h3>
 <p>To use the <code>shekel</code> command-line tools:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>pip<span class="w"> </span>install<span class="w"> </span>shekel<span class="o">[</span>cli<span class="o">]</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>pip<span class="w"> </span>install<span class="w"> </span>shekel<span class="o">[</span>cli<span class="o">]</span>
 </span></code></pre></div>
 <p>This enables commands like:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>shekel<span class="w"> </span>estimate<span class="w"> </span>--model<span class="w"> </span>gpt-4o<span class="w"> </span>--input-tokens<span class="w"> </span><span class="m">1000</span><span class="w"> </span>--output-tokens<span class="w"> </span><span class="m">500</span>
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>shekel<span class="w"> </span>models
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>shekel<span class="w"> </span>models<span class="w"> </span>--provider<span class="w"> </span>openai
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>shekel<span class="w"> </span>estimate<span class="w"> </span>--model<span class="w"> </span>gpt-4o<span class="w"> </span>--input-tokens<span class="w"> </span><span class="m">1000</span><span class="w"> </span>--output-tokens<span class="w"> </span><span class="m">500</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>shekel<span class="w"> </span>models
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>shekel<span class="w"> </span>models<span class="w"> </span>--provider<span class="w"> </span>openai
 </span></code></pre></div>
 <h3 id="development-installation">Development Installation<a class="headerlink" href="#development-installation" title="Permanent link">&para;</a></h3>
 <p>If you want to contribute to shekel or modify the source:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/arieradle/shekel
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="nb">cd</span><span class="w"> </span>shekel
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;.[all-models,dev]&quot;</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/arieradle/shekel
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="nb">cd</span><span class="w"> </span>shekel
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;.[all-models,dev]&quot;</span>
 </span></code></pre></div>
 <p>This installs shekel in editable mode with all development dependencies.</p>
 <h2 id="verify-installation">Verify Installation<a class="headerlink" href="#verify-installation" title="Permanent link">&para;</a></h2>
 <p>After installation, verify that shekel is installed correctly:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">shekel</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="nb">print</span><span class="p">(</span><span class="n">shekel</span><span class="o">.</span><span class="n">__version__</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">shekel</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="nb">print</span><span class="p">(</span><span class="n">shekel</span><span class="o">.</span><span class="n">__version__</span><span class="p">)</span>
 </span></code></pre></div>
 <p>You should see the version number printed (e.g., <code>0.2.2</code>).</p>
 <h2 id="no-api-keys-required">No API Keys Required<a class="headerlink" href="#no-api-keys-required" title="Permanent link">&para;</a></h2>
@@ -1980,6 +2057,11 @@
 <td>Track Anthropic API costs</td>
 </tr>
 <tr>
+<td><code>litellm&gt;=1.0.0</code></td>
+<td>Optional</td>
+<td>Track costs via LiteLLM (100+ providers)</td>
+</tr>
+<tr>
 <td><code>tokencost&gt;=0.1.0</code></td>
 <td>Optional</td>
 <td>Support 400+ models</td>
@@ -1994,11 +2076,15 @@
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
 <h3 id="importerror-no-module-named-openai">ImportError: No module named 'openai'<a class="headerlink" href="#importerror-no-module-named-openai" title="Permanent link">&para;</a></h3>
 <p>If you see this error, install the OpenAI SDK:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>pip<span class="w"> </span>install<span class="w"> </span>shekel<span class="o">[</span>openai<span class="o">]</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>pip<span class="w"> </span>install<span class="w"> </span>shekel<span class="o">[</span>openai<span class="o">]</span>
 </span></code></pre></div>
 <h3 id="importerror-no-module-named-anthropic">ImportError: No module named 'anthropic'<a class="headerlink" href="#importerror-no-module-named-anthropic" title="Permanent link">&para;</a></h3>
 <p>If you see this error, install the Anthropic SDK:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>pip<span class="w"> </span>install<span class="w"> </span>shekel<span class="o">[</span>anthropic<span class="o">]</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>pip<span class="w"> </span>install<span class="w"> </span>shekel<span class="o">[</span>anthropic<span class="o">]</span>
+</span></code></pre></div>
+<h3 id="importerror-no-module-named-litellm">ImportError: No module named 'litellm'<a class="headerlink" href="#importerror-no-module-named-litellm" title="Permanent link">&para;</a></h3>
+<p>If you see this error, install LiteLLM:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>pip<span class="w"> </span>install<span class="w"> </span>shekel<span class="o">[</span>litellm<span class="o">]</span>
 </span></code></pre></div>
 <h3 id="model-pricing-not-found">Model pricing not found<a class="headerlink" href="#model-pricing-not-found" title="Permanent link">&para;</a></h3>
 <p>For models not in shekel's built-in pricing table:</p>

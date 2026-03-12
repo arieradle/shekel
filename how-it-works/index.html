@@ -416,7 +416,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../integrations/langfuse/" class="md-tabs__link">
+        <a href="../integrations/litellm/" class="md-tabs__link">
           
   
   
@@ -977,14 +977,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../integrations/langfuse/" class="md-nav__link">
+      <a href="../integrations/litellm/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Langfuse
+    LiteLLM
   
 
     
@@ -1097,6 +1097,34 @@
     
   
     Anthropic
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations/langfuse/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Langfuse
   
 
     
@@ -2085,6 +2113,9 @@
 <p><strong>Anthropic:</strong>
 - <code>anthropic.resources.messages.Messages.create</code> (sync)
 - <code>anthropic.resources.messages.AsyncMessages.create</code> (async)</p>
+<p><strong>LiteLLM</strong> (when <code>shekel[litellm]</code> is installed):
+- <code>litellm.completion</code> (sync)
+- <code>litellm.acompletion</code> (async)</p>
 <h3 id="patching-implementation">Patching Implementation<a class="headerlink" href="#patching-implementation" title="Permanent link">&para;</a></h3>
 <p>Shekel uses a pluggable <code>ProviderAdapter</code> pattern — each provider registers itself in <code>ADAPTER_REGISTRY</code>. <code>shekel/_patch.py</code> delegates all patching to the registry:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># shekel/_patch.py</span>
@@ -2174,13 +2205,14 @@
 </span></code></pre></div>
 <h2 id="token-extraction">Token Extraction<a class="headerlink" href="#token-extraction" title="Permanent link">&para;</a></h2>
 <p>Shekel extracts tokens from API responses:</p>
-<p><strong>OpenAI:</strong>
+<p><strong>OpenAI / LiteLLM:</strong>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">_extract_openai_tokens</span><span class="p">(</span><span class="n">response</span><span class="p">):</span>
 </span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>    <span class="n">input_tokens</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">usage</span><span class="o">.</span><span class="n">prompt_tokens</span>
 </span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>    <span class="n">output_tokens</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">usage</span><span class="o">.</span><span class="n">completion_tokens</span>
 </span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>    <span class="n">model</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">model</span>
 </span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>    <span class="k">return</span> <span class="n">input_tokens</span><span class="p">,</span> <span class="n">output_tokens</span><span class="p">,</span> <span class="n">model</span>
 </span></code></pre></div></p>
+<p>LiteLLM uses the same OpenAI-compatible format regardless of the underlying provider, so the same extraction logic applies.</p>
 <p><strong>Anthropic:</strong>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">_extract_anthropic_tokens</span><span class="p">(</span><span class="n">response</span><span class="p">):</span>
 </span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>    <span class="n">input_tokens</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">usage</span><span class="o">.</span><span class="n">input_tokens</span>
