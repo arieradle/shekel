@@ -543,7 +543,7 @@ def test_warn_at_fires_before_fallback() -> None:
         with budget(
             max_usd=0.10,
             warn_at=0.5,
-            on_exceed=on_warn,
+            on_warn=on_warn,
             fallback={"at_pct": 0.8, "model": "gpt-4o-mini"},
         ) as b:
             import openai

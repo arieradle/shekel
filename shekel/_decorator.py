@@ -10,7 +10,7 @@ from shekel._budget import Budget
 def with_budget(
     max_usd: float | None = None,
     warn_at: float | None = None,
-    on_exceed: Callable[[float, float], None] | None = None,
+    on_warn: Callable[[float, float], None] | None = None,
     price_per_1k_tokens: dict[str, float] | None = None,
     fallback: dict[str, Any] | None = None,
     on_fallback: Callable[[float, float, str], None] | None = None,
@@ -42,7 +42,7 @@ def with_budget(
                 b = Budget(
                     max_usd=max_usd,
                     warn_at=warn_at,
-                    on_exceed=on_exceed,
+                    on_warn=on_warn,
                     price_per_1k_tokens=price_per_1k_tokens,
                     fallback=fallback,
                     on_fallback=on_fallback,
@@ -61,7 +61,7 @@ def with_budget(
                 b = Budget(
                     max_usd=max_usd,
                     warn_at=warn_at,
-                    on_exceed=on_exceed,
+                    on_warn=on_warn,
                     price_per_1k_tokens=price_per_1k_tokens,
                     fallback=fallback,
                     on_fallback=on_fallback,

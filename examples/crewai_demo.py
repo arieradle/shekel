@@ -58,7 +58,7 @@ def main() -> None:
         print(f"  Warning: ${spent:.4f} of ${limit:.2f} used")
 
     try:
-        with budget(max_usd=0.50, warn_at=0.8, on_exceed=on_warn) as b:
+        with budget(max_usd=0.50, warn_at=0.8, on_warn=on_warn) as b:
             result = crew.kickoff()
         print(result)
         print(f"\nCrew cost: ${b.spent:.4f}")

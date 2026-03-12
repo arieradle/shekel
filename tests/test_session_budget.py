@@ -149,7 +149,7 @@ def test_warn_fires_once_across_entries() -> None:
     # Call 1: $0.0325 — above threshold → warn fires
     # Calls 2-5: above threshold, but warn already fired
     fake = make_openai_response("gpt-4o", 5000, 2000)
-    session = budget(max_usd=0.50, warn_at=0.05, on_exceed=on_warn)
+    session = budget(max_usd=0.50, warn_at=0.05, on_warn=on_warn)
 
     with patch(OPENAI_CREATE, return_value=fake):
         import openai

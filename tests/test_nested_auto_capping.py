@@ -144,7 +144,7 @@ class TestAutoCapWarnAt:
             with budget(
                 max_usd=5.00,
                 warn_at=0.5,
-                on_exceed=lambda s, lim: fired.append((s, lim)),
+                on_warn=lambda s, lim: fired.append((s, lim)),
                 name="child",
             ) as child:
                 assert child.limit == 3.00
@@ -165,7 +165,7 @@ class TestAutoCapWarnAt:
             with budget(
                 max_usd=5.00,
                 warn_at=0.5,
-                on_exceed=lambda s, lim: fired.append((s, lim)),
+                on_warn=lambda s, lim: fired.append((s, lim)),
                 name="child",
             ) as child:
                 assert child.limit == 3.00

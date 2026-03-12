@@ -442,7 +442,7 @@ class TestOllamaBudgetWarnings:
             with budget(
                 max_usd=0.10,
                 warn_at=0.5,
-                on_exceed=on_warn,
+                on_warn=on_warn,
                 fallback={"at_pct": 0.8, "model": "gpt-4o-mini"},
                 name="warn_test",
             ) as b:  # noqa: F841
@@ -463,7 +463,7 @@ class TestOllamaBudgetWarnings:
         def on_warn(spent: float, limit: float) -> None:
             warnings_triggered.append((spent, limit))
 
-        with budget(max_usd=10.00, warn_at=0.9, on_exceed=on_warn):
+        with budget(max_usd=10.00, warn_at=0.9, on_warn=on_warn):
             from shekel._patch import _record
 
             # Spend small amount
