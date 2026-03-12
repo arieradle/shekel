@@ -65,6 +65,14 @@ def test_calls_used_and_remaining() -> None:
             assert b.calls_remaining == 9
 
 
+def test_calls_remaining_none_when_track_only() -> None:
+    """calls_remaining is None when budget has no max_llm_calls (track-only)."""
+    with budget(max_usd=1.0) as b:
+        assert b.calls_remaining is None
+    with budget() as b:
+        assert b.calls_remaining is None
+
+
 # ---------------------------------------------------------------------------
 # Call limit enforcement
 # ---------------------------------------------------------------------------
@@ -179,6 +187,10 @@ def test_fallback_activates_by_call_count_only() -> None:
 
 def test_fallback_validation() -> None:
     """Fallback dict must have valid 'at' and 'model' keys."""
+    # fallback must be a dict (not string)
+    with pytest.raises(ValueError, match="fallback must be a dict"):
+        budget(max_usd=1.0, fallback="gpt-4o-mini")
+
     # Invalid 'at' values
     with pytest.raises(ValueError):
         budget(max_llm_calls=10, fallback={"at_pct": 1.5, "model": "gpt-3.5"})
