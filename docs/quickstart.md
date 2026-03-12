@@ -114,12 +114,12 @@ with budget(max_usd=2.00, warn_at=0.8) as b:
 Switch models instead of crashing:
 
 ```python
-with budget(max_usd=1.00, fallback="gpt-4o-mini") as b:
+with budget(max_usd=1.00, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}) as b:
     response = client.chat.completions.create(
         model="gpt-4o",  # Starts with expensive model
         messages=[{"role": "user", "content": "Hello"}],
     )
-# Automatically switches to gpt-4o-mini at $1.00
+# Automatically switches to gpt-4o-mini at 80% of $1.00 ($0.80)
 
 if b.model_switched:
     print(f"Switched to fallback at ${b.switched_at_usd:.4f}")
@@ -180,7 +180,7 @@ with session:
 print(f"Total session spend: ${session.spent:.4f}")
 ```
 
-**Note:** Budget variables accumulate by default (no `persistent=True` needed).
+**Note:** Budget variables always accumulate across uses.
 
 ### Pattern 6: Decorator
 

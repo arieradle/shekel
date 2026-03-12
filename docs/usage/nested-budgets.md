@@ -361,42 +361,21 @@ with budget(max_usd=10, name="parent"):
         work()
 ```
 
-## Migration from v0.2.2
+## Migration Notes
 
-### Breaking Change: Accumulation
+### Accumulating Budgets
 
-Budget variables now **always accumulate**:
-
-```python
-# v0.2.2: Reset on each entry
-b = budget(max_usd=10.00)
-with b: work1()  # Spends $2
-with b: work2()  # Was $0, now $2
-# v0.2.2: b.spent == $2
-
-# v0.2.3: Accumulates
-b = budget(max_usd=10.00)
-with b: work1()  # Spends $2
-with b: work2()  # Spends $2 more
-# v0.2.3: b.spent == $4  ⚠️
-```
-
-**Migration:** Create new `budget()` instances instead of reusing:
+Budget variables always accumulate across uses. Create a new `budget()` instance if you need a fresh budget:
 
 ```python
-# v0.2.3: Create fresh instances
-with budget(max_usd=10.00): work1()  # $2
+# Accumulates across uses
+b = budget(max_usd=10.00)
+with b: work1()  # Spends $2
+with b: work2()  # Spends $2 more — b.spent == $4
+
+# Fresh budget each time
+with budget(max_usd=10.00): work1()  # $2 (separate budget)
 with budget(max_usd=10.00): work2()  # $2 (separate budget)
-```
-
-### Deprecated: `persistent` Flag
-
-```python
-# v0.2.2
-b = budget(max_usd=10.00, persistent=True)
-
-# v0.2.3: persistent is now the default
-b = budget(max_usd=10.00)  # Always accumulates
 ```
 
 ## API Reference

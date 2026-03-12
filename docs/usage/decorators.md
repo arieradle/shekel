@@ -68,9 +68,9 @@ The decorator supports all budget parameters:
 @with_budget(
     max_usd=1.00,
     warn_at=0.8,
-    fallback="gpt-4o-mini",
+    fallback={"at_pct": 0.8, "model": "gpt-4o-mini"},
     price_per_1k_tokens=None,
-    on_exceed=None,
+    on_warn=None,
     on_fallback=None,
 )
 def my_function():
@@ -86,8 +86,8 @@ def log_warning(spent: float, limit: float):
 @with_budget(
     max_usd=2.00,
     warn_at=0.8,
-    fallback="gpt-4o-mini",
-    on_exceed=log_warning,
+    fallback={"at_pct": 0.8, "model": "gpt-4o-mini"},
+    on_warn=log_warning,
 )
 def generate_report(data: dict) -> str:
     response = client.chat.completions.create(
@@ -315,7 +315,7 @@ def process_all(items: list):
     
     for item in items:
         with session:
-            process(item)  # Accumulates automatically (v0.2.3+)
+            process(item)  # Accumulates automatically
 ```
 
 ## Testing with Decorators
@@ -376,21 +376,21 @@ def generate_response(prompt: str, context: dict) -> str:
 ### 3. Document Budget in Docstring
 
 ```python
-@with_budget(max_usd=2.00, fallback="gpt-4o-mini")
+@with_budget(max_usd=2.00, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"})
 def analyze_data(data: dict) -> str:
     """
     Analyze data using AI.
-    
-    Budget: $2.00 per call, fallback to gpt-4o-mini.
-    
+
+    Budget: $2.00 per call, fallback to gpt-4o-mini at 80% ($1.60).
+
     Args:
         data: Data to analyze
-    
+
     Returns:
         Analysis results
-    
+
     Raises:
-        BudgetExceededError: If hard cap ($4.00) is exceeded
+        BudgetExceededError: If $2.00 budget is exceeded
     """
     ...
 ```

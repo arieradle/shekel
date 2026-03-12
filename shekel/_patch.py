@@ -76,10 +76,13 @@ def _validate_same_provider(fallback_model: str, current_provider: str) -> None:
 
 def _apply_fallback_if_needed(active_budget: Any, kwargs: dict[str, Any], provider: str) -> None:
     """Rewrite model kwarg to fallback if budget has switched. Validates same-provider."""
+    # --- NEW in v0.2.6 (call limits): Check if fallback should activate based on call count ---
+    active_budget._check_call_limit_for_fallback()
+
     if not active_budget._using_fallback or active_budget.fallback is None:
         return
 
-    fallback_model: str = active_budget.fallback
+    fallback_model: str = active_budget.fallback["model"]
     _validate_same_provider(fallback_model, provider)
     kwargs["model"] = fallback_model
 

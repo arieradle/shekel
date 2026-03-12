@@ -9,7 +9,7 @@ Instead of raising `BudgetExceededError`, switch to a cheaper model:
 ```python
 from shekel import budget
 
-with budget(max_usd=1.00, fallback="gpt-4o-mini") as b:
+with budget(max_usd=1.00, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}) as b:
     # Starts with gpt-4o
     response = client.chat.completions.create(
         model="gpt-4o",
@@ -26,11 +26,11 @@ if b.model_switched:
 
 1. You start with your preferred (expensive) model
 2. Shekel tracks spending as normal
-3. When spending exceeds `max_usd`:
-   - **Without fallback**: Raises `BudgetExceededError`
+3. When spending reaches the `at_pct` fraction of `max_usd` (e.g., 80%):
+   - **Without fallback**: No automatic switch occurs until `max_usd` is reached, then raises `BudgetExceededError`
    - **With fallback**: Switches to the specified cheaper model
 4. Subsequent calls automatically use the fallback model
-5. A hard cap (default: `max_usd * 2`) prevents runaway costs
+5. The fallback model shares the same `max_usd` budget — there is no separate ceiling. Once total spend reaches `max_usd`, `BudgetExceededError` is raised.
 
 !!! tip "Graceful Degradation"
     Fallback models provide graceful degradation: your application keeps running with a cheaper model instead of crashing. Perfect for production environments where availability matters.
@@ -40,7 +40,7 @@ if b.model_switched:
 The budget object provides properties to check fallback status:
 
 ```python
-with budget(max_usd=2.00, fallback="gpt-4o-mini") as b:
+with budget(max_usd=2.00, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}) as b:
     run_my_agent()
 
 # After execution
@@ -50,46 +50,21 @@ print(f"Fallback spent: ${b.fallback_spent:.4f}") # Cost on fallback model
 print(f"Total spent: ${b.spent:.4f}")             # Total cost (primary + fallback)
 ```
 
-## Hard Cap Protection
+## Budget Enforcement with Fallback
 
-By default, fallback models have a hard cap at `max_usd * 2`:
+The fallback model shares the same `max_usd` budget. Once total spending reaches `max_usd`, `BudgetExceededError` is raised:
 
 ```python
 from shekel import budget, BudgetExceededError
 
 try:
-    with budget(max_usd=1.00, fallback="gpt-4o-mini") as b:
-        # Switches to gpt-4o-mini at $1.00
-        # Raises BudgetExceededError at $2.00 (hard cap)
+    with budget(max_usd=1.00, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}) as b:
+        # Switches to gpt-4o-mini at $0.80 (80% of $1.00)
+        # Raises BudgetExceededError at $1.00
         run_expensive_operation()
 except BudgetExceededError as e:
-    print(f"Hard cap reached: ${e.spent:.4f}")
+    print(f"Budget reached: ${e.spent:.4f}")
 ```
-
-This prevents runaway costs if the fallback model is also expensive or used heavily.
-
-### Custom Hard Cap
-
-Override the hard cap explicitly:
-
-```python
-# Switch at $1.00, hard stop at $1.50
-with budget(max_usd=1.00, fallback="gpt-4o-mini", hard_cap=1.50) as b:
-    run_my_agent()
-```
-
-### No Hard Cap
-
-Remove the hard cap entirely (not recommended):
-
-```python
-# Switch at $1.00, never raise (risky!)
-with budget(max_usd=1.00, fallback="gpt-4o-mini", hard_cap=float('inf')) as b:
-    run_my_agent()
-```
-
-!!! danger "Removing Hard Cap"
-    Removing the hard cap means unlimited spending after the switch. Only do this if you're absolutely confident in your agent's termination logic.
 
 ## Fallback Callbacks
 
@@ -102,7 +77,7 @@ def on_fallback_switch(spent: float, limit: float, fallback_model: str):
 
 with budget(
     max_usd=5.00,
-    fallback="gpt-4o-mini",
+    fallback={"at_pct": 0.8, "model": "gpt-4o-mini"},
     on_fallback=on_fallback_switch
 ) as b:
     run_my_agent()
@@ -126,7 +101,7 @@ def log_fallback(spent: float, limit: float, fallback_model: str):
         }
     )
 
-with budget(max_usd=10.00, fallback="gpt-4o-mini", on_fallback=log_fallback):
+with budget(max_usd=10.00, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}, on_fallback=log_fallback):
     run_production_agent()
 ```
 
@@ -144,7 +119,7 @@ def alert_fallback(spent: float, limit: float, fallback_model: str):
         "fallback": fallback_model,
     })
 
-with budget(max_usd=20.00, fallback="gpt-4o-mini", on_fallback=alert_fallback):
+with budget(max_usd=20.00, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}, on_fallback=alert_fallback):
     run_my_agent()
 ```
 
@@ -155,7 +130,7 @@ with budget(max_usd=20.00, fallback="gpt-4o-mini", on_fallback=alert_fallback):
 Most common pattern for OpenAI:
 
 ```python
-with budget(max_usd=1.00, fallback="gpt-4o-mini"):
+with budget(max_usd=1.00, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}):
     response = client.chat.completions.create(
         model="gpt-4o",
         messages=[{"role": "user", "content": prompt}],
@@ -172,7 +147,7 @@ with budget(max_usd=1.00, fallback="gpt-4o-mini"):
 For Anthropic models:
 
 ```python
-with budget(max_usd=2.00, fallback="claude-3-haiku-20240307"):
+with budget(max_usd=2.00, fallback={"at_pct": 0.8, "model": "claude-3-haiku-20240307"}):
     response = client.messages.create(
         model="claude-3-opus-20240229",
         max_tokens=1000,
@@ -190,7 +165,7 @@ with budget(max_usd=2.00, fallback="claude-3-haiku-20240307"):
 For reasoning-heavy tasks:
 
 ```python
-with budget(max_usd=5.00, fallback="gpt-4o-mini"):
+with budget(max_usd=5.00, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}):
     response = client.chat.completions.create(
         model="o1",
         messages=[{"role": "user", "content": "Solve this complex problem..."}],
@@ -201,21 +176,60 @@ with budget(max_usd=5.00, fallback="gpt-4o-mini"):
 - Complex reasoning tasks
 - When you want the best possible answer but have budget constraints
 
+## Combining USD and Call-Count Limits
+
+You can set both `max_usd` and `max_llm_calls` at the same time. Shekel applies `at_pct` to **both** limits independently — whichever threshold is reached first triggers the fallback:
+
+```python
+with budget(
+    max_usd=5.00,
+    max_llm_calls=20,
+    fallback={"at_pct": 0.8, "model": "gpt-4o-mini"},
+) as b:
+    run_my_agent()
+# Fallback activates at: $4.00 (80% of $5.00) OR 16 calls (80% of 20) — whichever comes first
+```
+
+**First-wins rule:** if your agent makes many cheap calls, it may hit the call-count threshold (`16 calls`) long before reaching the USD threshold (`$4.00`). Conversely, a few expensive calls may hit the USD threshold first. Design your thresholds with this in mind.
+
+!!! tip "Tight call limits"
+    If you want the call limit to be the primary circuit-breaker, set `max_usd` high (or omit it) and rely on `max_llm_calls` alone:
+    ```python
+    with budget(max_llm_calls=20, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}) as b:
+        run_my_agent()
+    # Switches at call 16, hard-stops at call 21
+    ```
+
+## `at_pct=1.0` — Reactive Fallback
+
+Setting `at_pct=1.0` means the fallback activates only **after** a call pushes spend past `max_usd` — not proactively before it:
+
+```python
+with budget(max_usd=1.00, fallback={"at_pct": 1.0, "model": "gpt-4o-mini"}) as b:
+    run_my_agent()
+# No early switch — switches to gpt-4o-mini only after spending exceeds $1.00
+# Then continues on gpt-4o-mini until BudgetExceededError (if still over limit)
+```
+
+**When to use `at_pct=1.0`:** when you want the primary model for as long as possible and only want a safety net to avoid a hard crash. The first call that exceeds the limit triggers the switch; subsequent calls use the cheaper model.
+
+**When NOT to use it:** if your goal is proactive cost control, use a lower threshold like `0.8`. With `at_pct=1.0` you've already exceeded your budget before the switch happens.
+
 ## Same-Provider Requirement
 
 Fallback models must be from the same provider:
 
 ```python
 # ✅ Valid - both OpenAI
-with budget(max_usd=1.00, fallback="gpt-4o-mini"):
+with budget(max_usd=1.00, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}):
     client.chat.completions.create(model="gpt-4o", ...)
 
 # ✅ Valid - both Anthropic
-with budget(max_usd=1.00, fallback="claude-3-haiku-20240307"):
+with budget(max_usd=1.00, fallback={"at_pct": 0.8, "model": "claude-3-haiku-20240307"}):
     client.messages.create(model="claude-3-opus-20240229", ...)
 
 # ❌ Invalid - cross-provider
-with budget(max_usd=1.00, fallback="gpt-4o-mini"):
+with budget(max_usd=1.00, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}):
     client.messages.create(model="claude-3-opus-20240229", ...)
 # Raises: ValueError: fallback model appears to be an OpenAI model but the current call is to Anthropic
 ```
@@ -228,25 +242,25 @@ with budget(max_usd=1.00, fallback="gpt-4o-mini"):
 Use both warnings and fallback for maximum visibility:
 
 ```python
-with budget(max_usd=5.00, warn_at=0.8, fallback="gpt-4o-mini") as b:
+with budget(max_usd=5.00, warn_at=0.7, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}) as b:
     run_my_agent()
 
-# Warnings at $4.00 (80%)
-# Switches at $5.00
-# Hard cap at $10.00 (default)
+# Warning at $3.50 (70%)
+# Switches to gpt-4o-mini at $4.00 (80%)
+# Raises BudgetExceededError at $5.00 (100%)
 ```
 
 This gives you:
-1. Early warning at 80% ($4.00)
-2. Automatic fallback at 100% ($5.00)
-3. Hard stop at 200% ($10.00)
+1. Early warning at 70% ($3.50)
+2. Automatic fallback at 80% ($4.00)
+3. Hard stop at 100% ($5.00)
 
 ## Spend Summary with Fallback
 
 The summary shows fallback usage:
 
 ```python
-with budget(max_usd=2.00, fallback="gpt-4o-mini") as b:
+with budget(max_usd=2.00, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}) as b:
     run_my_agent()
 
 print(b.summary())
@@ -268,7 +282,7 @@ Output:
 │  ...
 ├────────────────────────────────────────────────────────────┤
 │  gpt-4o: 14 calls  $2.0140
-│  gpt-4o-mini: 11 calls  $0.5290
+│  gpt-4o-mini: 11 calls (fallback)  $0.5290
 │  Switched at: $2.0140
 └────────────────────────────────────────────────────────────┘
 ```
@@ -282,14 +296,14 @@ import pytest
 from shekel import budget
 
 def test_fallback_activation():
-    with budget(max_usd=0.01, fallback="gpt-4o-mini") as b:
+    with budget(max_usd=0.01, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}) as b:
         # This should trigger fallback
         for i in range(10):
             response = client.chat.completions.create(
                 model="gpt-4o",
                 messages=[{"role": "user", "content": f"Test {i}"}],
             )
-    
+
     # Verify fallback was activated
     assert b.model_switched is True
     assert b.switched_at_usd > 0
@@ -297,14 +311,14 @@ def test_fallback_activation():
 
 def test_fallback_callback():
     callback_fired = []
-    
+
     def capture_fallback(spent, limit, fallback):
         callback_fired.append((spent, limit, fallback))
-    
-    with budget(max_usd=0.01, fallback="gpt-4o-mini", on_fallback=capture_fallback):
+
+    with budget(max_usd=0.01, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}, on_fallback=capture_fallback):
         # Trigger fallback
         ...
-    
+
     assert len(callback_fired) == 1
     assert callback_fired[0][2] == "gpt-4o-mini"
 ```
@@ -339,7 +353,7 @@ def call_with_fallback_chain(prompt: str):
     
     # Try tier 2: gpt-4o with fallback to gpt-4o-mini
     try:
-        with budget(max_usd=2.00, fallback="gpt-4o-mini"):
+        with budget(max_usd=2.00, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}):
             return client.chat.completions.create(model="gpt-4o", ...)
     except BudgetExceededError:
         pass

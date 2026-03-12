@@ -83,7 +83,7 @@ except BudgetExceededError as e:
 Combine streaming with model fallback:
 
 ```python
-with budget(max_usd=1.00, fallback="gpt-4o-mini") as b:
+with budget(max_usd=1.00, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}) as b:
     # First stream - uses gpt-4o
     stream1 = client.chat.completions.create(
         model="gpt-4o",
@@ -92,9 +92,9 @@ with budget(max_usd=1.00, fallback="gpt-4o-mini") as b:
     )
     for chunk in stream1:
         print(chunk.choices[0].delta.content or "", end="")
-    
+
     print(f"\nFirst stream: ${b.spent:.4f}")
-    
+
     # Second stream - might use gpt-4o-mini if switched
     stream2 = client.chat.completions.create(
         model="gpt-4o",  # Automatically becomes gpt-4o-mini if fallback activated
@@ -103,7 +103,7 @@ with budget(max_usd=1.00, fallback="gpt-4o-mini") as b:
     )
     for chunk in stream2:
         print(chunk.choices[0].delta.content or "", end="")
-    
+
     if b.model_switched:
         print(f"\nSwitched to fallback at ${b.switched_at_usd:.4f}")
 ```
@@ -238,7 +238,7 @@ def stream_with_display(prompt: str):
     
     print(f"\n[Cost: ${session.spent:.4f} / ${session.limit:.2f}]")
 
-# Use multiple times - costs accumulate automatically (v0.2.3+)
+# Use multiple times - costs accumulate automatically
 stream_with_display("Tell me about Python")
 stream_with_display("Tell me about JavaScript")
 stream_with_display("Tell me about Rust")

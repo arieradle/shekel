@@ -171,12 +171,12 @@ except BudgetExceededError as e:
 Use cheaper models when budget is reached:
 
 ```python
-with budget(max_usd=0.50, fallback="gpt-4o-mini") as b:
+with budget(max_usd=0.50, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}) as b:
     # Graph starts with gpt-4o
     result = app.invoke(initial_state)
-    
-    # Automatically switches to gpt-4o-mini if $0.50 exceeded
-    
+
+    # Automatically switches to gpt-4o-mini at 80% of $0.50 ($0.40)
+
     if b.model_switched:
         print(f"Switched to {b.fallback} at ${b.switched_at_usd:.4f}")
 ```
@@ -308,7 +308,7 @@ class WorkflowState(TypedDict):
 def process_with_budget(state: WorkflowState):
     """Process workflow with budget tracking."""
     try:
-        with budget(max_usd=2.00, warn_at=0.8, fallback="gpt-4o-mini") as b:
+        with budget(max_usd=2.00, warn_at=0.8, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}) as b:
             # Build and execute graph
             graph = build_complex_graph()
             result = graph.invoke({"input": state["input"]})
@@ -341,7 +341,7 @@ def process_with_budget(state: WorkflowState):
 ## Tips for LangGraph + Shekel
 
 1. **Wrap at the graph level**, not individual nodes
-2. **Use persistent budgets** for multi-turn conversations
+2. **Reuse budget variables** for multi-turn conversations (they accumulate automatically)
 3. **Set fallback models** to prevent graph crashes
 4. **Monitor retry loops** with budget caps
 5. **Test with low budgets** to catch runaway costs early

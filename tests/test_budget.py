@@ -112,7 +112,7 @@ def test_warn_at_fires_once() -> None:
     callback = MagicMock()
     fake = make_openai_response("gpt-4o", 5000, 2000)
     with patch(OPENAI_CREATE, return_value=fake):
-        with budget(max_usd=0.05, warn_at=0.5, on_exceed=callback):
+        with budget(max_usd=0.05, warn_at=0.5, on_warn=callback):
             import openai
 
             client = openai.OpenAI(api_key="test")
@@ -130,7 +130,7 @@ def test_warn_at_fires_only_once_across_multiple_calls() -> None:
     expected_per_call = calculate_cost("gpt-4o-mini", 1000, 500)
     budget_limit = expected_per_call * 1.5
     with patch(OPENAI_CREATE, return_value=fake):
-        with budget(max_usd=budget_limit * 10, warn_at=0.1, on_exceed=callback):
+        with budget(max_usd=budget_limit * 10, warn_at=0.1, on_warn=callback):
             import openai
 
             client = openai.OpenAI(api_key="test")

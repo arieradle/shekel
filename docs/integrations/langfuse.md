@@ -162,12 +162,11 @@ When Shekel switches to a fallback model, it creates an **INFO** event and updat
 **Example:**
 
 ```python
-with budget(max_usd=5.00, fallback="gpt-4o-mini", hard_cap=10.0, name="agent") as b:
-    # Runs with gpt-4o until $5 spent
+with budget(max_usd=5.00, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}, name="agent") as b:
+    # Runs with gpt-4o until 80% of $5.00 ($4.00), then switches to gpt-4o-mini
     run_agent_loop()
-    # Then switches to gpt-4o-mini
-    # Hard cap at $10 prevents runaway
-    
+    # Raises BudgetExceededError at $5.00
+
     if b.model_switched:
         print(f"Switched to {b.fallback} at ${b.switched_at_usd:.2f}")
 ```
@@ -290,13 +289,10 @@ with budget(max_usd=20.00, name="agent-workflow") as parent:
 ### 4. Set Appropriate Fallbacks
 
 ```python
-# ✅ Good: Same provider fallback with hard cap
-with budget(max_usd=5.00, fallback="gpt-4o-mini", hard_cap=10.0):
+# ✅ Good: Same provider fallback with at_pct threshold
+with budget(max_usd=5.00, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}):
     run_workflow()
-
-# ❌ Bad: No hard cap with fallback (runaway protection missing)
-with budget(max_usd=5.00, fallback="gpt-4o-mini"):
-    run_workflow()
+# Switches to gpt-4o-mini at $4.00 (80%), raises BudgetExceededError at $5.00
 ```
 
 ### 5. Handle Exceptions Gracefully
@@ -435,7 +431,7 @@ def setup_observability():
 @app.post("/chat")
 async def chat(query: str, user_id: str):
     try:
-        with budget(max_usd=0.50, fallback="gpt-4o-mini", name=f"user-{user_id}") as b:
+        with budget(max_usd=0.50, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}, name=f"user-{user_id}") as b:
             response = openai_client.chat.completions.create(
                 model="gpt-4o",
                 messages=[{"role": "user", "content": query}]
@@ -471,7 +467,7 @@ openai_client = OpenAI()
 
 def run_agent(user_query: str):
     """Multi-stage agent with nested budgets."""
-    with budget(max_usd=10.00, fallback="gpt-4o-mini", hard_cap=15.0, name="agent") as agent_budget:
+    with budget(max_usd=10.00, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}, name="agent") as agent_budget:
         
         # Stage 1: Planning
         with budget(max_usd=2.00, name="planning") as plan_budget:

@@ -108,11 +108,13 @@ class TestOllamaBudgetIntegration:
 
     def test_ollama_fallback_model_switching(self) -> None:
         """Test fallback model switching with Ollama models."""
-        with budget(max_usd=0.001, fallback="gpt-4o-mini", hard_cap=5.0) as b:  # noqa: F841
+        with budget(
+            max_usd=0.08, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}
+        ) as b:  # noqa: F841
             from shekel._patch import _record
 
             # Use known model with pricing to trigger fallback
-            _record(input_tokens=1000, output_tokens=500, model="gpt-4o")
+            _record(input_tokens=10000, output_tokens=5000, model="gpt-4o")
 
         # Should have switched to fallback
         assert b.model_switched
@@ -440,9 +442,8 @@ class TestOllamaBudgetWarnings:
             with budget(
                 max_usd=0.10,
                 warn_at=0.5,
-                on_exceed=on_warn,
-                fallback="gpt-4o-mini",
-                hard_cap=1.0,
+                on_warn=on_warn,
+                fallback={"at_pct": 0.8, "model": "gpt-4o-mini"},
                 name="warn_test",
             ) as b:  # noqa: F841
                 from shekel._patch import _record
@@ -462,7 +463,7 @@ class TestOllamaBudgetWarnings:
         def on_warn(spent: float, limit: float) -> None:
             warnings_triggered.append((spent, limit))
 
-        with budget(max_usd=10.00, warn_at=0.9, on_exceed=on_warn):
+        with budget(max_usd=10.00, warn_at=0.9, on_warn=on_warn):
             from shekel._patch import _record
 
             # Spend small amount
@@ -683,16 +684,16 @@ class TestOllamaEdgeCases:
         assert "Summary" in summary
 
     def test_fallback_chain_scenario(self) -> None:
-        """Test fallback with very low hard cap."""
+        """Test fallback with low max_usd and high token usage."""
         with budget(
-            max_usd=0.001, fallback="gpt-4o-mini", hard_cap=0.005, name="fallback_chain"
+            max_usd=0.08, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}, name="fallback_chain"
         ) as b:  # noqa: F841
             from shekel._patch import _record
 
             try:
-                _record(input_tokens=1000, output_tokens=500, model="gpt-4o")
+                _record(input_tokens=10000, output_tokens=5000, model="gpt-4o")
             except BudgetExceededError:
-                pass  # Expected to hit hard cap
+                pass  # Expected to exceed budget
 
         # Should have switched
         assert b.model_switched

@@ -6,6 +6,8 @@ The persistent flag is deprecated - same variable = same accumulated state.
 
 import warnings
 
+import pytest
+
 from shekel import budget
 
 
@@ -42,24 +44,18 @@ def test_new_budget_instance_starts_fresh():
         assert b2.spent == 0.0
 
 
-def test_persistent_true_shows_deprecation_warning():
-    """Using persistent=True shows deprecation warning."""
-    with warnings.catch_warnings(record=True) as w:
-        warnings.simplefilter("always")
+def test_persistent_param_removed():
+    """persistent parameter was removed in v0.2.6 — passing it raises TypeError."""
+    with pytest.raises(TypeError, match="unexpected keyword argument"):
         budget(max_usd=10.00, persistent=True, name="old")
 
-        assert len(w) == 1
-        assert issubclass(w[0].category, DeprecationWarning)
-        assert "persistent" in str(w[0].message).lower()
 
-
-def test_persistent_false_is_default_no_warning():
-    """Using persistent=False (or omitting it) is the default - no warning."""
+def test_no_persistent_no_warning():
+    """No warnings emitted when creating a budget without persistent."""
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
         budget(max_usd=10.00, name="normal")
 
-        # Should have no warnings (persistent=False is default behavior)
         assert len(w) == 0
 
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import warnings
 from contextvars import Token
 from typing import TYPE_CHECKING, Any, Callable, TypedDict
@@ -22,35 +23,35 @@ class CallRecord(TypedDict):
 class Budget:
     """LLM spend tracker and budget enforcer.
 
-    Usage:
-        with budget(max_usd=1.00, warn_at=0.8) as b:
-            response = openai_client.chat.completions.create(...)
-        print(f"Spent: ${b.spent:.4f}")
+    Usage::
 
-    Track-only mode (no enforcement):
+        # Track-only mode (no enforcement):
         with budget() as b:
             response = openai_client.chat.completions.create(...)
         print(f"This run cost: ${b.spent:.4f}")
 
-    Model fallback (v0.2):
-        with budget(max_usd=1.00, fallback="gpt-4o-mini") as b:
-            run_agent()  # switches to mini at $1.00, keeps running
-        print(b.model_switched)   # True
+        # Cap by USD:
+        with budget(max_usd=1.00) as b:
+            response = openai_client.chat.completions.create(...)
+
+        # Cap by call count:
+        with budget(max_llm_calls=50) as b:
+            run_agent()
+
+        # Graceful degradation — switch to cheaper model at 80% of budget:
+        with budget(max_usd=1.00, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}) as b:
+            run_agent()
+        print(b.model_switched)   # True if switch occurred
         print(b.summary())
 
-    Hard cap (v0.2) — absolute ceiling even for fallback model:
-        # Default: hard_cap = max_usd * 2 (runaway protection, always active with fallback)
-        with budget(max_usd=1.00, fallback="gpt-4o-mini", hard_cap=1.50) as b:
-            run_agent()  # switches at $1.00, raises BudgetExceededError at $1.50
-
-    Session (persistent) budget (v0.2):
-        session = budget(max_usd=5.00, persistent=True)
+        # Session budget (accumulates across multiple with-blocks):
+        session = budget(max_usd=5.00)
         with session:
             respond(turn_1)
         with session:
             respond(turn_2)   # spend accumulates
 
-    Note: Persistent budget objects are not thread-safe when shared across threads.
+    Note: Budget objects are not thread-safe when shared across threads.
     Each thread should use its own budget instance.
     """
 
@@ -58,27 +59,14 @@ class Budget:
         self,
         max_usd: float | None = None,
         warn_at: float | None = None,
-        on_exceed: Callable[[float, float], None] | None = None,
+        on_warn: Callable[[float, float], None] | None = None,
         price_per_1k_tokens: dict[str, float] | None = None,
-        # --- NEW in v0.2 ---
-        fallback: str | None = None,
+        fallback: dict[str, Any] | None = None,
         on_fallback: Callable[[float, float, str], None] | None = None,
-        persistent: bool = False,  # DEPRECATED in v0.2.3
-        hard_cap: float | None = None,
-        # --- NEW in v0.2.3 (nested budgets) ---
         name: str | None = None,
+        max_llm_calls: int | None = None,
     ) -> None:
-        # --- NEW in v0.2.3 (Decision #12): Deprecate persistent flag ---
-        if persistent is not False:  # User explicitly set it
-            warnings.warn(
-                "The 'persistent' parameter is deprecated in v0.2.3. "
-                "Budget variables now always accumulate across multiple 'with' blocks. "
-                "To start fresh, create a new Budget instance.",
-                DeprecationWarning,
-                stacklevel=2,
-            )
 
-        # --- NEW in v0.2.3 (Decision #24): Validate zero/negative budgets ---
         if max_usd is not None and max_usd <= 0:
             raise ValueError(
                 "max_usd must be positive or None for track-only mode. " f"Got: {max_usd}"
@@ -86,53 +74,81 @@ class Budget:
 
         if warn_at is not None and not (0.0 <= warn_at <= 1.0):
             raise ValueError(f"warn_at must be a fraction between 0.0 and 1.0, got {warn_at}")
+
         if price_per_1k_tokens is not None:
             if "input" not in price_per_1k_tokens or "output" not in price_per_1k_tokens:
                 raise ValueError(
                     "price_per_1k_tokens must have both 'input' and 'output' keys. "
                     f"Got: {list(price_per_1k_tokens.keys())}"
                 )
+
+        if fallback is not None:
+            if not isinstance(fallback, dict):
+                raise ValueError(
+                    "fallback must be a dict with keys: 'at_pct' (float), 'model' (str). "
+                    f"Got: {type(fallback).__name__}"
+                )
+            required_keys = {"at_pct", "model"}
+            provided_keys = set(fallback.keys())
+            if not required_keys.issubset(provided_keys):
+                missing = required_keys - provided_keys
+                raise ValueError(
+                    f"fallback dict missing required keys: {missing}. "
+                    f"Required: 'at_pct', 'model'"
+                )
+
+            # Validate 'at_pct' (activation percentage — 0 exclusive, 1 inclusive)
+            at_value = fallback["at_pct"]
+            if not isinstance(at_value, (int, float)) or not (0.0 < at_value <= 1.0):
+                raise ValueError(
+                    f"fallback['at_pct'] must be a fraction between 0 and 1 "
+                    f"(exclusive 0, inclusive 1), got {at_value}"
+                )
+
+            # Validate 'model' (non-empty string)
+            model_value = fallback["model"]
+            if not isinstance(model_value, str) or model_value == "":
+                raise ValueError(
+                    f"fallback['model'] must be a non-empty string, got {repr(model_value)}"
+                )
+
+            # Require at least one limit so fallback has something to threshold against
+            if max_usd is None and max_llm_calls is None:
+                raise ValueError("fallback requires either max_usd or max_llm_calls to be set")
+
         if on_fallback is not None and fallback is None:
             raise ValueError("on_fallback requires fallback to be set")
-        if fallback is not None and fallback == "":
-            raise ValueError("fallback must be a non-empty string if provided")
-        if fallback is not None and max_usd is None:
-            warnings.warn(
-                "shekel: fallback has no effect without max_usd",
-                stacklevel=2,
-            )
-        if hard_cap is not None and fallback is None:
-            warnings.warn(
-                "shekel: hard_cap has no effect without fallback",
-                stacklevel=2,
-            )
-        if hard_cap is not None and max_usd is not None and hard_cap <= max_usd:
+
+        if max_llm_calls is not None and max_llm_calls <= 0:
             raise ValueError(
-                f"hard_cap (${hard_cap:.2f}) must be greater than max_usd (${max_usd:.2f})"
+                "max_llm_calls must be positive or None for track-only mode. "
+                f"Got: {max_llm_calls}"
             )
 
         self.max_usd = max_usd
         self.warn_at = warn_at
-        self.on_exceed = on_exceed
+        self.on_warn = on_warn
         self.price_per_1k_tokens = price_per_1k_tokens
-        self.fallback: str | None = fallback
+        self.fallback: dict[str, Any] | None = fallback
         self.on_fallback = on_fallback
-        self.persistent: bool = persistent
-        self.hard_cap: float | None = hard_cap
 
-        # --- NEW in v0.2.3 (nested budgets) ---
+        # --- Nested budget support (v0.2.3) ---
         self.name: str | None = name
         self.parent: Budget | None = None
         self.children: list[Budget] = []
         self.active_child: Budget | None = None
         self._depth: int = 0
-        self._effective_limit: float | None = max_usd  # Will be auto-capped in __enter__
+        self._effective_limit: float | None = max_usd  # Auto-capped in __enter__ for children
+
+        # --- Call limit support (v0.2.6) ---
+        self.max_llm_calls: int | None = max_llm_calls
+        self._effective_call_limit: int | None = max_llm_calls  # Auto-capped in __enter__
 
         self._ctx_token: Token[Budget | None] | None = None
 
-        # All spend-tracking state lives here — reset on each __enter__ for non-persistent
+        # Spend-tracking state
         self._spent: float = 0.0
-        self._spent_direct: float = 0.0  # NEW in v0.2.3: Direct spend (excluding children)
+        self._spent_direct: float = 0.0
         self._warn_fired: bool = False
         self._last_model: str = "unknown"
         self._last_tokens: dict[str, int] = {"input": 0, "output": 0}
@@ -140,13 +156,14 @@ class Budget:
         self._fallback_spent: float = 0.0
         self._switched_at_usd: float | None = None
         self._calls: list[CallRecord] = []
+        self._calls_made: int = 0
 
     # ------------------------------------------------------------------
     # Internal state reset
     # ------------------------------------------------------------------
 
     def _reset_state(self) -> None:
-        """Reset all spend tracking state. Called on __enter__ for non-persistent budgets."""
+        """Reset all spend tracking state. Called via reset() between with-blocks."""
         self._spent = 0.0
         self._spent_direct = 0.0
         self._warn_fired = False
@@ -156,23 +173,16 @@ class Budget:
         self._fallback_spent = 0.0
         self._switched_at_usd = None
         self._calls = []
+        self._calls_made = 0
 
     # ------------------------------------------------------------------
     # Sync context manager
     # ------------------------------------------------------------------
 
     def __enter__(self) -> Budget:
-        # --- REMOVED in v0.2.3 (Decision #12): Always accumulate, never reset ---
-        # Budget variables now always accumulate across multiple entries
-        # if not self.persistent:
-        #     self._reset_state()
-
-        # --- NEW in v0.2.3 (nested budgets): Detect parent and validate BEFORE applying patches ---
+        # Nested budget validation
         current_budget = _context.get_active_budget()
         if current_budget is not None:
-            # We're nesting inside another budget
-
-            # --- NEW in v0.2.3 (Decision #9): Required names for nested budgets ---
             if current_budget.name is None:
                 raise ValueError(
                     "Parent budget must have a name when nesting. "
@@ -184,16 +194,13 @@ class Budget:
                     "Add name='...' to the child budget."
                 )
 
-            # --- NEW in v0.2.3 (Decision #18): Max depth limit ---
-            if current_budget._depth >= 4:  # Depth 4 is max (0, 1, 2, 3, 4)
+            if current_budget._depth >= 4:
                 raise ValueError(
                     f"Maximum budget nesting depth of 5 exceeded. "
                     f"Current depth: {current_budget._depth}, "
                     f"attempted depth: {current_budget._depth + 1}"
                 )
 
-            # --- NEW in v0.2.3 (Decision #23): Unique sibling names ---
-            # Check if parent already has a child with this name
             for existing_child in current_budget.children:
                 if existing_child.name == self.name:
                     raise ValueError(
@@ -202,41 +209,40 @@ class Budget:
                         f"Sibling budgets must have unique names."
                     )
 
-        # All validation passed - now apply patches
+        # All validation passed — apply patches and wire up hierarchy
         _patch.apply_patches()
 
-        # Set up parent-child relationships
         if current_budget is not None:
             self.parent = current_budget
             self._depth = current_budget._depth + 1
-            # Register as child of parent
             current_budget.children.append(self)
             current_budget.active_child = self
 
-            # --- NEW in v0.2.3 (Decision #2): Auto-capping ---
-            # Cap child limit to parent's remaining budget
+            # Auto-cap child USD limit to parent's remaining budget
             if self.max_usd is not None and current_budget.remaining is not None:
                 self._effective_limit = min(self.max_usd, current_budget.remaining)
             else:
-                # Track-only child (max_usd=None) is not capped
                 self._effective_limit = self.max_usd
+
+            # Auto-cap child call limit to parent's remaining calls
+            if self.max_llm_calls is not None and current_budget.calls_remaining is not None:
+                self._effective_call_limit = min(self.max_llm_calls, current_budget.calls_remaining)
+            else:
+                self._effective_call_limit = self.max_llm_calls
         else:
-            # Root budget - no capping needed
             self._effective_limit = self.max_usd
+            self._effective_call_limit = self.max_llm_calls
 
         self._ctx_token = _context.set_active_budget(self)
         return self
 
     def __exit__(self, exc_type: object, exc_val: object, exc_tb: object) -> None:
-        # --- NEW in v0.2.3 (nested budgets): Propagate to parent ---
+        # Propagate spend and call count to parent on exit
         if self.parent is not None:
-            # Propagate our spend to parent
             self.parent._spent += self._spent
-            # Clear parent's active_child
+            self.parent._calls_made += self._calls_made
             self.parent.active_child = None
 
-        # Always clean up — even if BudgetExceededError is in flight
-        # Use proper ContextVar token-based restoration
         if self._ctx_token is not None:
             from shekel._context import _active_budget
 
@@ -249,11 +255,6 @@ class Budget:
     # ------------------------------------------------------------------
 
     async def __aenter__(self) -> Budget:
-        # --- REMOVED in v0.2.3 (Decision #12): Always accumulate, never reset ---
-        # if not self.persistent:
-        #     self._reset_state()
-
-        # --- NEW in v0.2.3 (Decision #20): No async nesting in MVP ---
         current_budget = _context.get_active_budget()
         if current_budget is not None:
             raise RuntimeError(
@@ -267,7 +268,6 @@ class Budget:
         return self
 
     async def __aexit__(self, exc_type: object, exc_val: object, exc_tb: object) -> None:
-        # Use proper ContextVar token-based restoration
         if self._ctx_token is not None:
             from shekel._context import _active_budget
 
@@ -296,8 +296,7 @@ class Budget:
     # ------------------------------------------------------------------
 
     def _record_spend(self, cost: float, model: str, tokens: dict[str, int]) -> None:
-        # --- NEW in v0.2.3 (Decision #4): Parent locking ---
-        # If this budget has an active child, it cannot record spend
+        # Parent locking: cannot record spend while a child budget is active
         if self.active_child is not None:
             raise RuntimeError(
                 f"shekel: Cannot spend on parent budget '{self.name or 'unnamed'}' "
@@ -306,12 +305,11 @@ class Budget:
             )
 
         self._spent += cost
-        self._spent_direct += cost  # NEW in v0.2.3: Track direct spend
+        self._spent_direct += cost
         if self._using_fallback:
             self._fallback_spent += cost
         self._last_model = model
         self._last_tokens = tokens
-        # Record call for summary (F5)
         self._calls.append(
             CallRecord(
                 model=model,
@@ -321,8 +319,10 @@ class Budget:
                 fallback=self._using_fallback,
             )
         )
+        self._calls_made += 1
         self._check_warn()
         self._check_limit()
+        self._check_call_limit()
 
     def _check_warn(self) -> None:
         effective_limit = self._effective_limit
@@ -333,8 +333,8 @@ class Budget:
             and self._spent >= effective_limit * self.warn_at
         ):
             self._warn_fired = True
-            if self.on_exceed is not None:
-                self.on_exceed(self._spent, effective_limit)
+            if self.on_warn is not None:
+                self.on_warn(self._spent, effective_limit)
             else:
                 warnings.warn(
                     f"shekel: ${self._spent:.4f} spent — "
@@ -342,77 +342,108 @@ class Budget:
                     stacklevel=4,
                 )
 
+    def _activate_fallback(self, budget_exceeded: bool) -> None:
+        """Activate fallback model with warning and adapter event.
+
+        Called from both USD threshold (_check_limit) and call-count threshold
+        (_check_call_limit_for_fallback). Centralises activation logic.
+        """
+        self._using_fallback = True
+        self._switched_at_usd = self._spent
+        self._emit_fallback_activated_event()
+        fallback_model = self.fallback["model"]  # type: ignore[index]
+        effective_limit = self._effective_limit
+        limit_val = effective_limit if effective_limit is not None else 0
+        if self.on_fallback is not None:
+            self.on_fallback(self._spent, limit_val, fallback_model)
+        else:
+            if budget_exceeded:
+                warnings.warn(
+                    f"shekel: budget of ${limit_val:.2f} exceeded "
+                    f"(${self._spent:.4f} spent). "
+                    f"Switching to fallback model '{fallback_model}'.",
+                    stacklevel=5,
+                )
+            else:
+                warnings.warn(
+                    f"shekel: approaching budget limit "
+                    f"(${self._spent:.4f} spent of ${limit_val:.2f}). "
+                    f"Switching to fallback model '{fallback_model}'.",
+                    stacklevel=5,
+                )
+
     def _check_limit(self) -> None:
+        """Check USD limit. Activates fallback at threshold; raises if exceeded without fallback."""
         effective_limit = self._effective_limit
         if effective_limit is None:
             return
-        if self._spent <= effective_limit:
-            return
 
-        if self.fallback is not None and not self._using_fallback:
-            # Activate fallback instead of raising
-            self._using_fallback = True
-            self._switched_at_usd = self._spent
-            self._emit_fallback_activated_event()
-            if self.on_fallback is not None:
-                self.on_fallback(self._spent, effective_limit, self.fallback)
-            else:
-                warnings.warn(
-                    f"shekel: budget of ${effective_limit:.2f} exceeded "
-                    f"(${self._spent:.4f} spent). "
-                    f"Switching to fallback model '{self.fallback}'.",
-                    stacklevel=4,
-                )
-            return
+        budget_exceeded = self._spent > effective_limit
+        fallback_threshold_met = (
+            self.fallback is not None and self._spent >= effective_limit * self.fallback["at_pct"]
+        )
 
-        if self.fallback is not None and self._using_fallback:
-            # Fallback is active — enforce the hard cap.
-            # Default hard cap = effective_limit * 2 if not explicitly set (runaway protection).
-            effective_hard_cap = self.hard_cap
-            if effective_hard_cap is None:
-                effective_hard_cap = effective_limit * 2.0
+        if (
+            (budget_exceeded or fallback_threshold_met)
+            and self.fallback is not None
+            and not self._using_fallback
+        ):
+            self._activate_fallback(budget_exceeded=budget_exceeded)
+            return  # Fallback just activated — keep running on cheaper model
 
-            if self._spent > effective_hard_cap:
-                self._emit_budget_exceeded_event()
-                raise BudgetExceededError(
-                    self._spent,
-                    effective_hard_cap,
-                    self._last_model,
-                    self._last_tokens,
-                )
-
-            # Under hard cap — warn once per entry into this branch
-            warnings.warn(
-                f"shekel: fallback model '{self.fallback}' has exceeded the primary budget "
-                f"(${self._spent:.4f} spent, primary limit ${effective_limit:.2f}). "
-                f"Hard cap: ${effective_hard_cap:.2f}. "
-                f"Use hard_cap= to override.",
-                stacklevel=4,
+        if budget_exceeded and (self.fallback is None or self._using_fallback):
+            # No fallback available, or already on fallback and still exceeded — raise
+            self._emit_budget_exceeded_event()
+            raise BudgetExceededError(
+                self._spent, effective_limit, self._last_model, self._last_tokens
             )
+
+    def _check_call_limit_for_fallback(self) -> None:
+        """Called BEFORE the API call. Activates fallback if call-count threshold is reached.
+
+        Uses math.ceil so that e.g. 10 calls × 0.85 = ceil(8.5) = 9 (not floor 8).
+        """
+        effective_call_limit = self._effective_call_limit
+        if effective_call_limit is None or self.fallback is None or self._using_fallback:
             return
 
-        # No fallback — standard raise
-        self._emit_budget_exceeded_event()
-        raise BudgetExceededError(self._spent, effective_limit, self._last_model, self._last_tokens)
+        call_threshold = math.ceil(effective_call_limit * self.fallback["at_pct"])
+        if self._calls_made >= call_threshold:
+            self._activate_fallback(budget_exceeded=False)
+
+    def _check_call_limit(self) -> None:
+        """Called AFTER recording spend. Enforces the hard call limit."""
+        effective_call_limit = self._effective_call_limit
+        if effective_call_limit is None:
+            return
+
+        if self._calls_made > effective_call_limit:
+            self._emit_budget_exceeded_event()
+            raise BudgetExceededError(
+                self._calls_made,
+                effective_call_limit,
+                self._last_model,
+                self._last_tokens,
+            )
 
     def _emit_fallback_activated_event(self) -> None:
         """Emit fallback activated event to adapters."""
         try:
             from shekel.integrations import AdapterRegistry
 
+            fallback_model = self.fallback["model"] if self.fallback else "unknown"
             AdapterRegistry.emit_event(
                 "on_fallback_activated",
                 {
                     "from_model": self._last_model,
-                    "to_model": self.fallback,
+                    "to_model": fallback_model,
                     "switched_at": self._switched_at_usd,
                     "cost_primary": self._switched_at_usd,
-                    "cost_fallback": 0.0,  # Just activated
-                    "savings": 0.0,  # Will be calculated over time
+                    "cost_fallback": 0.0,
+                    "savings": 0.0,
                 },
             )
         except Exception:
-            # Don't break budget enforcement if adapter system fails
             pass
 
     def _emit_budget_exceeded_event(self) -> None:
@@ -438,7 +469,6 @@ class Budget:
                 },
             )
         except Exception:
-            # Don't break budget enforcement if adapter system fails
             pass
 
     # ------------------------------------------------------------------
@@ -482,7 +512,17 @@ class Budget:
         """USD spent on the fallback model (0.0 if no switch occurred)."""
         return self._fallback_spent
 
-    # --- NEW in v0.2.3 (Decision #11): Rich introspection API ---
+    @property
+    def calls_used(self) -> int:
+        """Number of LLM calls made in this budget context."""
+        return self._calls_made
+
+    @property
+    def calls_remaining(self) -> int | None:
+        """Remaining call count (based on effective limit), or None if track-only mode."""
+        if self._effective_call_limit is None:
+            return None
+        return max(0, self._effective_call_limit - self._calls_made)
 
     @property
     def full_name(self) -> str:
@@ -502,21 +542,16 @@ class Budget:
         return self._spent - self._spent_direct
 
     def tree(self, _indent: int = 0) -> str:
-        """
-        Visual hierarchy of budget tree with spend breakdown.
+        """Visual hierarchy of budget tree with spend breakdown.
 
-        Active children are shown with [ACTIVE] marker but no spend details
-        (Decision #27 - consistent with transparent model).
+        Active children are shown with [ACTIVE] marker but no spend details.
         """
         lines = []
         prefix = "  " * _indent
 
-        # Show this budget
         if self.active_child is not None:
-            # This budget has an active child - show name only
             lines.append(f"{prefix}{self.name or 'unnamed'}")
         else:
-            # Budget completed - show full details
             limit_str = (
                 f"${self._effective_limit:.2f}"
                 if self._effective_limit is not None
@@ -528,45 +563,46 @@ class Budget:
                 f"(direct: ${self._spent_direct:.2f})"
             )
 
-        # Show children
         for child in self.children:
             if child == self.active_child:
-                # Active child - show name with marker, no spend (Decision #27)
                 lines.append(f"{prefix}  {child.name or 'unnamed'} [ACTIVE]")
             else:
-                # Completed child - recurse
                 lines.append(child.tree(_indent=_indent + 1))
 
         return "\n".join(lines)
 
     # ------------------------------------------------------------------
-    # Summary (F5)
+    # Summary
     # ------------------------------------------------------------------
 
     def summary_data(self) -> dict[str, object]:
         """Return structured spend data as a dict."""
+        fallback_model: str | None = self.fallback["model"] if self.fallback is not None else None
+
         by_model: dict[str, dict[str, Any]] = {}
         for call in self._calls:
             m = call["model"]
             if m not in by_model:
-                by_model[m] = {"calls": 0, "cost": 0.0, "input_tokens": 0, "output_tokens": 0}
+                by_model[m] = {
+                    "calls": 0,
+                    "cost": 0.0,
+                    "input_tokens": 0,
+                    "output_tokens": 0,
+                    "fallback": m == fallback_model,
+                }
             by_model[m]["calls"] += 1
             by_model[m]["cost"] += call["cost"]
             by_model[m]["input_tokens"] += call["input_tokens"]
             by_model[m]["output_tokens"] += call["output_tokens"]
 
-        effective_hard_cap: float | None = self.hard_cap
-        if effective_hard_cap is None and self.fallback is not None and self.max_usd is not None:
-            effective_hard_cap = self.max_usd * 2.0
-
         return {
             "total_spent": self._spent,
             "limit": self.max_usd,
-            "hard_cap": self.hard_cap,
-            "effective_hard_cap": effective_hard_cap,
+            "calls_used": self._calls_made,
+            "calls_limit": self.max_llm_calls,
             "model_switched": self._using_fallback,
             "switched_at_usd": self._switched_at_usd,
-            "fallback_model": self.fallback,
+            "fallback_model": fallback_model,
             "fallback_spent": self._fallback_spent,
             "total_calls": len(self._calls),
             "calls": list(self._calls),
@@ -585,7 +621,6 @@ class Budget:
         calls: list[CallRecord] = list(self._calls)
         total_calls: int = len(calls)
 
-        # Build per-model aggregation
         by_model: dict[str, dict[str, Any]] = {}
         for call in calls:
             m = call["model"]
@@ -600,11 +635,15 @@ class Budget:
             else ("EXCEEDED" if (limit_val is not None and total_spent > limit_val) else "OK")
         )
         limit_str = f"${limit_val:.2f}" if limit_val is not None else "none"
+        call_str = (
+            f"{self._calls_made} / {self.max_llm_calls} calls"
+            if self.max_llm_calls is not None
+            else f"{total_calls} calls"
+        )
 
         lines.append("┌─ Shekel Budget Summary " + "─" * (width - 24) + "┐")
         lines.append(
-            f"│ Total: ${total_spent:.4f}  Limit: {limit_str}  "
-            f"Calls: {total_calls}  Status: {status}"
+            f"│ Total: ${total_spent:.4f}  Limit: {limit_str}  " f"{call_str}  Status: {status}"
         )
 
         if calls:
@@ -619,9 +658,13 @@ class Budget:
                     f"${call['cost']:>9.4f}{fallback_marker}"
                 )
 
+        fallback_model_name: str | None = (
+            self.fallback["model"] if self.fallback is not None else None
+        )
         lines.append("├" + "─" * width + "┤")
         for model, stats in by_model.items():
-            lines.append(f"│  {model}: {stats['calls']} calls  ${stats['cost']:.4f}")
+            role = " (fallback)" if model == fallback_model_name and model_switched else ""
+            lines.append(f"│  {model}: {stats['calls']} calls{role}  ${stats['cost']:.4f}")
 
         if model_switched and switched_at is not None:
             lines.append(f"│  Switched at: ${switched_at:.4f}")
