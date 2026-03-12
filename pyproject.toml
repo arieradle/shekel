@@ -62,8 +62,9 @@ dependencies = []
 openai = ["openai>=1.0.0"]
 anthropic = ["anthropic>=0.7.0"]
 langfuse = ["langfuse>=2.0.0"]
+langgraph = ["langgraph>=0.1.0"]
 litellm = ["litellm>=1.0.0"]
-all = ["openai>=1.0.0", "anthropic>=0.7.0", "langfuse>=2.0.0", "litellm>=1.0.0"]
+all = ["openai>=1.0.0", "anthropic>=0.7.0", "langfuse>=2.0.0", "langgraph>=0.1.0", "litellm>=1.0.0"]
 all-models = ["openai>=1.0.0", "anthropic>=0.7.0", "langfuse>=2.0.0", "tokencost>=0.1.0"]
 cli = ["click>=8.0.0"]
 dev = [
@@ -123,6 +124,7 @@ python_version = "3.9"
 strict = true
 warn_return_any = true
 warn_unused_configs = true
+exclude = ["/_pytest/"]
 
 [[tool.mypy.overrides]]
 module = "tokencost"
@@ -133,5 +135,14 @@ module = "langfuse"
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
+module = "langgraph"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
 module = "litellm"
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["_pytest", "_pytest.*"]
+follow_imports = "skip"
+ignore_errors = true
