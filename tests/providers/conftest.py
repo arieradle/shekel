@@ -57,6 +57,23 @@ class MockAnthropicMessage:
         self.usage = MockUsage(input_tokens=input_tokens)
 
 
+class MockLiteLLMResponse:
+    """Mock LiteLLM API response (OpenAI-compatible format)."""
+
+    def __init__(self, model: str, input_tokens: int, output_tokens: int):
+        self.model = model
+        self.usage = MockUsage(prompt_tokens=input_tokens, completion_tokens=output_tokens)
+
+
+class MockLiteLLMChunk:
+    """Mock LiteLLM streaming chunk."""
+
+    def __init__(self, model: str | None = None, usage: MockUsage | None = None):
+        self.model = model
+        self.usage = usage
+        self.choices = []
+
+
 class ProviderTestBase:
     """Base class providing mock response factories for provider testing."""
 
@@ -81,6 +98,23 @@ class ProviderTestBase:
         yield MockOpenAIChunk(model=model)
         # Final chunk has usage
         yield MockOpenAIChunk(
+            model=model,
+            usage=MockUsage(prompt_tokens=input_tokens, completion_tokens=output_tokens),
+        )
+
+    def make_litellm_response(
+        self, model: str = "gpt-4o", input_tokens: int = 0, output_tokens: int = 0
+    ) -> MockLiteLLMResponse:
+        """Create a mock LiteLLM API response."""
+        return MockLiteLLMResponse(model, input_tokens, output_tokens)
+
+    def make_litellm_stream(
+        self, model: str = "gpt-4o", input_tokens: int = 0, output_tokens: int = 0
+    ) -> Generator[MockLiteLLMChunk, None, None]:
+        """Create a mock LiteLLM streaming response."""
+        yield MockLiteLLMChunk(model=model)
+        yield MockLiteLLMChunk(model=model)
+        yield MockLiteLLMChunk(
             model=model,
             usage=MockUsage(prompt_tokens=input_tokens, completion_tokens=output_tokens),
         )
