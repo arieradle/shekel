@@ -149,7 +149,13 @@ class TestLangGraphGroqIntegration:
         app = self._build_single_node_app(groq_api_key)  # type: ignore[arg-type]
         exceeded = False
         try:
-            with budget(max_usd=0.000001, name="tiny_groq_graph"):
+            # Force non-zero pricing so enforcement works even if the model has no
+            # bundled price table (e.g. llama-3.1-8b-instant on Groq).
+            with budget(
+                max_usd=0.000001,
+                name="tiny_groq_graph",
+                price_per_1k_tokens={"input": 1.0, "output": 1.0},
+            ):
                 app.invoke({"messages": ["Say hello."], "response": ""})
         except BudgetExceededError:
             exceeded = True
@@ -313,7 +319,13 @@ class TestLangGraphGeminiIntegration:
         app = self._build_single_node_app(gemini_api_key)  # type: ignore[arg-type]
         exceeded = False
         try:
-            with budget(max_usd=0.000001, name="tiny_gemini_graph"):
+            # Force non-zero pricing so enforcement works even if the model has no
+            # bundled price table. Use max_usd well below what any real call costs.
+            with budget(
+                max_usd=0.000001,
+                name="tiny_gemini_graph",
+                price_per_1k_tokens={"input": 1.0, "output": 1.0},
+            ):
                 app.invoke({"messages": ["Say hello."], "response": ""})
         except BudgetExceededError:
             exceeded = True
