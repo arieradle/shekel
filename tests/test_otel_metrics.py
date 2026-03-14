@@ -11,6 +11,7 @@ Groups:
   H — Tier 1 P1 metrics
   I — Tier 1 P2 metrics
   J — Coverage: base no-ops, _infer_gen_ai_system, exception handlers
+  K — _budget.py emit-guard exception handlers and async paths
 """
 
 from __future__ import annotations
@@ -728,3 +729,181 @@ class TestCoverageGaps:
         adapter._budget_autocaps.add.side_effect = RuntimeError("boom")
 
         adapter.on_autocap({"child_name": "c", "parent_name": "p"})
+
+
+# ---------------------------------------------------------------------------
+# Group K — _budget.py emit-guard exception handlers and async paths
+# ---------------------------------------------------------------------------
+
+
+class _RaisingAdapter(ObservabilityAdapter):
+    """Adapter that always raises on specific events — used to exercise except-pass guards."""
+
+    def __init__(self, raise_on: str) -> None:
+        self._raise_on = raise_on
+
+    def _maybe_raise(self, event: str) -> None:
+        if event == self._raise_on:
+            raise RuntimeError(f"deliberate failure in {event}")
+
+    def on_autocap(self, data: dict) -> None:  # type: ignore[override]
+        self._maybe_raise("on_autocap")
+
+    def on_budget_exit(self, data: dict) -> None:  # type: ignore[override]
+        self._maybe_raise("on_budget_exit")
+
+    def on_fallback_activated(self, data: dict) -> None:  # type: ignore[override]
+        self._maybe_raise("on_fallback_activated")
+
+    def on_budget_exceeded(self, data: dict) -> None:  # type: ignore[override]
+        self._maybe_raise("on_budget_exceeded")
+
+
+class TestBudgetEmitGuards:
+    """Group K: exception-swallowing guards inside _budget.py emit calls."""
+
+    def setup_method(self) -> None:
+        AdapterRegistry.clear()
+
+    def teardown_method(self) -> None:
+        AdapterRegistry.clear()
+
+    # -- line 124: max_llm_calls validation ------------------------------------
+
+    def test_max_llm_calls_zero_raises_value_error(self) -> None:
+        with pytest.raises(ValueError, match="max_llm_calls must be positive"):
+            Budget(max_llm_calls=0)
+
+    def test_max_llm_calls_negative_raises_value_error(self) -> None:
+        with pytest.raises(ValueError, match="max_llm_calls must be positive"):
+            Budget(max_llm_calls=-1)
+
+    # -- lines 241-242: __enter__ on_autocap except guard ---------------------
+
+    def test_enter_autocap_emit_exception_is_swallowed(self) -> None:
+        """emit_event raising inside __enter__ autocap block must not propagate."""
+        from unittest.mock import patch
+
+        parent = Budget(max_usd=1.00, name="parent")
+        child = Budget(max_usd=10.00, name="child")  # will be auto-capped
+        with patch(
+            "shekel.integrations.registry.AdapterRegistry.emit_event",
+            side_effect=RuntimeError("boom"),
+        ):
+            with parent:
+                with child:  # must not raise
+                    pass
+
+    # -- lines 292-293: __exit__ on_budget_exit except guard -----------------
+
+    def test_exit_budget_exit_emit_exception_is_swallowed(self) -> None:
+        """emit_event raising inside __exit__ on_budget_exit block must not propagate."""
+        from unittest.mock import patch
+
+        b = Budget(max_usd=1.00, name="b")
+        with patch(
+            "shekel.integrations.registry.AdapterRegistry.emit_event",
+            side_effect=RuntimeError("boom"),
+        ):
+            with b:  # must complete without raising
+                pass
+
+    # -- lines 353-366: __aenter__ autocap try/except -------------------------
+
+    @pytest.mark.asyncio
+    async def test_aenter_autocap_event_emitted(self) -> None:
+        """Async autocap: on_autocap fires when child is capped inside async context."""
+        captured: list[dict] = []
+
+        class CaptureAdapter(ObservabilityAdapter):
+            def on_autocap(self, data: dict) -> None:  # type: ignore[override]
+                captured.append(data)
+
+        AdapterRegistry.register(CaptureAdapter())
+        parent = Budget(max_usd=0.50, name="aparent")
+        child = Budget(max_usd=2.00, name="achild")  # will be capped to 0.50
+        async with parent:
+            async with child:
+                pass
+
+        assert len(captured) == 1
+        assert captured[0]["child_name"] == "achild"
+        assert captured[0]["effective_limit"] == pytest.approx(0.50)
+
+    @pytest.mark.asyncio
+    async def test_aenter_autocap_emit_exception_is_swallowed(self) -> None:
+        """emit_event raising inside __aenter__ autocap block must not propagate."""
+        from unittest.mock import patch
+
+        parent = Budget(max_usd=0.50, name="aparent2")
+        child = Budget(max_usd=5.00, name="achild2")
+        with patch(
+            "shekel.integrations.registry.AdapterRegistry.emit_event",
+            side_effect=RuntimeError("boom"),
+        ):
+            async with parent:
+                async with child:  # must not raise
+                    pass
+
+    # -- line 387: __aexit__ warned status branch -----------------------------
+
+    @pytest.mark.asyncio
+    async def test_aexit_warned_status_emitted(self) -> None:
+        """__aexit__ emits status='warned' when warn was fired."""
+        captured: list[dict] = []
+
+        class CaptureExit(ObservabilityAdapter):
+            def on_budget_exit(self, data: dict) -> None:  # type: ignore[override]
+                captured.append(data)
+
+        AdapterRegistry.register(CaptureExit())
+        b = Budget(max_usd=1.00, warn_at=0.01, name="wb")
+        async with b:
+            # Directly set internal state to simulate a warn having fired
+            b._warn_fired = True
+
+        assert len(captured) == 1
+        assert captured[0]["status"] == "warned"
+
+    # -- lines 415-416: __aexit__ on_budget_exit except guard ----------------
+
+    @pytest.mark.asyncio
+    async def test_aexit_budget_exit_emit_exception_is_swallowed(self) -> None:
+        """emit_event raising inside __aexit__ on_budget_exit block must not propagate."""
+        from unittest.mock import patch
+
+        b = Budget(max_usd=1.00, name="abex")
+        with patch(
+            "shekel.integrations.registry.AdapterRegistry.emit_event",
+            side_effect=RuntimeError("boom"),
+        ):
+            async with b:  # must complete without raising
+                pass
+
+    # -- lines 598-599: _emit_fallback_activated_event except guard -----------
+
+    def test_emit_fallback_activated_exception_is_swallowed(self) -> None:
+        """emit_event raising inside _emit_fallback_activated_event must not propagate."""
+        from unittest.mock import patch
+
+        b = Budget(max_usd=0.001, name="fb", fallback={"at_pct": 0.5, "model": "gpt-4o-mini"})
+        b._using_fallback = True
+        b._switched_at_usd = 0.001
+        with patch(
+            "shekel.integrations.registry.AdapterRegistry.emit_event",
+            side_effect=RuntimeError("boom"),
+        ):
+            b._emit_fallback_activated_event()  # must not raise
+
+    # -- lines 623-624: _emit_budget_exceeded_event except guard --------------
+
+    def test_emit_budget_exceeded_exception_is_swallowed(self) -> None:
+        """emit_event raising inside _emit_budget_exceeded_event must not propagate."""
+        from unittest.mock import patch
+
+        b = Budget(max_usd=1.00, name="bex")
+        with patch(
+            "shekel.integrations.registry.AdapterRegistry.emit_event",
+            side_effect=RuntimeError("boom"),
+        ):
+            b._emit_budget_exceeded_event()  # must not raise
