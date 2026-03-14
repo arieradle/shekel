@@ -152,7 +152,7 @@ Hierarchical budget tracking for multi-stage AI workflows:
 ### 🛡️ Safety Rails
 
 - Maximum nesting depth of 5 levels enforced
-- Async nesting detection (raises clear error — deferred to future version)
+- Async nesting support (nested `async with budget()` contexts with same rules as sync)
 - Zero/negative budget validation at `__init__`
 - Spend propagation on all exceptions (money spent is money spent)
 

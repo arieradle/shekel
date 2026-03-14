@@ -12,12 +12,14 @@ pip install shekel[gemini]
 
 Unlike OpenAI and Anthropic, Gemini uses its own SDK (`google-genai`) that makes direct API calls — it does **not** route through the OpenAI SDK. Without a dedicated adapter, `budget()` would be completely blind to Gemini spend.
 
-Shekel's `GeminiAdapter` patches two methods at runtime:
+Shekel's `GeminiAdapter` patches four methods at runtime:
 
-- `google.genai.models.Models.generate_content` — non-streaming calls
-- `google.genai.models.Models.generate_content_stream` — streaming calls
+- `google.genai.models.Models.generate_content` — sync non-streaming calls
+- `google.genai.models.Models.generate_content_stream` — sync streaming calls
+- `google.genai.models.AsyncModels.generate_content` — async non-streaming calls
+- `google.genai.models.AsyncModels.generate_content_stream` — async streaming calls
 
-All other Shekel features (nested budgets, fallback models, `BudgetExceededError`) work identically.
+All Shekel features (nested budgets, fallback models, `BudgetExceededError`) work identically across sync and async.
 
 ## Basic Integration
 
@@ -51,6 +53,31 @@ with budget(max_usd=1.00) as b:
     print()
     print(f"Cost: ${b.spent:.6f}")
 ```
+
+## Async
+
+Both `AsyncModels.generate_content` and `AsyncModels.generate_content_stream` are tracked automatically:
+
+```python
+import asyncio
+import google.genai as genai
+from shekel import budget
+
+client = genai.Client(api_key="your-gemini-key")
+
+async def main() -> None:
+    async with budget(max_usd=1.00) as b:
+        response = await client.aio.models.generate_content(
+            model="gemini-2.0-flash-lite",
+            contents="Explain quantum computing in one sentence.",
+        )
+        print(response.text)
+        print(f"Cost: ${b.spent:.6f}")
+
+asyncio.run(main())
+```
+
+Async streaming works the same way — iterate `client.aio.models.generate_content_stream(...)` with `async for`.
 
 ## Nested Budgets
 

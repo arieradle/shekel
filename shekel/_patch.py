@@ -508,6 +508,63 @@ def _extract_gemini_tokens(response: Any) -> tuple[int, int, str]:
 
 
 # ---------------------------------------------------------------------------
+# Gemini async wrapper (google-genai SDK)
+# ---------------------------------------------------------------------------
+
+
+async def _gemini_async_wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
+    original = _originals.get("gemini_async")
+    if original is None:
+        raise RuntimeError("shekel: gemini async original not stored")
+
+    model_name: str = kwargs.get("model", None) or "unknown"
+
+    active_budget = _context.get_active_budget()
+    if active_budget is not None:
+        _apply_fallback_if_needed(active_budget, kwargs, "gemini")
+        model_name = kwargs.get("model", None) or model_name
+
+    response = await original(self, *args, **kwargs)
+    input_tokens, output_tokens, _ = _extract_gemini_tokens(response)
+    _record(input_tokens, output_tokens, model_name)
+    return response
+
+
+async def _gemini_async_stream_wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
+    original = _originals.get("gemini_async_stream")
+    if original is None:
+        raise RuntimeError("shekel: gemini async stream original not stored")
+
+    model_name: str = kwargs.get("model", None) or "unknown"
+
+    active_budget = _context.get_active_budget()
+    if active_budget is not None:
+        _apply_fallback_if_needed(active_budget, kwargs, "gemini")
+        model_name = kwargs.get("model", None) or model_name
+
+    async for chunk in _wrap_gemini_stream_async(original(self, *args, **kwargs), model_name):
+        yield chunk
+
+
+async def _wrap_gemini_stream_async(stream: Any, model_name: str) -> Any:
+    seen: list[tuple[int, int]] = []
+    try:
+        async for chunk in stream:
+            usage = getattr(chunk, "usage_metadata", None)
+            if usage is not None:
+                try:
+                    it = usage.prompt_token_count or 0
+                    ot = usage.candidates_token_count or 0
+                    seen.append((it, ot))
+                except AttributeError:
+                    pass
+            yield chunk
+    finally:
+        it, ot = seen[-1] if seen else (0, 0)
+        _record(it, ot, model_name)
+
+
+# ---------------------------------------------------------------------------
 # HuggingFace sync wrapper (huggingface-hub SDK)
 # ---------------------------------------------------------------------------
 
@@ -535,6 +592,49 @@ def _wrap_huggingface_stream(stream: Any) -> Generator[Any, None, None]:
     seen: list[tuple[int, int, str]] = []
     try:
         for chunk in stream:
+            usage = getattr(chunk, "usage", None)
+            if usage is not None:
+                try:
+                    it = usage.prompt_tokens or 0
+                    ot = usage.completion_tokens or 0
+                    m = getattr(chunk, "model", None) or "unknown"
+                    seen.append((it, ot, m))
+                except AttributeError:
+                    pass
+            yield chunk
+    finally:
+        it, ot, m = seen[-1] if seen else (0, 0, "unknown")
+        _record(it, ot, m)
+
+
+# ---------------------------------------------------------------------------
+# HuggingFace async wrapper (huggingface-hub SDK)
+# ---------------------------------------------------------------------------
+
+
+async def _huggingface_async_wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
+    original = _originals.get("huggingface_async")
+    if original is None:
+        raise RuntimeError("shekel: huggingface async original not stored")
+
+    active_budget = _context.get_active_budget()
+    if active_budget is not None:
+        _apply_fallback_if_needed(active_budget, kwargs, "huggingface")
+
+    if kwargs.get("stream") is True:
+        stream = await original(self, *args, **kwargs)
+        return _wrap_huggingface_stream_async(stream)
+
+    response = await original(self, *args, **kwargs)
+    input_tokens, output_tokens, model = _extract_openai_tokens(response)
+    _record(input_tokens, output_tokens, model)
+    return response
+
+
+async def _wrap_huggingface_stream_async(stream: Any) -> Any:
+    seen: list[tuple[int, int, str]] = []
+    try:
+        async for chunk in stream:
             usage = getattr(chunk, "usage", None)
             if usage is not None:
                 try:

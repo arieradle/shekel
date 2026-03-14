@@ -2,16 +2,18 @@
 """
 Gemini demo: budget enforcement with shekel + google-genai SDK.
 
-Shekel patches google.genai.models.Models at runtime so every
-client.models.generate_content() and generate_content_stream() call
-is automatically tracked inside an active budget().
+Shekel patches google.genai.models.Models and google.genai.models.AsyncModels
+at runtime so every generate_content() and generate_content_stream() call —
+sync or async — is automatically tracked inside an active budget().
 
-Shows three patterns:
+Shows four patterns:
 1. Basic generate_content with budget tracking
 2. Streaming with token accumulation
 3. Fallback to a cheaper Gemini model at a spend threshold
+4. Async generate_content with async budget
 """
 
+import asyncio
 import os
 
 
@@ -42,8 +44,8 @@ def main() -> None:
                 model="gemini-2.0-flash-lite",
                 contents="What is 2+2? Answer in one word.",
             )
-            text = response.candidates[0].content.parts[0].text
-            print(f"Answer: {text.strip()}")
+            text = response.candidates[0].content.parts[0].text  # type: ignore[index,union-attr]
+            print(f"Answer: {text.strip()}")  # type: ignore[union-attr]
             print(f"Spent: ${b.spent:.6f} / ${b.limit:.2f}")
     except BudgetExceededError as e:
         print(f"Budget exceeded: {e}")
@@ -60,8 +62,8 @@ def main() -> None:
                 contents="Count from 1 to 5, one number per line.",
             ):
                 if chunk.candidates:
-                    for part in chunk.candidates[0].content.parts:
-                        full_text += part.text
+                    for part in chunk.candidates[0].content.parts:  # type: ignore[union-attr]
+                        full_text += part.text  # type: ignore[operator]
             print(f"Response: {full_text.strip()}")
             print(f"Spent: ${b.spent:.6f}")
     except BudgetExceededError as e:
@@ -86,6 +88,24 @@ def main() -> None:
     if b.model_switched:
         print(f"Switched to fallback at ${b.switched_at_usd:.8f}")
     print(f"Total: ${b.spent:.6f}")
+
+    # ------------------------------------------------------------------
+    # 4. Async generate_content with async budget
+    # ------------------------------------------------------------------
+    asyncio.run(_async_demo(client))
+
+
+async def _async_demo(client) -> None:  # type: ignore[no-untyped-def]
+    from shekel import budget
+
+    print("\n=== Async generate_content ===")
+    async with budget(max_usd=0.10, name="async-demo") as b:
+        response = await client.aio.models.generate_content(
+            model="gemini-2.0-flash-lite",
+            contents="What is the capital of Germany? Answer in one word.",
+        )
+        print(f"Answer: {response.text.strip()}")
+        print(f"Spent: ${b.spent:.6f}")
 
 
 if __name__ == "__main__":

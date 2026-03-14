@@ -334,19 +334,19 @@ with budget(max_usd=100, name="L0"):      # Depth 0 ✅
                     # with budget(max_usd=3, name="L5"):  # ❌
 ```
 
-### Async Nesting Not Supported
+### Async Nesting
+
+Nested budgets work identically in async contexts — same naming rules, same depth limit, same spend propagation:
 
 ```python
-# ❌ Async nesting raises RuntimeError
-async with budget(max_usd=10, name="parent"):
-    async with budget(max_usd=5, name="child"):  # ❌ Error!
+async with budget(max_usd=10, name="parent") as parent:
+    async with budget(max_usd=5, name="child") as child:
         await work()
 
-# ✅ Use sync nested budgets instead
-with budget(max_usd=10, name="parent"):
-    with budget(max_usd=5, name="child"):
-        await work()  # ✅ OK
+# child.spent is propagated to parent on exit
 ```
+
+Each `asyncio` task gets its own isolated budget context automatically, so concurrent tasks cannot interfere with each other's budgets.
 
 ### Unique Sibling Names
 

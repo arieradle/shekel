@@ -353,6 +353,49 @@ class TestAnthropicRealIntegration:
                 self._maybe_skip_quota(exc)
             raise
 
+    @pytest.mark.asyncio
+    async def test_async_streaming_tracks_spend(self, async_client: Any, available: bool) -> None:
+        """budget() tracks spend when iterating an async streaming message."""
+        if not available:
+            pytest.skip("Anthropic API not available")
+
+        try:
+            chunks = []
+            with budget(max_usd=1.00) as b:
+                async for chunk in await async_client.messages.create(
+                    model=_MODEL,
+                    max_tokens=15,
+                    messages=[{"role": "user", "content": "Count to three."}],
+                    stream=True,
+                ):
+                    chunks.append(chunk)
+            assert len(chunks) > 0
+            assert b.spent >= 0
+        except Exception as exc:
+            self._maybe_skip_quota(exc)
+            raise
+
+    @pytest.mark.asyncio
+    async def test_async_message_with_async_budget(
+        self, async_client: Any, available: bool
+    ) -> None:
+        """async with budget() tracks spend from async messages.create()."""
+        if not available:
+            pytest.skip("Anthropic API not available")
+
+        try:
+            async with budget(max_usd=1.00) as b:
+                response = await async_client.messages.create(
+                    model=_MODEL,
+                    max_tokens=10,
+                    messages=[{"role": "user", "content": "Say hello in one word."}],
+                )
+            assert response is not None
+            assert b.spent > 0
+        except Exception as exc:
+            self._maybe_skip_quota(exc)
+            raise
+
 
 # ---------------------------------------------------------------------------
 # Mock tests — always run, no API key required
@@ -576,6 +619,81 @@ class TestAnthropicMockIntegration:
                 )
 
         assert b.spent == pytest.approx(0.0)
+
+    @pytest.mark.asyncio
+    async def test_async_streaming_mock_records_spend(self) -> None:
+        """async budget records cost from mocked async streaming response."""
+
+        class MessageStartEvent:
+            type = "message_start"
+
+            class message:
+                model = _MODEL
+
+                class usage:
+                    input_tokens = 60
+
+        class MessageDeltaEvent:
+            type = "message_delta"
+
+            class usage:
+                output_tokens = 30
+
+        class OtherEvent:
+            type = "content_block_delta"
+
+        async def fake_async_create(self: Any, **kwargs: Any) -> Any:
+            async def _gen() -> Any:
+                yield MessageStartEvent()
+                yield OtherEvent()
+                yield MessageDeltaEvent()
+
+            return _gen()
+
+        with patch.object(ant_messages.AsyncMessages, "create", fake_async_create):
+            async with budget(
+                max_usd=1.00,
+                price_per_1k_tokens={"input": 1.0, "output": 1.0},
+            ) as b:
+                client = anthropic.AsyncAnthropic(api_key="fake-key")
+                async for _ in await client.messages.create(
+                    model=_MODEL,
+                    max_tokens=10,
+                    messages=[{"role": "user", "content": "hello"}],
+                    stream=True,
+                ):
+                    pass
+
+        assert b.spent > 0
+
+    @pytest.mark.asyncio
+    async def test_async_budget_records_spend_from_mock_response(self) -> None:
+        """async with budget() records correct cost from a mocked async create call."""
+
+        class FakeUsage:
+            input_tokens = 100
+            output_tokens = 50
+
+        class FakeResponse:
+            model = _MODEL
+            usage = FakeUsage()
+
+        async def fake_async_create(self: Any, **kwargs: Any) -> FakeResponse:
+            return FakeResponse()
+
+        with patch.object(ant_messages.AsyncMessages, "create", fake_async_create):
+            async with budget(
+                max_usd=1.00,
+                price_per_1k_tokens={"input": 1.0, "output": 1.0},
+            ) as b:
+                client = anthropic.AsyncAnthropic(api_key="fake-key")
+                await client.messages.create(
+                    model=_MODEL,
+                    max_tokens=10,
+                    messages=[{"role": "user", "content": "hello"}],
+                )
+
+        assert b.spent > 0
 
     def test_wrapper_directly_records_spend(self) -> None:
         """_anthropic_sync_wrapper records cost via _patch._record."""

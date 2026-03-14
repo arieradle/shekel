@@ -402,6 +402,27 @@ class TestOpenAIRealIntegration:
                 self._maybe_skip_quota(exc)
             raise
 
+    @pytest.mark.asyncio
+    async def test_async_completion_with_async_budget(
+        self, async_client: Any, available: bool
+    ) -> None:
+        """async with budget() tracks spend from async chat.completions.create()."""
+        if not available:
+            pytest.skip("OpenAI API not available")
+
+        try:
+            async with budget(max_usd=1.00) as b:
+                response = await async_client.chat.completions.create(
+                    model=_MODEL,
+                    messages=[{"role": "user", "content": "Say hello in one word."}],
+                    max_tokens=5,
+                )
+            assert response is not None
+            assert b.spent > 0
+        except Exception as exc:
+            self._maybe_skip_quota(exc)
+            raise
+
 
 # ---------------------------------------------------------------------------
 # Mock tests — always run, no API key required
@@ -619,6 +640,36 @@ class TestOpenAIMockIntegration:
 
         assert b.spent > 0
         assert len(warnings) > 0
+
+    @pytest.mark.asyncio
+    async def test_async_budget_records_spend_from_mock_response(self) -> None:
+        """async with budget() records correct cost from a mocked async create call."""
+
+        class FakeUsage:
+            prompt_tokens = 100
+            completion_tokens = 50
+
+        class FakeResponse:
+            model = _MODEL
+            usage = FakeUsage()
+
+        async def fake_async_create(self: Any, **kwargs: Any) -> FakeResponse:
+            return FakeResponse()
+
+        import openai.resources.chat.completions as oai_completions
+
+        with patch.object(oai_completions.AsyncCompletions, "create", fake_async_create):
+            async with budget(
+                max_usd=1.00,
+                price_per_1k_tokens={"input": 1.0, "output": 1.0},
+            ) as b:
+                client = openai.AsyncOpenAI(api_key="fake-key")
+                await client.chat.completions.create(
+                    model=_MODEL,
+                    messages=[{"role": "user", "content": "hello"}],
+                )
+
+        assert b.spent > 0
 
     def test_wrapper_directly_records_spend(self) -> None:
         """_openai_sync_wrapper records cost via _patch._record."""
