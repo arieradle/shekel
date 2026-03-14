@@ -62,3 +62,34 @@ class ObservabilityAdapter:
                 - savings: float - Estimated savings from using fallback
         """
         pass
+
+    def on_budget_exit(self, exit_data: dict[str, Any]) -> None:
+        """Called when a budget context exits.
+
+        Args:
+            exit_data: Dictionary containing:
+                - budget_name: str - Name of the budget
+                - budget_full_name: str - Full hierarchical budget path
+                - status: str - "completed", "exceeded", or "warned"
+                - spent_usd: float - Total USD spent
+                - limit_usd: float | None - Budget limit (None for track-only)
+                - utilization: float | None - spent/limit ratio (None when no limit)
+                - duration_seconds: float - Time spent inside with-block
+                - calls_made: int - Number of LLM calls made
+                - model_switched: bool - Whether fallback was activated
+                - from_model: str | None - Primary model name (if switched)
+                - to_model: str | None - Fallback model name (if switched)
+        """
+        pass
+
+    def on_autocap(self, autocap_data: dict[str, Any]) -> None:
+        """Called when a child budget is auto-capped by parent remaining.
+
+        Args:
+            autocap_data: Dictionary containing:
+                - child_name: str - Name of the child budget
+                - parent_name: str - Name of the parent budget
+                - original_limit: float - Child's originally requested limit
+                - effective_limit: float - Actual capped limit applied
+        """
+        pass

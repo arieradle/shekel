@@ -18,3 +18,12 @@ try:
 except ImportError:
     # langfuse is an optional dependency
     pass
+
+# Optional OTel metrics adapter (only if opentelemetry-api is installed)
+try:
+    from shekel.integrations.otel_metrics import _OtelMetricsAdapter  # noqa: F401
+
+    __all__.append("_OtelMetricsAdapter")
+except ImportError:
+    # opentelemetry-api is an optional dependency
+    pass
