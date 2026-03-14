@@ -10,6 +10,7 @@ Groups:
   G — Tier 1 budget lifecycle metrics (P0)
   H — Tier 1 P1 metrics
   I — Tier 1 P2 metrics
+  J — Coverage: base no-ops, _infer_gen_ai_system, exception handlers
 """
 
 from __future__ import annotations
@@ -647,3 +648,83 @@ class TestTier1P2Metrics:
         adapter = _OtelMetricsAdapter(meter, emit_tokens=False)
         # Don't call on_autocap at all
         adapter._budget_autocaps.add.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# Group J — Coverage: base no-ops, _infer_gen_ai_system, exception handlers
+# ---------------------------------------------------------------------------
+
+
+class TestCoverageGaps:
+    """Tests specifically targeting lines not covered by the behaviour-focused groups."""
+
+    # -- base.py no-op methods -------------------------------------------------
+
+    def test_on_cost_update_noop_in_base(self) -> None:
+        adapter = ObservabilityAdapter()
+        adapter.on_cost_update({})  # must not raise
+
+    def test_on_fallback_activated_noop_in_base(self) -> None:
+        adapter = ObservabilityAdapter()
+        adapter.on_fallback_activated({})  # must not raise
+
+    # -- _infer_gen_ai_system fallthrough --------------------------------------
+
+    def test_infer_gen_ai_system_unknown_prefix(self) -> None:
+        from shekel.integrations.otel_metrics import _infer_gen_ai_system
+
+        assert _infer_gen_ai_system("unknown-model-xyz") == "unknown"
+
+    def test_infer_gen_ai_system_known_prefixes(self) -> None:
+        from shekel.integrations.otel_metrics import _infer_gen_ai_system
+
+        assert _infer_gen_ai_system("gpt-4o") == "openai"
+        assert _infer_gen_ai_system("claude-3-haiku-20240307") == "anthropic"
+        assert _infer_gen_ai_system("gemini-2.0-flash") == "google_ai_studio"
+        assert _infer_gen_ai_system("llama-3") == "meta"
+
+    # -- exception handlers in _OtelMetricsAdapter ----------------------------
+
+    def test_on_cost_update_exception_is_swallowed(self) -> None:
+        from shekel.integrations.otel_metrics import _OtelMetricsAdapter
+
+        meter = _make_meter()
+        adapter = _OtelMetricsAdapter(meter, emit_tokens=False)
+        adapter._llm_cost.add.side_effect = RuntimeError("boom")
+
+        # Must not raise — exception handler swallows it
+        adapter.on_cost_update(
+            {"model": "gpt-4o", "name": "b", "full_name": "b", "call_cost": 0.01}
+        )
+
+    def test_on_budget_exit_exception_is_swallowed(self) -> None:
+        from shekel.integrations.otel_metrics import _OtelMetricsAdapter
+
+        meter = _make_meter()
+        adapter = _OtelMetricsAdapter(meter, emit_tokens=False)
+        adapter._budget_exits.add.side_effect = RuntimeError("boom")
+
+        adapter.on_budget_exit(
+            {
+                "budget_name": "wf",
+                "budget_full_name": "wf",
+                "status": "completed",
+                "spent_usd": 0.1,
+                "limit_usd": 1.0,
+                "utilization": 0.1,
+                "duration_seconds": 1.0,
+                "calls_made": 1,
+                "model_switched": False,
+                "from_model": None,
+                "to_model": None,
+            }
+        )
+
+    def test_on_autocap_exception_is_swallowed(self) -> None:
+        from shekel.integrations.otel_metrics import _OtelMetricsAdapter
+
+        meter = _make_meter()
+        adapter = _OtelMetricsAdapter(meter, emit_tokens=False)
+        adapter._budget_autocaps.add.side_effect = RuntimeError("boom")
+
+        adapter.on_autocap({"child_name": "c", "parent_name": "p"})

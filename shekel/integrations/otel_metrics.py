@@ -10,8 +10,8 @@ try:
     from opentelemetry import metrics as _otel_metrics  # noqa: F401
 
     _OTEL_AVAILABLE = True
-except ImportError:
-    _OTEL_AVAILABLE = False
+except ImportError:  # pragma: no cover
+    _OTEL_AVAILABLE = False  # pragma: no cover
 
 # Provider prefix → OTel gen_ai.system semantic convention value
 _PROVIDER_MAP: dict[str, str] = {

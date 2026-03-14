@@ -24,8 +24,8 @@ try:
     from opentelemetry import metrics as _otel_metrics
 
     _OTEL_AVAILABLE = True
-except ImportError:
-    _OTEL_AVAILABLE = False
+except ImportError:  # pragma: no cover
+    _OTEL_AVAILABLE = False  # pragma: no cover
 
 
 class ShekelMeter:
