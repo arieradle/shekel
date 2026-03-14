@@ -12,7 +12,12 @@ pip install shekel[huggingface]
 
 HuggingFace's `InferenceClient` uses its own HTTP layer — it does **not** call the OpenAI SDK under the hood. Without a dedicated adapter, `budget()` would be completely blind to HuggingFace spend.
 
-Shekel's `HuggingFaceAdapter` patches `InferenceClient.chat_completion` at runtime. Since `client.chat.completions.create()` delegates to `chat_completion` internally, all calls through either interface are tracked automatically.
+Shekel's `HuggingFaceAdapter` patches two methods at runtime:
+
+- `InferenceClient.chat_completion` — sync calls
+- `AsyncInferenceClient.chat_completion` — async calls
+
+Since `client.chat.completions.create()` delegates to `chat_completion` internally, all calls through either interface are tracked automatically.
 
 ## Important: Custom Pricing Required
 
@@ -73,6 +78,36 @@ with budget(
 
 !!! note "Streaming usage availability"
     Many HuggingFace-hosted models do not return `usage` data in streaming chunks. In that case, `b.spent` will be `0.0` for streaming calls even if tokens were consumed. Non-streaming calls generally do return usage data.
+
+## Async
+
+`AsyncInferenceClient` is tracked automatically — no extra setup needed:
+
+```python
+import asyncio
+from huggingface_hub import AsyncInferenceClient
+from shekel import budget
+
+client = AsyncInferenceClient(token="your-hf-token")
+
+async def main() -> None:
+    async with budget(
+        max_usd=1.00,
+        price_per_1k_tokens={"input": 0.001, "output": 0.001},
+    ) as b:
+        response = await client.chat_completion(
+            model="meta-llama/Llama-3.2-1B-Instruct",
+            messages=[{"role": "user", "content": "Explain transformers in one sentence."}],
+            max_tokens=50,
+        )
+        print(response.choices[0].message.content)
+        print(f"Cost: ${b.spent:.6f}")
+
+asyncio.run(main())
+```
+
+!!! note "Streaming usage availability"
+    The same caveat applies to async streaming: many HuggingFace-hosted models do not return `usage` data in streaming chunks, so `b.spent` may be `0.0` for streaming calls.
 
 ## Nested Budgets
 
