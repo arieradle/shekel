@@ -1,9 +1,10 @@
 # Requires: pip install shekel[openai]
 """
-Async example: concurrent agents with isolated budgets.
+Async example: concurrent agents and nested async budgets.
 
-Each agent runs in its own async task with its own budget counter.
-Budgets are isolated via Python's ContextVar — no shared state.
+Shows two patterns:
+1. Concurrent agents — each task gets its own isolated budget via ContextVar
+2. Nested async budgets — async with budget() nesting works identically to sync
 """
 
 import asyncio
@@ -33,6 +34,36 @@ async def run_agent(name: str, task: str, max_usd: float) -> dict:
         return {"name": name, "result": None, "spent": e.spent, "ok": False}
 
 
+async def nested_async_example() -> None:
+    try:
+        import openai
+    except ImportError:
+        raise RuntimeError("Run: pip install shekel[openai]")
+
+    client = openai.AsyncOpenAI(api_key=os.environ["OPENAI_API_KEY"])
+
+    print("=== Nested async budgets ===\n")
+
+    async with budget(max_usd=1.00, name="pipeline") as total:
+        async with budget(max_usd=0.05, name="step-1") as step1:
+            await client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[{"role": "user", "content": "One word: sky colour?"}],
+                max_tokens=5,
+            )
+
+        async with budget(max_usd=0.05, name="step-2") as step2:
+            await client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[{"role": "user", "content": "One word: grass colour?"}],
+                max_tokens=5,
+            )
+
+    print(f"step-1: ${step1.spent:.6f}")
+    print(f"step-2: ${step2.spent:.6f}")
+    print(f"total:  ${total.spent:.6f}  (= step-1 + step-2)")
+
+
 async def main() -> None:
     if not os.environ.get("OPENAI_API_KEY"):
         print("Set OPENAI_API_KEY to run this demo.")
@@ -56,6 +87,9 @@ async def main() -> None:
         total += agent["spent"]
 
     print(f"\nCombined spend: ${total:.4f}")
+
+    print()
+    await nested_async_example()
 
 
 if __name__ == "__main__":

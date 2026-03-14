@@ -2,20 +2,22 @@
 """
 HuggingFace InferenceClient demo: budget enforcement with shekel.
 
-Shekel patches InferenceClient.chat_completion at runtime so every
-client.chat.completions.create() call is automatically tracked inside
-an active budget().
+Shekel patches both InferenceClient.chat_completion and
+AsyncInferenceClient.chat_completion at runtime so every call —
+sync or async — is automatically tracked inside an active budget().
 
 Note: HuggingFace has no standard pricing table. Always pass
 price_per_1k_tokens={'input': X, 'output': Y} to budget() so Shekel
 knows the cost per token for the model you're using.
 
-Shows three patterns:
+Shows four patterns:
 1. Basic chat completion with budget tracking
 2. Streaming response with token tracking
 3. BudgetExceededError handling to cap runaway costs
+4. Async chat completion with async budget
 """
 
+import asyncio
 import os
 
 _MODEL = "meta-llama/Llama-3.2-1B-Instruct"
@@ -96,6 +98,30 @@ def main() -> None:
             )
     except BudgetExceededError as e:
         print(f"Caught BudgetExceededError at ${e.spent:.8f} — call stopped cleanly.")
+
+    # ------------------------------------------------------------------
+    # 4. Async chat completion with async budget
+    # ------------------------------------------------------------------
+    asyncio.run(_async_demo(api_key, pricing))
+
+
+async def _async_demo(api_key: str, pricing: dict[str, float]) -> None:
+    from huggingface_hub import AsyncInferenceClient
+
+    from shekel import budget
+
+    client = AsyncInferenceClient(token=api_key)
+
+    print("\n=== Async chat completion ===")
+    async with budget(max_usd=0.10, name="async-demo", price_per_1k_tokens=pricing) as b:
+        response = await client.chat_completion(
+            model=_MODEL,
+            messages=[{"role": "user", "content": "What is 2+2? Answer in one word."}],
+            max_tokens=10,
+        )
+        text = response.choices[0].message.content or ""
+        print(f"Answer: {text.strip()}")
+        print(f"Spent: ${b.spent:.6f}")
 
 
 if __name__ == "__main__":
