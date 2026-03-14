@@ -37,27 +37,33 @@ class HuggingFaceAdapter(ProviderAdapter):
         return "huggingface"
 
     def install_patches(self) -> None:
-        """Monkey-patch InferenceClient.chat_completion."""
+        """Monkey-patch InferenceClient.chat_completion and AsyncInferenceClient.chat_completion."""
         from shekel import _patch
 
         try:
+            from huggingface_hub import AsyncInferenceClient
             from huggingface_hub.inference import _client
 
             if "huggingface_sync" not in _patch._originals:
                 _patch._originals["huggingface_sync"] = _client.InferenceClient.chat_completion
+                _patch._originals["huggingface_async"] = AsyncInferenceClient.chat_completion
                 _client.InferenceClient.chat_completion = _patch._huggingface_sync_wrapper  # type: ignore[method-assign]
+                AsyncInferenceClient.chat_completion = _patch._huggingface_async_wrapper  # type: ignore[method-assign]
         except ImportError:
             pass
 
     def remove_patches(self) -> None:
-        """Restore original InferenceClient.chat_completion."""
+        """Restore original InferenceClient and AsyncInferenceClient chat_completion."""
         from shekel import _patch
 
         try:
+            from huggingface_hub import AsyncInferenceClient
             from huggingface_hub.inference import _client
 
             if "huggingface_sync" in _patch._originals:
                 _client.InferenceClient.chat_completion = _patch._originals.pop("huggingface_sync")  # type: ignore[method-assign]
+            if "huggingface_async" in _patch._originals:
+                AsyncInferenceClient.chat_completion = _patch._originals.pop("huggingface_async")  # type: ignore[method-assign]
         except ImportError:
             pass
 

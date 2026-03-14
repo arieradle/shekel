@@ -91,8 +91,133 @@ def test_wrap_huggingface_stream_records_usage() -> None:
         yield MockChunk()
 
     # Prevent install_patches() from overwriting _originals inside budget context
-    with patch.dict("shekel._patch._originals", {"huggingface_sync": object()}):
+    with patch.dict(
+        "shekel._patch._originals", {"huggingface_sync": object(), "huggingface_async": object()}
+    ):
         with budget(max_usd=1.0, price_per_1k_tokens={"input": 0.001, "output": 0.001}) as b:
             list(_wrap_huggingface_stream(stream()))
 
     assert b.spent > 0
+
+
+@pytest.mark.asyncio
+async def test_huggingface_async_wrapper_raises_if_no_original() -> None:
+    """RuntimeError when huggingface_async not in _originals."""
+    from shekel._patch import _huggingface_async_wrapper
+
+    with patch("shekel._patch._originals", {}):
+        with pytest.raises(RuntimeError, match="huggingface async original not stored"):
+            await _huggingface_async_wrapper(None)
+
+
+@pytest.mark.asyncio
+async def test_huggingface_async_wrapper_records_tokens() -> None:
+    """Non-streaming async path extracts tokens and charges the active budget."""
+    from shekel._patch import _huggingface_async_wrapper
+
+    class MockUsage:
+        prompt_tokens = 80
+        completion_tokens = 40
+
+    class MockResponse:
+        model = "HuggingFaceH4/zephyr-7b-beta"
+        usage = MockUsage()
+
+    async def fake_async(self: object, *args: object, **kwargs: object) -> MockResponse:
+        return MockResponse()
+
+    both_keys = {"huggingface_sync": object(), "huggingface_async": fake_async}
+    with patch.dict("shekel._patch._originals", both_keys):
+        async with budget(max_usd=1.0, price_per_1k_tokens={"input": 0.001, "output": 0.001}) as b:
+            result = await _huggingface_async_wrapper(None)
+
+    assert isinstance(result, MockResponse)
+    assert b.spent > 0
+
+
+@pytest.mark.asyncio
+async def test_huggingface_async_wrapper_no_budget() -> None:
+    """Async wrapper works correctly when no budget context is active."""
+    from shekel._patch import _huggingface_async_wrapper
+
+    class MockUsage:
+        prompt_tokens = 10
+        completion_tokens = 5
+
+    class MockResponse:
+        model = "HuggingFaceH4/zephyr-7b-beta"
+        usage = MockUsage()
+
+    async def fake_async(self: object, *args: object, **kwargs: object) -> MockResponse:
+        return MockResponse()
+
+    with patch.dict("shekel._patch._originals", {"huggingface_async": fake_async}):
+        result = await _huggingface_async_wrapper(None)
+
+    assert isinstance(result, MockResponse)
+
+
+@pytest.mark.asyncio
+async def test_huggingface_async_wrapper_stream_path() -> None:
+    """stream=True delegates to the async streaming path and returns an async generator."""
+    from shekel._patch import _huggingface_async_wrapper
+
+    class MockChunk:
+        usage = None
+
+    async def fake_async_stream(self: object, *args: object, **kwargs: object):  # type: ignore[return]
+        yield MockChunk()
+
+    async def fake_async(self: object, *args: object, **kwargs: object):  # type: ignore[return]
+        # When stream=True, HF async returns an async iterable after await
+        return fake_async_stream(self)
+
+    both_keys = {"huggingface_sync": object(), "huggingface_async": fake_async}
+    with patch.dict("shekel._patch._originals", both_keys):
+        gen = await _huggingface_async_wrapper(None, stream=True)
+        chunks = [c async for c in gen]
+
+    assert len(chunks) == 1
+
+
+@pytest.mark.asyncio
+async def test_wrap_huggingface_stream_async_records_usage() -> None:
+    """Usage tokens from async streaming chunks are charged to the active budget."""
+    from shekel._patch import _wrap_huggingface_stream_async
+
+    class MockUsage:
+        prompt_tokens = 60
+        completion_tokens = 30
+
+    class MockChunk:
+        model = "HuggingFaceH4/zephyr-7b-beta"
+        usage = MockUsage()
+
+    async def stream():  # type: ignore[return]
+        yield MockChunk()
+
+    both_keys = {"huggingface_sync": object(), "huggingface_async": object()}
+    with patch.dict("shekel._patch._originals", both_keys):
+        async with budget(max_usd=1.0, price_per_1k_tokens={"input": 0.001, "output": 0.001}) as b:
+            async for _ in _wrap_huggingface_stream_async(stream()):
+                pass
+
+    assert b.spent > 0
+
+
+@pytest.mark.asyncio
+async def test_wrap_huggingface_stream_async_swallows_attribute_error() -> None:
+    """Broken usage in async stream chunk is handled without crashing."""
+    from shekel._patch import _wrap_huggingface_stream_async
+
+    class BrokenUsage:
+        def __getattr__(self, name: str) -> None:
+            raise AttributeError(name)
+
+    async def stream():  # type: ignore[return]
+        chunk = MagicMock()
+        chunk.usage = BrokenUsage()
+        yield chunk
+
+    async for _ in _wrap_huggingface_stream_async(stream()):
+        pass  # must not raise

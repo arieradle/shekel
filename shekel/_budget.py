@@ -51,8 +51,8 @@ class Budget:
         with session:
             respond(turn_2)   # spend accumulates
 
-    Note: Budget objects are not thread-safe when shared across threads.
-    Each thread should use its own budget instance.
+    Note: Budget objects are not thread-safe when shared across threads or
+    concurrent asyncio tasks. Each thread/task should use its own budget instance.
     """
 
     def __init__(
@@ -257,17 +257,62 @@ class Budget:
     async def __aenter__(self) -> Budget:
         current_budget = _context.get_active_budget()
         if current_budget is not None:
-            raise RuntimeError(
-                "Nested budgets not supported in async contexts yet. "
-                "Use sync context managers or a single async budget. "
-                "See https://github.com/arieradle/shekel for details."
-            )
+            if current_budget.name is None:
+                raise ValueError(
+                    "Parent budget must have a name when nesting. "
+                    "Add name='...' to the parent budget."
+                )
+            if self.name is None:
+                raise ValueError(
+                    "Child budget must have a name when nesting. "
+                    "Add name='...' to the child budget."
+                )
+
+            if current_budget._depth >= 4:
+                raise ValueError(
+                    f"Maximum budget nesting depth of 5 exceeded. "
+                    f"Current depth: {current_budget._depth}, "
+                    f"attempted depth: {current_budget._depth + 1}"
+                )
+
+            for existing_child in current_budget.children:
+                if existing_child.name == self.name:
+                    raise ValueError(
+                        f"Child name '{self.name}' already exists under "
+                        f"parent '{current_budget.name}'. "
+                        f"Sibling budgets must have unique names."
+                    )
 
         _patch.apply_patches()
+
+        if current_budget is not None:
+            self.parent = current_budget
+            self._depth = current_budget._depth + 1
+            current_budget.children.append(self)
+            current_budget.active_child = self
+
+            if self.max_usd is not None and current_budget.remaining is not None:
+                self._effective_limit = min(self.max_usd, current_budget.remaining)
+            else:
+                self._effective_limit = self.max_usd
+
+            if self.max_llm_calls is not None and current_budget.calls_remaining is not None:
+                self._effective_call_limit = min(self.max_llm_calls, current_budget.calls_remaining)
+            else:
+                self._effective_call_limit = self.max_llm_calls
+        else:
+            self._effective_limit = self.max_usd
+            self._effective_call_limit = self.max_llm_calls
+
         self._ctx_token = _context.set_active_budget(self)
         return self
 
     async def __aexit__(self, exc_type: object, exc_val: object, exc_tb: object) -> None:
+        if self.parent is not None:
+            self.parent._spent += self._spent
+            self.parent._calls_made += self._calls_made
+            self.parent.active_child = None
+
         if self._ctx_token is not None:
             from shekel._context import _active_budget
 

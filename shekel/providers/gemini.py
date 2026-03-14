@@ -40,8 +40,12 @@ class GeminiAdapter(ProviderAdapter):
             if "gemini_sync" not in _patch._originals:
                 _patch._originals["gemini_sync"] = gm.Models.generate_content
                 _patch._originals["gemini_stream"] = gm.Models.generate_content_stream
+                _patch._originals["gemini_async"] = gm.AsyncModels.generate_content
+                _patch._originals["gemini_async_stream"] = gm.AsyncModels.generate_content_stream
                 gm.Models.generate_content = _patch._gemini_sync_wrapper  # type: ignore[method-assign]
                 gm.Models.generate_content_stream = _patch._gemini_stream_wrapper  # type: ignore[method-assign]
+                gm.AsyncModels.generate_content = _patch._gemini_async_wrapper  # type: ignore[method-assign]
+                gm.AsyncModels.generate_content_stream = _patch._gemini_async_stream_wrapper  # type: ignore[method-assign]
         except ImportError:
             pass
 
@@ -56,6 +60,12 @@ class GeminiAdapter(ProviderAdapter):
                 gm.Models.generate_content = _patch._originals.pop("gemini_sync")  # type: ignore[method-assign]
             if "gemini_stream" in _patch._originals:
                 gm.Models.generate_content_stream = _patch._originals.pop("gemini_stream")  # type: ignore[method-assign]
+            if "gemini_async" in _patch._originals:
+                gm.AsyncModels.generate_content = _patch._originals.pop("gemini_async")  # type: ignore[method-assign]
+            if "gemini_async_stream" in _patch._originals:
+                gm.AsyncModels.generate_content_stream = _patch._originals.pop(  # type: ignore[method-assign]
+                    "gemini_async_stream"
+                )
         except ImportError:
             pass
 
