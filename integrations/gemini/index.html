@@ -1226,6 +1226,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#async" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Async
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#nested-budgets" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1354,6 +1365,34 @@
     
   
     Langfuse
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../otel/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OpenTelemetry
   
 
     
@@ -1763,6 +1802,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#async" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Async
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#nested-budgets" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1866,12 +1916,14 @@
 </span></code></pre></div>
 <h2 id="why-a-dedicated-adapter">Why a dedicated adapter?<a class="headerlink" href="#why-a-dedicated-adapter" title="Permanent link">&para;</a></h2>
 <p>Unlike OpenAI and Anthropic, Gemini uses its own SDK (<code>google-genai</code>) that makes direct API calls — it does <strong>not</strong> route through the OpenAI SDK. Without a dedicated adapter, <code>budget()</code> would be completely blind to Gemini spend.</p>
-<p>Shekel's <code>GeminiAdapter</code> patches two methods at runtime:</p>
+<p>Shekel's <code>GeminiAdapter</code> patches four methods at runtime:</p>
 <ul>
-<li><code>google.genai.models.Models.generate_content</code> — non-streaming calls</li>
-<li><code>google.genai.models.Models.generate_content_stream</code> — streaming calls</li>
+<li><code>google.genai.models.Models.generate_content</code> — sync non-streaming calls</li>
+<li><code>google.genai.models.Models.generate_content_stream</code> — sync streaming calls</li>
+<li><code>google.genai.models.AsyncModels.generate_content</code> — async non-streaming calls</li>
+<li><code>google.genai.models.AsyncModels.generate_content_stream</code> — async streaming calls</li>
 </ul>
-<p>All other Shekel features (nested budgets, fallback models, <code>BudgetExceededError</code>) work identically.</p>
+<p>All Shekel features (nested budgets, fallback models, <code>BudgetExceededError</code>) work identically across sync and async.</p>
 <h2 id="basic-integration">Basic Integration<a class="headerlink" href="#basic-integration" title="Permanent link">&para;</a></h2>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">google.genai</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">genai</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">shekel</span><span class="w"> </span><span class="kn">import</span> <span class="n">budget</span>
@@ -1898,40 +1950,60 @@
 </span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    <span class="nb">print</span><span class="p">()</span>
 </span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Cost: $</span><span class="si">{</span><span class="n">b</span><span class="o">.</span><span class="n">spent</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </span></code></pre></div>
+<h2 id="async">Async<a class="headerlink" href="#async" title="Permanent link">&para;</a></h2>
+<p>Both <code>AsyncModels.generate_content</code> and <code>AsyncModels.generate_content_stream</code> are tracked automatically:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">google.genai</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">genai</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">shekel</span><span class="w"> </span><span class="kn">import</span> <span class="n">budget</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="n">client</span> <span class="o">=</span> <span class="n">genai</span><span class="o">.</span><span class="n">Client</span><span class="p">(</span><span class="n">api_key</span><span class="o">=</span><span class="s2">&quot;your-gemini-key&quot;</span><span class="p">)</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>    <span class="k">async</span> <span class="k">with</span> <span class="n">budget</span><span class="p">(</span><span class="n">max_usd</span><span class="o">=</span><span class="mf">1.00</span><span class="p">)</span> <span class="k">as</span> <span class="n">b</span><span class="p">:</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>        <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">aio</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">generate_content</span><span class="p">(</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>            <span class="n">model</span><span class="o">=</span><span class="s2">&quot;gemini-2.0-flash-lite&quot;</span><span class="p">,</span>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>            <span class="n">contents</span><span class="o">=</span><span class="s2">&quot;Explain quantum computing in one sentence.&quot;</span><span class="p">,</span>
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>        <span class="p">)</span>
+</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>        <span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Cost: $</span><span class="si">{</span><span class="n">b</span><span class="o">.</span><span class="n">spent</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>
+</span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a><span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">main</span><span class="p">())</span>
+</span></code></pre></div>
+<p>Async streaming works the same way — iterate <code>client.aio.models.generate_content_stream(...)</code> with <code>async for</code>.</p>
 <h2 id="nested-budgets">Nested Budgets<a class="headerlink" href="#nested-budgets" title="Permanent link">&para;</a></h2>
 <p>Track costs across multi-step Gemini workflows:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">with</span> <span class="n">budget</span><span class="p">(</span><span class="n">max_usd</span><span class="o">=</span><span class="mf">5.00</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;pipeline&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">total</span><span class="p">:</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="k">with</span> <span class="n">budget</span><span class="p">(</span><span class="n">max_usd</span><span class="o">=</span><span class="mf">1.00</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;research&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">research</span><span class="p">:</span>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>        <span class="n">client</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">generate_content</span><span class="p">(</span>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>            <span class="n">model</span><span class="o">=</span><span class="s2">&quot;gemini-2.0-flash-lite&quot;</span><span class="p">,</span>
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>            <span class="n">contents</span><span class="o">=</span><span class="s2">&quot;Summarise recent AI trends.&quot;</span><span class="p">,</span>
-</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>        <span class="p">)</span>
-</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>
-</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>    <span class="k">with</span> <span class="n">budget</span><span class="p">(</span><span class="n">max_usd</span><span class="o">=</span><span class="mf">2.00</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;analysis&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">analysis</span><span class="p">:</span>
-</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>        <span class="n">client</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">generate_content</span><span class="p">(</span>
-</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>            <span class="n">model</span><span class="o">=</span><span class="s2">&quot;gemini-2.0-flash&quot;</span><span class="p">,</span>
-</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>            <span class="n">contents</span><span class="o">=</span><span class="s2">&quot;Analyse the implications of those trends.&quot;</span><span class="p">,</span>
-</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>        <span class="p">)</span>
-</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>
-</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Research: $</span><span class="si">{</span><span class="n">research</span><span class="o">.</span><span class="n">spent</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Analysis: $</span><span class="si">{</span><span class="n">analysis</span><span class="o">.</span><span class="n">spent</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-</span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Total:    $</span><span class="si">{</span><span class="n">total</span><span class="o">.</span><span class="n">spent</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-</span><span id="__span-3-17"><a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a><span class="nb">print</span><span class="p">(</span><span class="n">total</span><span class="o">.</span><span class="n">tree</span><span class="p">())</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">with</span> <span class="n">budget</span><span class="p">(</span><span class="n">max_usd</span><span class="o">=</span><span class="mf">5.00</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;pipeline&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">total</span><span class="p">:</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    <span class="k">with</span> <span class="n">budget</span><span class="p">(</span><span class="n">max_usd</span><span class="o">=</span><span class="mf">1.00</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;research&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">research</span><span class="p">:</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>        <span class="n">client</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">generate_content</span><span class="p">(</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>            <span class="n">model</span><span class="o">=</span><span class="s2">&quot;gemini-2.0-flash-lite&quot;</span><span class="p">,</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>            <span class="n">contents</span><span class="o">=</span><span class="s2">&quot;Summarise recent AI trends.&quot;</span><span class="p">,</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>        <span class="p">)</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>    <span class="k">with</span> <span class="n">budget</span><span class="p">(</span><span class="n">max_usd</span><span class="o">=</span><span class="mf">2.00</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;analysis&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">analysis</span><span class="p">:</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>        <span class="n">client</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">generate_content</span><span class="p">(</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>            <span class="n">model</span><span class="o">=</span><span class="s2">&quot;gemini-2.0-flash&quot;</span><span class="p">,</span>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>            <span class="n">contents</span><span class="o">=</span><span class="s2">&quot;Analyse the implications of those trends.&quot;</span><span class="p">,</span>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>        <span class="p">)</span>
+</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a>
+</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Research: $</span><span class="si">{</span><span class="n">research</span><span class="o">.</span><span class="n">spent</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Analysis: $</span><span class="si">{</span><span class="n">analysis</span><span class="o">.</span><span class="n">spent</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Total:    $</span><span class="si">{</span><span class="n">total</span><span class="o">.</span><span class="n">spent</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="nb">print</span><span class="p">(</span><span class="n">total</span><span class="o">.</span><span class="n">tree</span><span class="p">())</span>
 </span></code></pre></div>
 <h2 id="fallback-models">Fallback Models<a class="headerlink" href="#fallback-models" title="Permanent link">&para;</a></h2>
 <p>Switch to a cheaper Gemini model when spend reaches a threshold:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">with</span> <span class="n">budget</span><span class="p">(</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    <span class="n">max_usd</span><span class="o">=</span><span class="mf">0.50</span><span class="p">,</span>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="n">fallback</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;at_pct&quot;</span><span class="p">:</span> <span class="mf">0.8</span><span class="p">,</span> <span class="s2">&quot;model&quot;</span><span class="p">:</span> <span class="s2">&quot;gemini-2.0-flash-lite&quot;</span><span class="p">},</span>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="p">)</span> <span class="k">as</span> <span class="n">b</span><span class="p">:</span>
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>    <span class="c1"># Starts with gemini-2.0-flash; auto-switches at 80% ($0.40)</span>
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>    <span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">generate_content</span><span class="p">(</span>
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>        <span class="n">model</span><span class="o">=</span><span class="s2">&quot;gemini-2.0-flash&quot;</span><span class="p">,</span>
-</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>        <span class="n">contents</span><span class="o">=</span><span class="s2">&quot;Write a detailed market analysis.&quot;</span><span class="p">,</span>
-</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>    <span class="p">)</span>
-</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>
-</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="k">if</span> <span class="n">b</span><span class="o">.</span><span class="n">model_switched</span><span class="p">:</span>
-</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Switched to fallback at $</span><span class="si">{</span><span class="n">b</span><span class="o">.</span><span class="n">switched_at_usd</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">with</span> <span class="n">budget</span><span class="p">(</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="n">max_usd</span><span class="o">=</span><span class="mf">0.50</span><span class="p">,</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>    <span class="n">fallback</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;at_pct&quot;</span><span class="p">:</span> <span class="mf">0.8</span><span class="p">,</span> <span class="s2">&quot;model&quot;</span><span class="p">:</span> <span class="s2">&quot;gemini-2.0-flash-lite&quot;</span><span class="p">},</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="p">)</span> <span class="k">as</span> <span class="n">b</span><span class="p">:</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>    <span class="c1"># Starts with gemini-2.0-flash; auto-switches at 80% ($0.40)</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>    <span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">generate_content</span><span class="p">(</span>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>        <span class="n">model</span><span class="o">=</span><span class="s2">&quot;gemini-2.0-flash&quot;</span><span class="p">,</span>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>        <span class="n">contents</span><span class="o">=</span><span class="s2">&quot;Write a detailed market analysis.&quot;</span><span class="p">,</span>
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>    <span class="p">)</span>
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>
+</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="k">if</span> <span class="n">b</span><span class="o">.</span><span class="n">model_switched</span><span class="p">:</span>
+</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Switched to fallback at $</span><span class="si">{</span><span class="n">b</span><span class="o">.</span><span class="n">switched_at_usd</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </span></code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Same-provider fallback only</p>
@@ -1939,17 +2011,17 @@
 </div>
 <h2 id="budget-enforcement">Budget Enforcement<a class="headerlink" href="#budget-enforcement" title="Permanent link">&para;</a></h2>
 <p>Stop a runaway Gemini loop automatically:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">shekel</span><span class="w"> </span><span class="kn">import</span> <span class="n">BudgetExceededError</span>
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="k">try</span><span class="p">:</span>
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>    <span class="k">with</span> <span class="n">budget</span><span class="p">(</span><span class="n">max_usd</span><span class="o">=</span><span class="mf">2.00</span><span class="p">)</span> <span class="k">as</span> <span class="n">b</span><span class="p">:</span>
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">100</span><span class="p">):</span>  <span class="c1"># Shekel stops this when budget runs out</span>
-</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>            <span class="n">client</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">generate_content</span><span class="p">(</span>
-</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>                <span class="n">model</span><span class="o">=</span><span class="s2">&quot;gemini-2.0-flash-lite&quot;</span><span class="p">,</span>
-</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>                <span class="n">contents</span><span class="o">=</span><span class="s2">&quot;Analyse this document.&quot;</span><span class="p">,</span>
-</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>            <span class="p">)</span>
-</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="k">except</span> <span class="n">BudgetExceededError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Stopped at $</span><span class="si">{</span><span class="n">e</span><span class="o">.</span><span class="n">spent</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> — saved the rest of the budget.&quot;</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">shekel</span><span class="w"> </span><span class="kn">import</span> <span class="n">BudgetExceededError</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="k">try</span><span class="p">:</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>    <span class="k">with</span> <span class="n">budget</span><span class="p">(</span><span class="n">max_usd</span><span class="o">=</span><span class="mf">2.00</span><span class="p">)</span> <span class="k">as</span> <span class="n">b</span><span class="p">:</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">100</span><span class="p">):</span>  <span class="c1"># Shekel stops this when budget runs out</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>            <span class="n">client</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">generate_content</span><span class="p">(</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>                <span class="n">model</span><span class="o">=</span><span class="s2">&quot;gemini-2.0-flash-lite&quot;</span><span class="p">,</span>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>                <span class="n">contents</span><span class="o">=</span><span class="s2">&quot;Analyse this document.&quot;</span><span class="p">,</span>
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>            <span class="p">)</span>
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="k">except</span> <span class="n">BudgetExceededError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Stopped at $</span><span class="si">{</span><span class="n">e</span><span class="o">.</span><span class="n">spent</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> — saved the rest of the budget.&quot;</span><span class="p">)</span>
 </span></code></pre></div>
 <h2 id="supported-models-and-pricing">Supported Models and Pricing<a class="headerlink" href="#supported-models-and-pricing" title="Permanent link">&para;</a></h2>
 <table>
@@ -1996,14 +2068,14 @@
 <p>Shekel uses prefix matching, so <code>gemini-2.0-flash-001</code> and similar versioned names resolve automatically.</p>
 <h2 id="custom-pricing">Custom Pricing<a class="headerlink" href="#custom-pricing" title="Permanent link">&para;</a></h2>
 <p>For models not in the pricing table, pass <code>price_per_1k_tokens</code>:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">with</span> <span class="n">budget</span><span class="p">(</span>
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>    <span class="n">max_usd</span><span class="o">=</span><span class="mf">1.00</span><span class="p">,</span>
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>    <span class="n">price_per_1k_tokens</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;input&quot;</span><span class="p">:</span> <span class="mf">0.0001</span><span class="p">,</span> <span class="s2">&quot;output&quot;</span><span class="p">:</span> <span class="mf">0.0003</span><span class="p">},</span>
-</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="p">)</span> <span class="k">as</span> <span class="n">b</span><span class="p">:</span>
-</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>    <span class="n">client</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">generate_content</span><span class="p">(</span>
-</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>        <span class="n">model</span><span class="o">=</span><span class="s2">&quot;gemini-3-flash-preview&quot;</span><span class="p">,</span>
-</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>        <span class="n">contents</span><span class="o">=</span><span class="s2">&quot;Hello.&quot;</span><span class="p">,</span>
-</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>    <span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">with</span> <span class="n">budget</span><span class="p">(</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>    <span class="n">max_usd</span><span class="o">=</span><span class="mf">1.00</span><span class="p">,</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>    <span class="n">price_per_1k_tokens</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;input&quot;</span><span class="p">:</span> <span class="mf">0.0001</span><span class="p">,</span> <span class="s2">&quot;output&quot;</span><span class="p">:</span> <span class="mf">0.0003</span><span class="p">},</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="p">)</span> <span class="k">as</span> <span class="n">b</span><span class="p">:</span>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>    <span class="n">client</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">generate_content</span><span class="p">(</span>
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>        <span class="n">model</span><span class="o">=</span><span class="s2">&quot;gemini-3-flash-preview&quot;</span><span class="p">,</span>
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>        <span class="n">contents</span><span class="o">=</span><span class="s2">&quot;Hello.&quot;</span><span class="p">,</span>
+</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>    <span class="p">)</span>
 </span></code></pre></div>
 <h2 id="tips-for-gemini-shekel">Tips for Gemini + Shekel<a class="headerlink" href="#tips-for-gemini-shekel" title="Permanent link">&para;</a></h2>
 <ol>

@@ -1091,10 +1091,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#async-nesting-not-supported" class="md-nav__link">
+  <a href="#async-nesting" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Async Nesting Not Supported
+        Async Nesting
       
     </span>
   </a>
@@ -1588,6 +1588,34 @@
     
   
     Langfuse
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/otel/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OpenTelemetry
   
 
     
@@ -2231,10 +2259,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#async-nesting-not-supported" class="md-nav__link">
+  <a href="#async-nesting" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Async Nesting Not Supported
+        Async Nesting
       
     </span>
   </a>
@@ -2592,17 +2620,15 @@
 </span><span id="__span-16-8"><a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a>                    <span class="c1"># Depth 5 would raise ValueError</span>
 </span><span id="__span-16-9"><a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a>                    <span class="c1"># with budget(max_usd=3, name=&quot;L5&quot;):  # ❌</span>
 </span></code></pre></div>
-<h3 id="async-nesting-not-supported">Async Nesting Not Supported<a class="headerlink" href="#async-nesting-not-supported" title="Permanent link">&para;</a></h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="c1"># ❌ Async nesting raises RuntimeError</span>
-</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="k">async</span> <span class="k">with</span> <span class="n">budget</span><span class="p">(</span><span class="n">max_usd</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;parent&quot;</span><span class="p">):</span>
-</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>    <span class="k">async</span> <span class="k">with</span> <span class="n">budget</span><span class="p">(</span><span class="n">max_usd</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;child&quot;</span><span class="p">):</span>  <span class="c1"># ❌ Error!</span>
-</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>        <span class="k">await</span> <span class="n">work</span><span class="p">()</span>
-</span><span id="__span-17-5"><a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a>
-</span><span id="__span-17-6"><a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a><span class="c1"># ✅ Use sync nested budgets instead</span>
-</span><span id="__span-17-7"><a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a><span class="k">with</span> <span class="n">budget</span><span class="p">(</span><span class="n">max_usd</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;parent&quot;</span><span class="p">):</span>
-</span><span id="__span-17-8"><a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a>    <span class="k">with</span> <span class="n">budget</span><span class="p">(</span><span class="n">max_usd</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;child&quot;</span><span class="p">):</span>
-</span><span id="__span-17-9"><a id="__codelineno-17-9" name="__codelineno-17-9" href="#__codelineno-17-9"></a>        <span class="k">await</span> <span class="n">work</span><span class="p">()</span>  <span class="c1"># ✅ OK</span>
+<h3 id="async-nesting">Async Nesting<a class="headerlink" href="#async-nesting" title="Permanent link">&para;</a></h3>
+<p>Nested budgets work identically in async contexts — same naming rules, same depth limit, same spend propagation:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="k">async</span> <span class="k">with</span> <span class="n">budget</span><span class="p">(</span><span class="n">max_usd</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;parent&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">parent</span><span class="p">:</span>
+</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>    <span class="k">async</span> <span class="k">with</span> <span class="n">budget</span><span class="p">(</span><span class="n">max_usd</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;child&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">child</span><span class="p">:</span>
+</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>        <span class="k">await</span> <span class="n">work</span><span class="p">()</span>
+</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>
+</span><span id="__span-17-5"><a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a><span class="c1"># child.spent is propagated to parent on exit</span>
 </span></code></pre></div>
+<p>Each <code>asyncio</code> task gets its own isolated budget context automatically, so concurrent tasks cannot interfere with each other's budgets.</p>
 <h3 id="unique-sibling-names">Unique Sibling Names<a class="headerlink" href="#unique-sibling-names" title="Permanent link">&para;</a></h3>
 <p>Children under the same parent must have unique names:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="k">with</span> <span class="n">budget</span><span class="p">(</span><span class="n">max_usd</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;parent&quot;</span><span class="p">):</span>

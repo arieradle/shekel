@@ -1196,6 +1196,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations/otel/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OpenTelemetry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1409,6 +1437,45 @@
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#027" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.2.7]
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.2.7]">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#opentelemetry-metrics-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📡 OpenTelemetry Metrics Integration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#full-async-support-for-gemini-huggingface-and-nested-budgets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Full Async Support for Gemini, HuggingFace, and Nested Budgets
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
       
         <li class="md-nav__item">
   <a href="#026" class="md-nav__link">
@@ -1870,6 +1937,45 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#027" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.2.7]
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.2.7]">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#opentelemetry-metrics-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📡 OpenTelemetry Metrics Integration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#full-async-support-for-gemini-huggingface-and-nested-budgets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Full Async Support for Gemini, HuggingFace, and Nested Budgets
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#026" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2163,6 +2269,98 @@
 
 <h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
 <p>All notable changes to this project are documented here. For detailed information, see <a href="https://github.com/arieradle/shekel/blob/main/CHANGELOG.md">CHANGELOG.md</a> on GitHub.</p>
+<h2 id="027">[0.2.7]<a class="headerlink" href="#027" title="Permanent link">&para;</a></h2>
+<h3 id="opentelemetry-metrics-integration">📡 OpenTelemetry Metrics Integration<a class="headerlink" href="#opentelemetry-metrics-integration" title="Permanent link">&para;</a></h3>
+<p>Shekel now exposes LLM cost and budget lifecycle data via OpenTelemetry — filling the gap the OTel GenAI semantic conventions leave around cost and budget metrics.</p>
+<p><strong><code>ShekelMeter</code></strong> (<code>shekel/otel.py</code>) — Zero-config public entry point</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">shekel.otel</span><span class="w"> </span><span class="kn">import</span> <span class="n">ShekelMeter</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">meter</span> <span class="o">=</span> <span class="n">ShekelMeter</span><span class="p">()</span>          <span class="c1"># uses global MeterProvider</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># or</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">meter</span> <span class="o">=</span> <span class="n">ShekelMeter</span><span class="p">(</span><span class="n">meter_provider</span><span class="o">=</span><span class="n">my_provider</span><span class="p">,</span> <span class="n">emit_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">meter</span><span class="o">.</span><span class="n">unregister</span><span class="p">()</span>             <span class="c1"># remove from registry when done</span>
+</span></code></pre></div>
+<p>Silent no-op when <code>opentelemetry-api</code> is not installed (<code>meter.is_noop is True</code>).</p>
+<p><strong>8 new instruments:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Instrument</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>shekel.llm.cost_usd</code></td>
+<td>Counter</td>
+<td>Cost per LLM call</td>
+</tr>
+<tr>
+<td><code>shekel.llm.calls_total</code></td>
+<td>Counter</td>
+<td>Call count per model</td>
+</tr>
+<tr>
+<td><code>shekel.llm.tokens_input_total</code></td>
+<td>Counter</td>
+<td>Input tokens (opt-in)</td>
+</tr>
+<tr>
+<td><code>shekel.llm.tokens_output_total</code></td>
+<td>Counter</td>
+<td>Output tokens (opt-in)</td>
+</tr>
+<tr>
+<td><code>shekel.budget.exits_total</code></td>
+<td>Counter</td>
+<td>Budget exits by <code>status</code></td>
+</tr>
+<tr>
+<td><code>shekel.budget.cost_usd</code></td>
+<td>UpDownCounter</td>
+<td>Cumulative spend per budget</td>
+</tr>
+<tr>
+<td><code>shekel.budget.utilization</code></td>
+<td>Histogram</td>
+<td>0.0–1.0 on exit</td>
+</tr>
+<tr>
+<td><code>shekel.budget.spend_rate</code></td>
+<td>Histogram</td>
+<td>USD/s on exit</td>
+</tr>
+<tr>
+<td><code>shekel.budget.fallbacks_total</code></td>
+<td>Counter</td>
+<td>Fallback activations</td>
+</tr>
+<tr>
+<td><code>shekel.budget.autocaps_total</code></td>
+<td>Counter</td>
+<td>Auto-cap events</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Two new <code>ObservabilityAdapter</code> events:</strong></p>
+<ul>
+<li><code>on_budget_exit(data)</code> — fires on every budget context exit (before parent propagation); <code>data</code> includes <code>status</code>, <code>spent_usd</code>, <code>utilization</code>, <code>duration_seconds</code>, <code>calls_made</code>, <code>model_switched</code>, <code>from_model</code>, <code>to_model</code></li>
+<li><code>on_autocap(data)</code> — fires when a child budget is silently reduced by the parent's remaining; <code>data</code> includes <code>child_name</code>, <code>parent_name</code>, <code>original_limit</code>, <code>effective_limit</code></li>
+</ul>
+<p><strong>Token payload in <code>on_cost_update</code></strong> — the event now includes <code>input_tokens</code> and <code>output_tokens</code> fields.</p>
+<p>Install: <code>pip install shekel[otel]</code></p>
+<p>See <a href="../integrations/otel/">OTel Integration Guide</a> for PromQL examples, cardinality guidance, and Grafana hints.</p>
+<h3 id="full-async-support-for-gemini-huggingface-and-nested-budgets">Full Async Support for Gemini, HuggingFace, and Nested Budgets<a class="headerlink" href="#full-async-support-for-gemini-huggingface-and-nested-budgets" title="Permanent link">&para;</a></h3>
+<p><code>async with budget(...):</code> now supports the same full nesting logic as sync contexts — auto-capping, spend propagation, and per-task isolation via ContextVar all work identically.</p>
+<p><strong>Gemini async</strong> — <code>_gemini_async_wrapper</code> and <code>_gemini_async_stream_wrapper</code> added; <code>AsyncModels</code> patched automatically alongside sync <code>Models</code>.</p>
+<p><strong>HuggingFace async</strong> — <code>_huggingface_async_wrapper</code> and <code>_wrap_huggingface_stream_async</code> added; <code>AsyncInferenceClient</code> patched automatically.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Now works — full nesting with async context managers</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="k">async</span> <span class="k">with</span> <span class="n">budget</span><span class="p">(</span><span class="n">max_usd</span><span class="o">=</span><span class="mf">10.00</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;workflow&quot;</span><span class="p">):</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="k">async</span> <span class="k">with</span> <span class="n">budget</span><span class="p">(</span><span class="n">max_usd</span><span class="o">=</span><span class="mf">2.00</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;research&quot;</span><span class="p">):</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">generate_content_async</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+</span></code></pre></div>
+<p>13 new async unit tests added for Gemini and HuggingFace. Integration test suites expanded with async streaming and <code>async with budget()</code> scenarios for OpenAI and Anthropic.</p>
 <h2 id="026">[0.2.6]<a class="headerlink" href="#026" title="Permanent link">&para;</a></h2>
 <h3 id="new-features">New Features<a class="headerlink" href="#new-features" title="Permanent link">&para;</a></h3>
 <p><strong><code>max_llm_calls</code> — limit budgets by call count</strong></p>
@@ -2300,7 +2498,7 @@
 <h3 id="safety-rails">🛡️ Safety Rails<a class="headerlink" href="#safety-rails" title="Permanent link">&para;</a></h3>
 <ul>
 <li>Maximum nesting depth of 5 levels enforced</li>
-<li>Async nesting detection (raises clear error — deferred to future version)</li>
+<li>Async nesting support (nested <code>async with budget()</code> contexts with same rules as sync)</li>
 <li>Zero/negative budget validation at <code>__init__</code></li>
 <li>Spend propagation on all exceptions (money spent is money spent)</li>
 </ul>
