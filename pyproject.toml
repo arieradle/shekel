@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "shekel"
-version = "0.2.6"
+version = "0.2.7"
 description = "LLM budget enforcement and cost tracking. Zero config — with budget(max_usd=1.00): run_agent(). Works with LangGraph, CrewAI, raw OpenAI/Anthropic/Gemini."
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -42,6 +42,9 @@ keywords = [
     "model fallback",
     "crewai",
     "observability",
+    "opentelemetry",
+    "otel",
+    "metrics",
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -71,7 +74,8 @@ langfuse = ["langfuse>=2.0.0"]
 litellm = ["litellm>=1.0.0"]
 gemini = ["google-genai>=1.0.0"]
 huggingface = ["huggingface-hub>=0.20.0"]
-all = ["openai>=1.0.0", "anthropic>=0.7.0", "langfuse>=2.0.0", "litellm>=1.0.0", "google-genai>=1.0.0", "huggingface-hub>=0.20.0"]
+otel = ["opentelemetry-api>=1.0.0"]
+all = ["openai>=1.0.0", "anthropic>=0.7.0", "langfuse>=2.0.0", "litellm>=1.0.0", "google-genai>=1.0.0", "huggingface-hub>=0.20.0", "opentelemetry-api>=1.0.0"]
 all-models = ["openai>=1.0.0", "anthropic>=0.7.0", "langfuse>=2.0.0", "tokencost>=0.1.0"]
 cli = ["click>=8.0.0"]
 dev = [
@@ -88,6 +92,8 @@ dev = [
     "mkdocs-material>=9.0.0",
     "google-genai>=1.0.0",
     "huggingface-hub>=0.20.0",
+    "opentelemetry-api>=1.0.0",
+    "opentelemetry-sdk>=1.0.0",
 ]
 
 [project.scripts]
@@ -155,6 +161,10 @@ ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = ["huggingface_hub", "huggingface_hub.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["opentelemetry", "opentelemetry.*"]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]

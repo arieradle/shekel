@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+import time
 import warnings
 from contextvars import Token
 from typing import TYPE_CHECKING, Any, Callable, TypedDict
@@ -145,6 +146,7 @@ class Budget:
         self._effective_call_limit: int | None = max_llm_calls  # Auto-capped in __enter__
 
         self._ctx_token: Token[Budget | None] | None = None
+        self._enter_time: float | None = None
 
         # Spend-tracking state
         self._spent: float = 0.0
@@ -174,6 +176,7 @@ class Budget:
         self._switched_at_usd = None
         self._calls = []
         self._calls_made = 0
+        self._enter_time = None
 
     # ------------------------------------------------------------------
     # Sync context manager
@@ -210,6 +213,7 @@ class Budget:
                     )
 
         # All validation passed — apply patches and wire up hierarchy
+        self._enter_time = time.monotonic()
         _patch.apply_patches()
 
         if current_budget is not None:
@@ -221,6 +225,21 @@ class Budget:
             # Auto-cap child USD limit to parent's remaining budget
             if self.max_usd is not None and current_budget.remaining is not None:
                 self._effective_limit = min(self.max_usd, current_budget.remaining)
+                if self._effective_limit < self.max_usd:
+                    try:
+                        from shekel.integrations import AdapterRegistry
+
+                        AdapterRegistry.emit_event(
+                            "on_autocap",
+                            {
+                                "child_name": self.name or "unnamed",
+                                "parent_name": current_budget.name or "unnamed",
+                                "original_limit": self.max_usd,
+                                "effective_limit": self._effective_limit,
+                            },
+                        )
+                    except Exception:
+                        pass
             else:
                 self._effective_limit = self.max_usd
 
@@ -237,6 +256,42 @@ class Budget:
         return self
 
     def __exit__(self, exc_type: object, exc_val: object, exc_tb: object) -> None:
+        # Determine exit status
+        _status = "completed"
+        if self._effective_limit is not None and self._spent > self._effective_limit:
+            _status = "exceeded"
+        elif self._warn_fired:
+            _status = "warned"
+
+        _duration = (time.monotonic() - self._enter_time) if self._enter_time is not None else 0.0
+        _utilization = (self._spent / self._effective_limit) if self._effective_limit else None
+
+        try:
+            from shekel.integrations import AdapterRegistry
+
+            AdapterRegistry.emit_event(
+                "on_budget_exit",
+                {
+                    "budget_name": self.name or "unnamed",
+                    "budget_full_name": self.full_name,
+                    "status": _status,
+                    "spent_usd": self._spent,
+                    "limit_usd": self._effective_limit,
+                    "utilization": _utilization,
+                    "duration_seconds": _duration,
+                    "calls_made": self._calls_made,
+                    "model_switched": self._using_fallback,
+                    "from_model": self._last_model if self._using_fallback else None,
+                    "to_model": (
+                        self.fallback.get("model")
+                        if self._using_fallback and self.fallback
+                        else None
+                    ),
+                },
+            )
+        except Exception:
+            pass
+
         # Propagate spend and call count to parent on exit
         if self.parent is not None:
             self.parent._spent += self._spent
@@ -283,6 +338,7 @@ class Budget:
                         f"Sibling budgets must have unique names."
                     )
 
+        self._enter_time = time.monotonic()
         _patch.apply_patches()
 
         if current_budget is not None:
@@ -293,6 +349,21 @@ class Budget:
 
             if self.max_usd is not None and current_budget.remaining is not None:
                 self._effective_limit = min(self.max_usd, current_budget.remaining)
+                if self._effective_limit < self.max_usd:
+                    try:
+                        from shekel.integrations import AdapterRegistry
+
+                        AdapterRegistry.emit_event(
+                            "on_autocap",
+                            {
+                                "child_name": self.name or "unnamed",
+                                "parent_name": current_budget.name or "unnamed",
+                                "original_limit": self.max_usd,
+                                "effective_limit": self._effective_limit,
+                            },
+                        )
+                    except Exception:
+                        pass
             else:
                 self._effective_limit = self.max_usd
 
@@ -308,6 +379,42 @@ class Budget:
         return self
 
     async def __aexit__(self, exc_type: object, exc_val: object, exc_tb: object) -> None:
+        # Determine exit status
+        _status = "completed"
+        if self._effective_limit is not None and self._spent > self._effective_limit:
+            _status = "exceeded"
+        elif self._warn_fired:
+            _status = "warned"
+
+        _duration = (time.monotonic() - self._enter_time) if self._enter_time is not None else 0.0
+        _utilization = (self._spent / self._effective_limit) if self._effective_limit else None
+
+        try:
+            from shekel.integrations import AdapterRegistry
+
+            AdapterRegistry.emit_event(
+                "on_budget_exit",
+                {
+                    "budget_name": self.name or "unnamed",
+                    "budget_full_name": self.full_name,
+                    "status": _status,
+                    "spent_usd": self._spent,
+                    "limit_usd": self._effective_limit,
+                    "utilization": _utilization,
+                    "duration_seconds": _duration,
+                    "calls_made": self._calls_made,
+                    "model_switched": self._using_fallback,
+                    "from_model": self._last_model if self._using_fallback else None,
+                    "to_model": (
+                        self.fallback.get("model")
+                        if self._using_fallback and self.fallback
+                        else None
+                    ),
+                },
+            )
+        except Exception:
+            pass
+
         if self.parent is not None:
             self.parent._spent += self._spent
             self.parent._calls_made += self._calls_made

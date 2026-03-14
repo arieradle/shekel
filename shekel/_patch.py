@@ -149,6 +149,8 @@ def _record(input_tokens: int, output_tokens: int, model: str) -> None:
                 "depth": budget._depth,
                 "model": model,
                 "call_cost": cost,
+                "input_tokens": input_tokens,
+                "output_tokens": output_tokens,
             },
         )
     except Exception:
