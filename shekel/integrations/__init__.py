@@ -15,15 +15,15 @@ try:
     from shekel.integrations.langfuse import LangfuseAdapter  # noqa: F401
 
     __all__.append("LangfuseAdapter")
-except ImportError:
+except ImportError:  # pragma: no cover
     # langfuse is an optional dependency
-    pass
+    pass  # pragma: no cover
 
 # Optional OTel metrics adapter (only if opentelemetry-api is installed)
 try:
     from shekel.integrations.otel_metrics import _OtelMetricsAdapter  # noqa: F401
 
     __all__.append("_OtelMetricsAdapter")
-except ImportError:
+except ImportError:  # pragma: no cover
     # opentelemetry-api is an optional dependency
-    pass
+    pass  # pragma: no cover
