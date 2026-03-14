@@ -21,49 +21,57 @@ I spent $47 debugging a LangGraph retry loop. The agent kept failing, LangGraph 
 
 ---
 
-## ⚡️ What's New in v0.2.6: Native Gemini & HuggingFace Support
+## ⚡️ What's New in v0.2.7: OpenTelemetry Metrics Integration
 
-**Zero-config budget enforcement for Google Gemini and HuggingFace Inference API — same `with budget():` pattern, no changes needed.**
-
-### Google Gemini
+**Shekel now exposes LLM cost and budget lifecycle data via OpenTelemetry — filling the gap the OTel GenAI spec leaves around cost and budget metrics.**
 
 ```bash
-pip install shekel[gemini]
+pip install shekel[otel]
 ```
 
 ```python
+from shekel import budget
+from shekel.otel import ShekelMeter
+
+meter = ShekelMeter()  # uses global MeterProvider; silent no-op if OTel absent
+
+with budget(max_usd=1.00, name="workflow") as b:
+    run_my_agent()
+
+meter.unregister()
+```
+
+Eight instruments ship out of the box:
+
+| Instrument | Type | What it tracks |
+|---|---|---|
+| `shekel.llm.cost_usd` | Counter | Cost per LLM call (tagged by model & provider) |
+| `shekel.llm.calls_total` | Counter | Call count per model |
+| `shekel.llm.tokens_input_total` | Counter | Input tokens (opt-in) |
+| `shekel.llm.tokens_output_total` | Counter | Output tokens (opt-in) |
+| `shekel.budget.exits_total` | Counter | Budget exits by `status=completed\|exceeded\|warned` |
+| `shekel.budget.cost_usd` | UpDownCounter | Cumulative spend per budget |
+| `shekel.budget.utilization` | Histogram | 0.0–1.0 utilization on exit |
+| `shekel.budget.spend_rate` | Histogram | USD/second spend rate |
+| `shekel.budget.fallbacks_total` | Counter | Fallback model activations |
+| `shekel.budget.autocaps_total` | Counter | Child budget auto-cap events |
+
+Two new `ObservabilityAdapter` events are also available for custom integrations: `on_budget_exit` and `on_autocap`.
+
+**[📖 OTel Integration Guide](https://arieradle.github.io/shekel/integrations/otel/)**
+
+### Previous: Native Gemini & HuggingFace Support *(v0.2.6)*
+
+**Zero-config budget enforcement for Google Gemini and HuggingFace Inference API — same `with budget():` pattern, no changes needed.**
+
+```python
+# Google Gemini
 import google.genai as genai
 from shekel import budget
 
 client = genai.Client(api_key="...")
-
 with budget(max_usd=1.00) as b:
-    response = client.models.generate_content(
-        model="gemini-2.0-flash",
-        contents="Summarize this doc.",
-    )
-print(f"Cost: ${b.spent:.4f}")
-```
-
-Supports `generate_content` (sync) and `generate_content_stream` (streaming). Pricing for `gemini-2.0-flash`, `gemini-2.5-flash`, and `gemini-2.5-pro` is bundled.
-
-### HuggingFace Inference API
-
-```bash
-pip install shekel[huggingface]
-```
-
-```python
-from huggingface_hub import InferenceClient
-from shekel import budget
-
-client = InferenceClient(token="...")
-
-with budget(max_usd=1.00, price_per_1k_tokens={"input": 0.001, "output": 0.001}) as b:
-    response = client.chat.completions.create(
-        model="meta-llama/Llama-3.2-1B-Instruct",
-        messages=[{"role": "user", "content": "Hello!"}],
-    )
+    response = client.models.generate_content(model="gemini-2.0-flash", contents="...")
 print(f"Cost: ${b.spent:.4f}")
 ```
 
@@ -171,7 +179,8 @@ pip install shekel[gemini]       # Google Gemini (google-genai SDK)
 pip install shekel[huggingface]  # HuggingFace Inference API
 pip install shekel[langfuse]     # Langfuse (budget visibility and circuit-break events)
 pip install shekel[litellm]      # LiteLLM (budget enforcement across 100+ providers)
-pip install shekel[all]          # All providers + Langfuse
+pip install shekel[otel]         # OpenTelemetry metrics (ShekelMeter)
+pip install shekel[all]          # All providers + Langfuse + OTel
 pip install shekel[all-models]   # All above + tokencost (400+ model pricing)
 pip install shekel[cli]          # CLI tools (shekel estimate, shekel models)
 ```
@@ -345,7 +354,7 @@ async with budget(max_usd=1.00) as b:
     )
 ```
 
-**Note:** Async nesting not yet supported in v0.2.3. Use sync nested budgets or single-level async.
+Full async support — `async with budget(...)` works for both top-level and nested budgets.
 
 ### Decorator Pattern
 
@@ -489,6 +498,7 @@ For unlisted models: pass `price_per_1k_tokens` or install `shekel[all-models]` 
 
 Works seamlessly with:
 
+- **OpenTelemetry** — 8 instruments for cost/budget metrics; compatible with any OTel backend *(v0.2.7)*
 - **Langfuse** — Full observability: cost streaming, span hierarchy, circuit-break events *(v0.2.4)*
 - **LangGraph** — Budget entire agent workflows
 - **CrewAI** — Per-agent budget tracking

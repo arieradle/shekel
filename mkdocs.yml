@@ -125,6 +125,7 @@ nav:
     - Google Gemini: integrations/gemini.md
     - HuggingFace: integrations/huggingface.md
     - Langfuse: integrations/langfuse.md
+    - OpenTelemetry: integrations/otel.md
   - Reference:
     - CLI Tools: cli.md
     - API Reference: api-reference.md

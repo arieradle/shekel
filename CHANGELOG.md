@@ -7,6 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.7] - 2026-03-14
+
+### Added
+- **📡 OpenTelemetry Metrics Integration** (`shekel/otel.py`, `shekel/integrations/otel_metrics.py`) — First-class OTel metrics surface for budget and LLM cost data, filling the gap left by the OTel GenAI semantic conventions which define no cost or budget instruments
+  - `ShekelMeter` — Zero-config public entry point; silent no-op when `opentelemetry-api` is absent
+  - Install via `pip install shekel[otel]`
+
+- **Tier 2 per-call instruments** (`shekel.llm.*`) with `gen_ai.system`, `gen_ai.request.model`, and `budget_name` attributes:
+  - `shekel.llm.cost_usd` (Counter) — cost of each LLM call
+  - `shekel.llm.calls_total` (Counter) — total call count
+  - `shekel.llm.tokens_input_total` / `shekel.llm.tokens_output_total` (Counters, opt-in via `emit_tokens=True`)
+
+- **Tier 1 budget lifecycle instruments** (`shekel.budget.*`):
+  - `shekel.budget.exits_total` (Counter) — budget context exits with `status=completed|exceeded|warned`
+  - `shekel.budget.cost_usd` (UpDownCounter) — cumulative spend per budget
+  - `shekel.budget.utilization` (Histogram, 0.0–1.0, clamped on exit)
+  - `shekel.budget.spend_rate` (Histogram, USD/s, zero-division safe)
+  - `shekel.budget.fallbacks_total` (Counter) — fallback activations with `from_model`/`to_model`
+  - `shekel.budget.autocaps_total` (Counter) — child budget auto-cap events
+
+- **Two new `ObservabilityAdapter` events** (`shekel/integrations/base.py`):
+  - `on_budget_exit(exit_data)` — fired when any budget context exits (before parent spend propagation); payload includes `status`, `spent_usd`, `utilization`, `duration_seconds`, `calls_made`, `model_switched`, `from_model`, `to_model`
+  - `on_autocap(autocap_data)` — fired when a child budget's limit is silently reduced by parent remaining; payload includes `child_name`, `parent_name`, `original_limit`, `effective_limit`
+
+- **`_patch.py` token payload** — `on_cost_update` event now includes `input_tokens` and `output_tokens` fields, enabling per-call token accounting in custom adapters
+
+- **Documentation**: `docs/integrations/otel.md` — attribute reference, PromQL query examples, cardinality guidance, Grafana hints
+
+- **32 new tests** in `tests/test_otel_metrics.py` (TDD, Groups A–I)
+
+### Technical
+- `Budget.__enter__`/`__aenter__` now record `_enter_time = time.monotonic()` for duration measurement
+- `Budget.__exit__`/`__aexit__` emit `on_budget_exit` before propagating spend to parent (so `spent_usd` reflects only the current budget's spend)
+- `on_autocap` fires only when child's `effective_limit < max_usd` (genuine cap, not when child fits within parent)
+- `pyproject.toml`: new `otel` extra (`opentelemetry-api>=1.0.0`), OTel packages added to dev deps, `mypy` `ignore_missing_imports` override for `opentelemetry.*`
+
 ## [0.2.6] - 2026-03-12
 
 ### Added
@@ -176,7 +212,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - `UnknownModelError` is kept for backwards compatibility but no longer raised internally
 
-[Unreleased]: https://github.com/arieradle/shekel/compare/v0.2.6...HEAD
+[Unreleased]: https://github.com/arieradle/shekel/compare/v0.2.7...HEAD
+[0.2.7]: https://github.com/arieradle/shekel/compare/v0.2.6...v0.2.7
 [0.2.6]: https://github.com/arieradle/shekel/compare/v0.2.5...v0.2.6
 [0.2.5]: https://github.com/arieradle/shekel/compare/v0.2.4...v0.2.5
 [0.2.4]: https://github.com/arieradle/shekel/compare/v0.2.3...v0.2.4

@@ -2,6 +2,51 @@
 
 All notable changes to this project are documented here. For detailed information, see [CHANGELOG.md](https://github.com/arieradle/shekel/blob/main/CHANGELOG.md) on GitHub.
 
+## [0.2.7] {#027}
+
+### 📡 OpenTelemetry Metrics Integration
+
+Shekel now exposes LLM cost and budget lifecycle data via OpenTelemetry — filling the gap the OTel GenAI semantic conventions leave around cost and budget metrics.
+
+**`ShekelMeter`** (`shekel/otel.py`) — Zero-config public entry point
+
+```python
+from shekel.otel import ShekelMeter
+
+meter = ShekelMeter()          # uses global MeterProvider
+# or
+meter = ShekelMeter(meter_provider=my_provider, emit_tokens=True)
+meter.unregister()             # remove from registry when done
+```
+
+Silent no-op when `opentelemetry-api` is not installed (`meter.is_noop is True`).
+
+**8 new instruments:**
+
+| Instrument | Type | Description |
+|---|---|---|
+| `shekel.llm.cost_usd` | Counter | Cost per LLM call |
+| `shekel.llm.calls_total` | Counter | Call count per model |
+| `shekel.llm.tokens_input_total` | Counter | Input tokens (opt-in) |
+| `shekel.llm.tokens_output_total` | Counter | Output tokens (opt-in) |
+| `shekel.budget.exits_total` | Counter | Budget exits by `status` |
+| `shekel.budget.cost_usd` | UpDownCounter | Cumulative spend per budget |
+| `shekel.budget.utilization` | Histogram | 0.0–1.0 on exit |
+| `shekel.budget.spend_rate` | Histogram | USD/s on exit |
+| `shekel.budget.fallbacks_total` | Counter | Fallback activations |
+| `shekel.budget.autocaps_total` | Counter | Auto-cap events |
+
+**Two new `ObservabilityAdapter` events:**
+
+- `on_budget_exit(data)` — fires on every budget context exit (before parent propagation); `data` includes `status`, `spent_usd`, `utilization`, `duration_seconds`, `calls_made`, `model_switched`, `from_model`, `to_model`
+- `on_autocap(data)` — fires when a child budget is silently reduced by the parent's remaining; `data` includes `child_name`, `parent_name`, `original_limit`, `effective_limit`
+
+**Token payload in `on_cost_update`** — the event now includes `input_tokens` and `output_tokens` fields.
+
+Install: `pip install shekel[otel]`
+
+See [OTel Integration Guide](integrations/otel.md) for PromQL examples, cardinality guidance, and Grafana hints.
+
 ## [0.2.6] {#026}
 
 ### New Features

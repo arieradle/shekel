@@ -107,6 +107,17 @@ I built shekel so you don't have to learn that lesson yourself.
     # Automatic cost tracking and budget monitoring!
     ```
 
+-   :material-chart-line:{ .lg .middle } **OpenTelemetry Metrics**
+
+    ---
+
+    Export cost, utilization, spend rate, and fallback data via OTel instruments — compatible with Prometheus, Grafana, Datadog, and any OTel backend.
+
+    ```python
+    from shekel.otel import ShekelMeter
+    meter = ShekelMeter()  # zero config
+    ```
+
 -   :material-speedometer:{ .lg .middle } **Framework Agnostic**
 
     ---
@@ -221,39 +232,39 @@ print(f"Remaining: ${b.remaining:.4f}")
 
 ---
 
-## What's New in v0.2.6
+## What's New in v0.2.7
 
 <div class="grid cards" markdown>
 
--   :material-swap-horizontal:{ .lg .middle } **[Smart Fallback](changelog.md#026)**
+-   :material-chart-line:{ .lg .middle } **[OpenTelemetry Metrics](integrations/otel.md)**
 
     ---
 
-    `fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}` — automatically switch to a cheaper model instead of crashing. Fallback shares the same `max_usd` budget.
-
--   :material-bell-outline:{ .lg .middle } **[Early Warning Callbacks](changelog.md#026)**
-
-    ---
-
-    `on_warn` callback fires at `warn_at` threshold before the budget is exhausted.
-
--   :material-counter:{ .lg .middle } **[Call-Count Budgets](changelog.md#026)**
-
-    ---
-
-    `max_llm_calls=50` caps by number of LLM API calls, combinable with `max_usd`.
-
--   :material-transit-connection-variant:{ .lg .middle } **[LiteLLM Support](integrations/litellm.md)**
-
-    ---
-
-    Native adapter for LiteLLM — hard budget caps and circuit-breaking across 100+ providers (Gemini, Cohere, Ollama, Azure, Bedrock…). One limit, every provider.
+    `ShekelMeter` emits 8 OTel instruments covering per-call cost, budget utilization, spend rate, fallback activations, and auto-cap events. Silent no-op when `opentelemetry-api` is absent.
 
     ```python
-    pip install shekel[litellm]
+    pip install shekel[otel]
     ```
 
--   :material-google:{ .lg .middle } **[Google Gemini](integrations/gemini.md)**
+-   :material-exit-run:{ .lg .middle } **[Budget Exit Events](integrations/otel.md)**
+
+    ---
+
+    New `on_budget_exit` adapter event fires on every context exit with `status`, `duration_seconds`, `utilization`, and more — usable in any custom `ObservabilityAdapter`.
+
+-   :material-arrow-collapse-down:{ .lg .middle } **[Auto-Cap Events](integrations/otel.md)**
+
+    ---
+
+    New `on_autocap` adapter event fires when a child budget's limit is silently reduced by the parent's remaining balance.
+
+-   :material-counter:{ .lg .middle } **[Token Payload in Cost Events](changelog.md#027)**
+
+    ---
+
+    `on_cost_update` adapter events now include `input_tokens` and `output_tokens` fields, enabling per-call token accounting in custom adapters.
+
+-   :material-google:{ .lg .middle } **[Google Gemini *(v0.2.6)*](integrations/gemini.md)**
 
     ---
 
@@ -263,7 +274,7 @@ print(f"Remaining: ${b.remaining:.4f}")
     pip install shekel[gemini]
     ```
 
--   :material-robot:{ .lg .middle } **[HuggingFace Inference API](integrations/huggingface.md)**
+-   :material-robot:{ .lg .middle } **[HuggingFace Inference API *(v0.2.6)*](integrations/huggingface.md)**
 
     ---
 

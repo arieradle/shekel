@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "shekel"
-version = "0.2.6"
+version = "0.2.7"
 description = "LLM budget enforcement and cost tracking. Zero config — with budget(max_usd=1.00): run_agent(). Works with LangGraph, CrewAI, raw OpenAI/Anthropic/Gemini."
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -42,6 +42,9 @@ keywords = [
     "model fallback",
     "crewai",
     "observability",
+    "opentelemetry",
+    "otel",
+    "metrics",
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
