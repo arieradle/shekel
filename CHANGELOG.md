@@ -37,6 +37,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **32 new tests** in `tests/test_otel_metrics.py` (TDD, Groups A–I)
 
+- **Full async support for Gemini, HuggingFace, and nested budgets** (PR #19)
+  - `async with budget(...):` now supports full nesting — `__aenter__`/`__aexit__` mirrors the sync implementation with the same auto-capping and spend propagation logic; ContextVar provides per-task isolation automatically
+  - Gemini async: `_gemini_async_wrapper`, `_gemini_async_stream_wrapper`, `_wrap_gemini_stream_async` added to `_patch.py`; `AsyncModels` patched in `shekel/providers/gemini.py`
+  - HuggingFace async: `_huggingface_async_wrapper`, `_wrap_huggingface_stream_async` added; `AsyncInferenceClient` patched in `shekel/providers/huggingface.py`
+  - 13 new async unit tests for Gemini (7) and HuggingFace (6)
+  - Expanded integration test suites: async streaming + `async with budget()` tests for OpenAI and Anthropic; new `tests/integrations/test_litellm_integration.py` with mock suite and real-API classes
+
 ### Technical
 - `Budget.__enter__`/`__aenter__` now record `_enter_time = time.monotonic()` for duration measurement
 - `Budget.__exit__`/`__aexit__` emit `on_budget_exit` before propagating spend to parent (so `spent_usd` reflects only the current budget's spend)

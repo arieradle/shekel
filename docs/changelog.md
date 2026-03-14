@@ -47,6 +47,23 @@ Install: `pip install shekel[otel]`
 
 See [OTel Integration Guide](integrations/otel.md) for PromQL examples, cardinality guidance, and Grafana hints.
 
+### Full Async Support for Gemini, HuggingFace, and Nested Budgets
+
+`async with budget(...):` now supports the same full nesting logic as sync contexts — auto-capping, spend propagation, and per-task isolation via ContextVar all work identically.
+
+**Gemini async** — `_gemini_async_wrapper` and `_gemini_async_stream_wrapper` added; `AsyncModels` patched automatically alongside sync `Models`.
+
+**HuggingFace async** — `_huggingface_async_wrapper` and `_wrap_huggingface_stream_async` added; `AsyncInferenceClient` patched automatically.
+
+```python
+# Now works — full nesting with async context managers
+async with budget(max_usd=10.00, name="workflow"):
+    async with budget(max_usd=2.00, name="research"):
+        result = await client.models.generate_content_async(...)
+```
+
+13 new async unit tests added for Gemini and HuggingFace. Integration test suites expanded with async streaming and `async with budget()` scenarios for OpenAI and Anthropic.
+
 ## [0.2.6] {#026}
 
 ### New Features
