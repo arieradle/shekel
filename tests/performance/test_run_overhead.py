@@ -3,6 +3,7 @@
 Uses pytest-benchmark when available (CI), falls back to a wall-clock assertion
 so the test still passes in environments without the benchmark plugin.
 """
+
 from __future__ import annotations
 
 import time
