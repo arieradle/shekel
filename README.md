@@ -603,6 +603,23 @@ Use cases include:
 
 See [CONTRIBUTING.md](CONTRIBUTING.md).
 
+## Security
+
+Shekel runs automated security checks on every pull request, every push to
+`main`, and on a weekly scheduled basis.
+
+| Tool | What it checks | Where results appear |
+|------|---------------|----------------------|
+| **GitHub CodeQL** | Static analysis — logic flaws, injection paths, unsafe patterns | GitHub Security tab → Code scanning |
+| **Trivy** | Known CVEs in dependencies + secrets/misconfig in source | GitHub Security tab → Code scanning |
+| **OSV-Scanner** | All dependencies against the [OSV](https://osv.dev) vulnerability database | GitHub Security tab → Code scanning |
+| **Bandit** | Python-specific issues (hardcoded passwords, use of `eval`, insecure hashing, etc.) | Actions log — fails the build |
+| **pip-audit** | Installed package versions against PyPI advisory database | Actions log — fails the build |
+
+**Reporting a vulnerability**: please open a [GitHub issue](https://github.com/arieradle/shekel/issues)
+marked _Security_ or email the maintainer directly. Do not post exploit details
+in public issues.
+
 ## License
 
 MIT
