@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "shekel"
-version = "0.2.8"
+version = "0.2.9"
 description = "LLM budget enforcement and cost tracking. Zero config — with budget(max_usd=1.00): run_agent(). Works with LangGraph, CrewAI, raw OpenAI/Anthropic/Gemini."
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -141,6 +141,10 @@ strict = true
 warn_return_any = true
 warn_unused_configs = true
 exclude = ["/_pytest/"]
+
+[[tool.mypy.overrides]]
+module = "tomli"
+ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = "tokencost"

@@ -1,6 +1,6 @@
 # CLI Tools
 
-Shekel provides command-line tools for cost estimation and model information.
+Shekel provides command-line tools for budget enforcement, cost estimation, and model information.
 
 ## Installation
 
@@ -11,6 +11,88 @@ pip install shekel[cli]
 This installs the `shekel` command with Click support.
 
 ## Commands
+
+### `shekel run`
+
+Run a Python script with budget enforcement. Equivalent to wrapping your script
+in `with budget(max_usd=N):` — zero code changes required.
+
+#### Usage
+
+```bash
+shekel run SCRIPT [OPTIONS] [-- SCRIPT_ARGS...]
+```
+
+#### Options
+
+| Option | Description |
+|--------|-------------|
+| `--budget N` | Max spend in USD. Equivalent to `AGENT_BUDGET_USD=N`. |
+| `--warn-at F` | Warn fraction 0.0–1.0 (e.g. `0.8` = warn at 80% of budget). |
+| `--max-llm-calls N` | Cap on LLM API calls. |
+| `--max-tool-calls N` | Cap on tool invocations. |
+| `--warn-only` | Warn but never exit 1 when budget exceeded. |
+| `--dry-run` | Track costs only — no enforcement. Implies `--warn-only`. |
+| `--output text\|json` | Output format (default: `text`). |
+| `--budget-file PATH` | Path to a `shekel.toml` config file. |
+| `--fallback-model M` | Cheaper model to switch to at threshold. |
+| `--fallback-at F` | Fallback activation threshold (default: `0.8`). |
+
+#### Exit codes
+
+| Code | Meaning |
+|------|---------|
+| `0` | Script completed within budget |
+| `1` | Budget exceeded (unless `--warn-only`) |
+| `2` | Configuration error (missing script, bad TOML, etc.) |
+
+#### Environment variables
+
+| Variable | Description |
+|----------|-------------|
+| `AGENT_BUDGET_USD` | Fallback for `--budget`. Ideal for Docker/CI operator control. |
+
+#### Examples
+
+```bash
+# Enforce a $5 cap
+shekel run agent.py --budget 5
+
+# Warn at 80%, hard-stop at $5
+shekel run agent.py --budget 5 --warn-at 0.8
+
+# Cap LLM calls instead of spend
+shekel run agent.py --max-llm-calls 20
+
+# JSON output for CI log parsing
+shekel run agent.py --budget 5 --output json
+
+# Warn but don't fail the pipeline
+shekel run agent.py --budget 5 --warn-only
+
+# Dry-run: track costs without enforcement
+shekel run agent.py --budget 5 --dry-run
+
+# Load limits from TOML file
+shekel run agent.py --budget-file shekel.toml
+
+# Set budget via env var (Docker / CI)
+AGENT_BUDGET_USD=5 shekel run agent.py
+```
+
+#### `shekel.toml` format
+
+```toml
+[budget]
+max_usd       = 5.0
+warn_at       = 0.8
+max_llm_calls = 50
+max_tool_calls = 200
+```
+
+See [Docker & Container Guardrails](docker.md) for container-specific patterns.
+
+---
 
 ### `shekel estimate`
 
@@ -244,6 +326,7 @@ print(f"Available models: {models}")
 
 ## Next Steps
 
+- [Docker & Container Guardrails](docker.md) - Using `shekel run` in Docker
 - [Supported Models](models.md) - Full model list with pricing
 - [Installation](installation.md) - Installing CLI tools
 - [Basic Usage](usage/basic-usage.md) - Using budgets in code

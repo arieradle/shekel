@@ -74,6 +74,7 @@ class Budget:
         max_llm_calls: int | None = None,
         max_tool_calls: int | None = None,
         tool_prices: dict[str, float] | None = None,
+        warn_only: bool = False,
     ) -> None:
 
         if max_usd is not None and max_usd <= 0:
@@ -146,6 +147,7 @@ class Budget:
         self.price_per_1k_tokens = price_per_1k_tokens
         self.fallback: dict[str, Any] | None = fallback
         self.on_fallback = on_fallback
+        self.warn_only: bool = warn_only
 
         # --- Nested budget support (v0.2.3) ---
         self.name: str | None = name
@@ -596,8 +598,11 @@ class Budget:
             return  # Fallback just activated — keep running on cheaper model
 
         if budget_exceeded and (self.fallback is None or self._using_fallback):
-            # No fallback available, or already on fallback and still exceeded — raise
+            # No fallback available, or already on fallback and still exceeded
             self._emit_budget_exceeded_event()
+            if self.warn_only:
+                self._check_warn()  # fire warning callback if threshold set
+                return
             raise BudgetExceededError(
                 self._spent, effective_limit, self._last_model, self._last_tokens
             )
@@ -623,6 +628,8 @@ class Budget:
 
         if self._calls_made > effective_call_limit:
             self._emit_budget_exceeded_event()
+            if self.warn_only:
+                return
             raise BudgetExceededError(
                 self._calls_made,
                 effective_call_limit,
@@ -643,20 +650,7 @@ class Budget:
         limit = self._effective_tool_call_limit
         if limit is not None and self._tool_calls_made >= limit:
             self._emit_tool_budget_exceeded_event(tool_name, framework)
-            raise ToolBudgetExceededError(
-                tool_name=tool_name,
-                calls_used=self._tool_calls_made,
-                calls_limit=limit,
-                usd_spent=self._tool_spent,
-                usd_limit=self.max_usd,
-                framework=framework,
-            )
-
-        # Also check USD limit if tool_prices configured for this tool
-        if self.max_usd is not None and self.tool_prices is not None:
-            price = self.tool_prices.get(tool_name)
-            if price is not None and self._tool_spent + price > self.max_usd:
-                self._emit_tool_budget_exceeded_event(tool_name, framework)
+            if not self.warn_only:
                 raise ToolBudgetExceededError(
                     tool_name=tool_name,
                     calls_used=self._tool_calls_made,
@@ -665,6 +659,21 @@ class Budget:
                     usd_limit=self.max_usd,
                     framework=framework,
                 )
+
+        # Also check USD limit if tool_prices configured for this tool
+        if self.max_usd is not None and self.tool_prices is not None:
+            price = self.tool_prices.get(tool_name)
+            if price is not None and self._tool_spent + price > self.max_usd:
+                self._emit_tool_budget_exceeded_event(tool_name, framework)
+                if not self.warn_only:
+                    raise ToolBudgetExceededError(
+                        tool_name=tool_name,
+                        calls_used=self._tool_calls_made,
+                        calls_limit=limit,
+                        usd_spent=self._tool_spent,
+                        usd_limit=self.max_usd,
+                        framework=framework,
+                    )
 
     def _record_tool_call(self, tool_name: str, cost: float, framework: str) -> None:
         """Post-dispatch: record the tool call and emit events."""

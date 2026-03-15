@@ -105,3 +105,12 @@ def test_models_filter_google(runner: CliRunner) -> None:
 def test_models_invalid_provider(runner: CliRunner) -> None:
     result = runner.invoke(cli, ["models", "--provider", "invalid"])
     assert result.exit_code != 0
+
+
+def test_models_no_results(runner: CliRunner) -> None:
+    from unittest.mock import patch
+
+    with patch("shekel._cli._PRICES", {}):
+        result = runner.invoke(cli, ["models"])
+    assert result.exit_code == 0
+    assert "No models found" in result.output
