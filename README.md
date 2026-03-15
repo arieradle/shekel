@@ -4,8 +4,9 @@
 [![Python versions](https://img.shields.io/pypi/pyversions/shekel)](https://pypi.org/project/shekel/)
 [![License](https://img.shields.io/pypi/l/shekel)](https://pypi.org/project/shekel/)
 [![CI](https://github.com/arieradle/shekel/actions/workflows/ci.yml/badge.svg)](https://github.com/arieradle/shekel/actions/workflows/ci.yml)
-[![Unit Tests](https://img.shields.io/badge/unit%20tests-390%20passed-brightgreen)](https://github.com/arieradle/shekel/actions/workflows/ci.yml)
-[![Integration Tests](https://img.shields.io/badge/integration%20tests-274%20passed-brightgreen)](https://github.com/arieradle/shekel/actions/workflows/ci.yml)
+[![Unit Tests](https://img.shields.io/badge/unit%20tests-491%20passed-brightgreen)](https://github.com/arieradle/shekel/actions/workflows/ci.yml)
+[![Integration Tests](https://img.shields.io/badge/integration%20tests-340%20passed-brightgreen)](https://github.com/arieradle/shekel/actions/workflows/ci.yml)
+[![Performance Tests](https://img.shields.io/badge/performance%20tests-148%20passed-brightgreen)](https://github.com/arieradle/shekel/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/arieradle/shekel/branch/main/graph/badge.svg)](https://codecov.io/gh/arieradle/shekel)
 [![Downloads](https://img.shields.io/pypi/dm/shekel)](https://pypi.org/project/shekel/)
 [![Documentation](https://img.shields.io/badge/docs-mkdocs-blue)](https://arieradle.github.io/shekel/)
@@ -127,9 +128,9 @@ with budget(max_usd=10.00):
 
 ### ✅ Comprehensive Integration Test Suite
 
-274 integration tests across 7 real providers — real API keys run in CI:
+340 integration tests across real providers and feature domains — real API keys run in CI:
 
-| Provider | Tests | Coverage |
+| Provider / Feature | Tests | Coverage |
 |----------|-------|----------|
 | OpenAI | 26 | Sync, async, streaming, budget enforcement, callbacks, fallback, multi-turn |
 | Anthropic | 24 | Sync, async, streaming, budget enforcement, callbacks, multi-turn |
@@ -138,6 +139,7 @@ with budget(max_usd=10.00):
 | HuggingFace | 12 | Sync, streaming, custom pricing, budget enforcement |
 | LangGraph | 14 | Multi-node graphs, conditional edges, budget propagation |
 | Ollama | 38 | Local inference, streaming, nested budgets |
+| Temporal Budgets | 37 | Rolling windows, nesting, adapter events, async, multi-tenant, OTel |
 
 ---
 
