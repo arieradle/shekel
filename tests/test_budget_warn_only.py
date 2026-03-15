@@ -64,7 +64,7 @@ def test_warn_only_still_fires_warn_callback_when_exceeded() -> None:
     b = Budget(
         max_usd=1.0,
         warn_at=0.5,
-        on_warn=lambda s, l: fired.append((s, l)),
+        on_warn=lambda s, lim: fired.append((s, lim)),
         warn_only=True,
     )
     with b:
