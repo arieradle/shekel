@@ -1,9 +1,9 @@
-"""Tool Budget Demo — shekel v0.2.9
+"""Tool Budget Demo — shekel v0.2.8
 
 Demonstrates:
   A) @tool decorator — plain Python functions (sync + async)
   B) max_tool_calls — hard cap, raises ToolBudgetExceededError pre-dispatch
-  C) tool_prices — charge per tool call, track total tool spend
+  C) tool_prices — budget-level price override (for auto-intercepted tools)
   D) Combined LLM + tool budget
   E) ToolBudgetExceededError — full error fields
   F) budget.summary() — LLM spend + tool breakdown
@@ -20,7 +20,7 @@ from shekel import budget, tool
 from shekel.exceptions import ToolBudgetExceededError
 
 # ---------------------------------------------------------------------------
-# Declare tools once — shekel tracks them everywhere
+# Declare tools once — price set on the decorator, no need to repeat it
 # ---------------------------------------------------------------------------
 
 
@@ -56,7 +56,7 @@ async def async_search(query: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# A) @tool decorator basics
+# A) @tool decorator basics — price comes from decorator, not budget
 # ---------------------------------------------------------------------------
 
 
@@ -64,9 +64,9 @@ def demo_decorator() -> None:
     print("=== A) @tool decorator ===")
 
     with budget(max_tool_calls=5) as b:
-        web_search("shekel python library")
-        read_file("/tmp/notes.txt")
-        run_code("print('hello')")
+        web_search("shekel python library")  # $0.005 from decorator
+        read_file("/tmp/notes.txt")  # $0.000 — no price on decorator
+        run_code("print('hello')")  # $0.020 from decorator
 
     print(f"Tool calls:  {b.tool_calls_used}")
     print(f"Tool spend:  ${b.tool_spent:.4f}")
@@ -95,22 +95,25 @@ def demo_cap() -> None:
 
 
 # ---------------------------------------------------------------------------
-# C) tool_prices — cost per tool call
+# C) tool_prices — budget-level override
+#    Use this for auto-intercepted tools (LangChain, MCP, CrewAI, OpenAI
+#    Agents) where you can't put a @tool decorator. It also overrides the
+#    decorator price when set.
 # ---------------------------------------------------------------------------
 
 
 def demo_prices() -> None:
-    print("=== C) tool_prices ===")
+    print("=== C) tool_prices (budget-level override) ===")
     with budget(
         tool_prices={
-            "web_search": 0.01,
-            "run_code": 0.05,
+            "web_search": 0.01,  # overrides @tool(price=0.005) for this budget
+            "run_code": 0.05,  # overrides @tool(price=0.02) for this budget
         }
     ) as b:
         web_search("quantum computing")
         web_search("LLM safety")
         run_code("summarize(papers)")
-        read_file("notes.txt")  # unknown tool — $0, still counted
+        read_file("notes.txt")  # not in tool_prices, no decorator price → $0
 
     print(f"Tool calls:  {b.tool_calls_used}")
     print(f"Tool spend:  ${b.tool_spent:.4f}")
@@ -127,13 +130,12 @@ def demo_combined() -> None:
     print("=== D) Combined max_usd + max_tool_calls ===")
     with budget(
         max_tool_calls=10,
-        tool_prices={"web_search": 0.005, "run_code": 0.02},
         warn_at=0.8,
         name="research-run",
     ) as b:
         for i in range(8):
-            web_search(f"topic {i}")
-        run_code("analyze()")
+            web_search(f"topic {i}")  # $0.005 each from decorator
+        run_code("analyze()")  # $0.020 from decorator
 
     print(f"Tool calls:     {b.tool_calls_used} / 10")
     print(f"Tool remaining: {b.tool_calls_remaining}")
@@ -149,10 +151,10 @@ def demo_combined() -> None:
 def demo_error_fields() -> None:
     print("=== E) ToolBudgetExceededError fields ===")
     try:
-        with budget(max_tool_calls=2, max_usd=1.00, tool_prices={"web_search": 0.005}):
-            web_search("first")
-            web_search("second")
-            web_search("third")  # blocked
+        with budget(max_tool_calls=2, max_usd=1.00):
+            web_search("first")  # $0.005 from decorator
+            web_search("second")  # $0.005 from decorator
+            web_search("third")  # blocked — 2/2 calls used
     except ToolBudgetExceededError as e:
         print(f"  tool_name:   {e.tool_name}")
         print(f"  calls_used:  {e.calls_used}")
@@ -172,13 +174,12 @@ def demo_summary() -> None:
     print("=== F) budget.summary() ===")
     with budget(
         max_tool_calls=20,
-        tool_prices={"web_search": 0.01, "run_code": 0.03},
         name="research-agent",
     ) as b:
         for _ in range(5):
-            web_search("AI safety research")
-        run_code("summarize(papers)")
-        read_file("notes.txt")
+            web_search("AI safety research")  # $0.005 each from decorator
+        run_code("summarize(papers)")  # $0.020 from decorator
+        read_file("notes.txt")  # $0.000
 
     print(b.summary())
 
@@ -190,9 +191,9 @@ def demo_summary() -> None:
 
 async def demo_async() -> None:
     print("=== G) Async tools ===")
-    with budget(max_tool_calls=5, tool_prices={"async_search": 0.005}) as b:
-        await async_search("async query 1")
-        await async_search("async query 2")
+    with budget(max_tool_calls=5) as b:
+        await async_search("async query 1")  # $0.005 from decorator
+        await async_search("async query 2")  # $0.005 from decorator
 
     print(f"Tool calls: {b.tool_calls_used}")
     print(f"Tool spend: ${b.tool_spent:.4f}")
