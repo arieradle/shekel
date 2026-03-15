@@ -143,6 +143,10 @@ warn_unused_configs = true
 exclude = ["/_pytest/"]
 
 [[tool.mypy.overrides]]
+module = "tomli"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
 module = "tokencost"
 ignore_missing_imports = true
 

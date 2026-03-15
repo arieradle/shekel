@@ -28,7 +28,7 @@ def load_budget_file(path: str) -> dict[str, object]:
         import tomllib
     else:  # pragma: no cover
         try:
-            import tomli as tomllib  # type: ignore[import-not-found]
+            import tomli as tomllib  # noqa: F401
         except ImportError:
             raise SystemExit("shekel: --budget-file requires Python 3.11+ or: pip install tomli")
 
