@@ -2,328 +2,26 @@
 
 [![PyPI version](https://img.shields.io/pypi/v/shekel)](https://pypi.org/project/shekel/)
 [![Python versions](https://img.shields.io/pypi/pyversions/shekel)](https://pypi.org/project/shekel/)
-[![License](https://img.shields.io/pypi/l/shekel)](https://pypi.org/project/shekel/)
 [![CI](https://github.com/arieradle/shekel/actions/workflows/ci.yml/badge.svg)](https://github.com/arieradle/shekel/actions/workflows/ci.yml)
-[![Unit Tests](https://img.shields.io/badge/unit%20tests-602%20passed-brightgreen)](https://github.com/arieradle/shekel/actions/workflows/ci.yml)
-[![Integration Tests](https://img.shields.io/badge/integration%20tests-340%20passed-brightgreen)](https://github.com/arieradle/shekel/actions/workflows/ci.yml)
-[![Performance Tests](https://img.shields.io/badge/performance%20tests-148%20passed-brightgreen)](https://github.com/arieradle/shekel/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/arieradle/shekel/branch/main/graph/badge.svg)](https://codecov.io/gh/arieradle/shekel)
 [![Downloads](https://img.shields.io/pypi/dm/shekel)](https://pypi.org/project/shekel/)
-[![Documentation](https://img.shields.io/badge/docs-mkdocs-blue)](https://arieradle.github.io/shekel/)
-[![Security Scan](https://github.com/arieradle/shekel/actions/workflows/security.yml/badge.svg)](https://github.com/arieradle/shekel/actions/workflows/security.yml)
-[![CodeQL](https://img.shields.io/badge/CodeQL-passing-brightgreen)](https://github.com/arieradle/shekel/security/code-scanning)
-[![Trivy](https://img.shields.io/badge/Trivy-scanned-brightgreen)](https://github.com/arieradle/shekel/actions/workflows/security.yml)
-[![pip-audit](https://img.shields.io/badge/pip--audit-passing-brightgreen)](https://github.com/arieradle/shekel/actions/workflows/security.yml)
+[![License](https://img.shields.io/pypi/l/shekel)](https://pypi.org/project/shekel/)
 
-**LLM budget enforcement and cost tracking for Python. One line. Zero config.**
+**Stop your AI agent from bankrupting you. One line.**
 
 ```python
-with budget(max_usd=1.00):
-    run_my_agent()  # raises BudgetExceededError if spend exceeds $1.00
-# or enforce from the CLI — zero code changes:
-# shekel run agent.py --budget 1
+with budget(max_usd=5.00):
+    run_my_agent()
 ```
-
-I spent $47 debugging a LangGraph retry loop. The agent kept failing, LangGraph kept retrying, and OpenAI kept charging — all while I slept. I built shekel so you don't have to learn that lesson yourself.
-
----
-
-## ⚡️ What's New in v0.2.9: CLI Budget Enforcement
-
-**Run any Python agent with a hard USD cap — zero code changes.**
 
 ```bash
-pip install shekel[cli]
-
-shekel run agent.py --budget 5           # hard stop at $5
-shekel run agent.py --budget 5 --warn-at 0.8  # warn at 80%, stop at 100%
-shekel run agent.py --max-llm-calls 20   # cap by call count
-shekel run agent.py --output json        # machine-readable spend line (CI logs)
-shekel run agent.py --warn-only          # soft guardrail — log, never exit 1
-AGENT_BUDGET_USD=5 shekel run agent.py  # Docker / CI operator control via env var
+# Or enforce from outside — zero code changes
+shekel run agent.py --budget 5
 ```
-
-Exit code 1 on budget exceeded — works as a CI pipeline gate with zero pipeline config:
-
-```yaml
-# GitHub Actions — one step, no code changes
-- uses: ./.github/actions/enforce
-  with:
-    script: agent.py
-    budget: "5"
-```
-
-Docker entrypoint pattern:
-
-```dockerfile
-pip install shekel[cli]
-ENTRYPOINT ["shekel", "run", "agent.py"]
-# docker run -e AGENT_BUDGET_USD=5 my-agent-image
-```
-
-**What's new:**
-- `shekel run` — wraps any Python script in-process; shekel patches are already active
-- `--budget N` / `AGENT_BUDGET_USD=N` — USD cap with Docker/CI env-var support
-- `--warn-only` — log warning, never exit 1; soft guardrail
-- `--dry-run` — track costs only, no enforcement; implies `--warn-only`
-- `--output json` — machine-readable spend summary for log pipelines
-- `--budget-file shekel.toml` — load limits from a TOML config file
-- `Budget(warn_only=True)` — new parameter suppresses raises, fires warn callback
-- GitHub Actions composite action: `.github/actions/enforce/action.yml`
-
-**[📖 CLI Reference](https://arieradle.github.io/shekel/cli/)** · **[📖 Docker & Containers](https://arieradle.github.io/shekel/docker/)**
 
 ---
 
-## ⚡️ Previous: v0.2.8 — Tool Budgets
-
-**Your agent just called `web_search` 847 times. Here's your bill. shekel stops that.**
-
-```python
-# Hard cap — works with LangChain, MCP, CrewAI, OpenAI Agents. Zero changes to your agent.
-with budget(max_tool_calls=50):
-    run_agent()  # raises ToolBudgetExceededError on the 51st tool call
-```
-
-```python
-# Charge per tool + hard USD cap — full cost picture
-from shekel import tool
-
-@tool(price=0.005)          # price set once on the decorator
-def web_search(query: str) -> str: ...
-
-with budget(max_usd=2.00, max_tool_calls=100) as b:
-    run_agent()
-
-print(b.summary())  # LLM spend + tool spend, broken out by tool and framework
-```
-
-Auto-intercepted — **no changes to your agent code**:
-
-```python
-# LangChain / LangGraph — BaseTool.invoke tracked automatically
-with budget(max_tool_calls=20):
-    agent.invoke({"input": "research quantum computing"})
-
-# MCP — session.call_tool tracked automatically
-with budget(max_tool_calls=100):
-    result = await session.call_tool("brave_search", {"query": "..."})
-
-# CrewAI and OpenAI Agents SDK — same one-liner
-```
-
-**What's new:**
-- `max_tool_calls` — hard cap on total tool dispatches; checked *before* the tool runs
-- `tool_prices` — `{"tool_name": USD}` per call; unknown tools count at `$0` but still cap
-- `@tool` / `tool()` — one decorator for any Python function or third-party callable
-- Auto-interception — LangChain, MCP, CrewAI, OpenAI Agents SDK; zero config
-- `ToolBudgetExceededError` — `tool_name`, `calls_used`, `calls_limit`, `usd_spent`, `framework`
-- `summary()` extended — tool spend broken out by tool name and framework
-
-**[📖 Tool Budgets Guide](https://arieradle.github.io/shekel/usage/tool-budgets/)**
-
----
-
-### Also in v0.2.8: Temporal Budgets
-
-**Rolling-window LLM spend limits — enforce `$5/hr` per API tier, user, or agent with a single line.**
-
-```python
-api_budget = budget("$5/hr", name="api-tier")
-
-async with api_budget:
-    response = await client.chat.completions.create(...)
-```
-
-When the window limit is hit, `BudgetExceededError` carries `retry_after` and `window_spent`:
-
-```python
-except BudgetExceededError as e:
-    print(f"Window exceeded — retry in {e.retry_after:.0f}s (spent ${e.window_spent:.2f})")
-```
-
-- Rolling window only — no clock-sync issues, no background threads
-- `TemporalBudgetBackend` Protocol — bring your own Redis/Postgres backend
-
-**[📖 Temporal Budgets Guide](https://arieradle.github.io/shekel/usage/temporal-budgets/)**
-
-### Previous: OpenTelemetry Metrics *(v0.2.7)*
-
-**Shekel exposes LLM cost and budget lifecycle data via OpenTelemetry — filling the gap the OTel GenAI spec leaves around cost and budget metrics.**
-
-```bash
-pip install shekel[otel]
-```
-
-```python
-from shekel.otel import ShekelMeter
-meter = ShekelMeter()  # uses global MeterProvider; silent no-op if OTel absent
-```
-
-Nine instruments ship out of the box:
-
-| Instrument | Type | What it tracks |
-|---|---|---|
-| `shekel.llm.cost_usd` | Counter | Cost per LLM call (tagged by model & provider) |
-| `shekel.llm.calls_total` | Counter | Call count per model |
-| `shekel.llm.tokens_input_total` | Counter | Input tokens (opt-in) |
-| `shekel.llm.tokens_output_total` | Counter | Output tokens (opt-in) |
-| `shekel.budget.exits_total` | Counter | Budget exits by `status=completed\|exceeded\|warned` |
-| `shekel.budget.cost_usd` | UpDownCounter | Cumulative spend per budget |
-| `shekel.budget.utilization` | Histogram | 0.0–1.0 utilization on exit |
-| `shekel.budget.spend_rate` | Histogram | USD/second spend rate |
-| `shekel.budget.fallbacks_total` | Counter | Fallback model activations |
-| `shekel.budget.autocaps_total` | Counter | Child budget auto-cap events |
-| `shekel.budget.window_resets_total` | Counter | Temporal budget window resets *(v0.2.8)* |
-
-**[📖 OTel Integration Guide](https://arieradle.github.io/shekel/integrations/otel/)**
-
-### Previous: Native Gemini & HuggingFace Support *(v0.2.6)*
-
-**Zero-config budget enforcement for Google Gemini and HuggingFace Inference API — same `with budget():` pattern, no changes needed.**
-
-```python
-# Google Gemini
-import google.genai as genai
-from shekel import budget
-
-client = genai.Client(api_key="...")
-with budget(max_usd=1.00) as b:
-    response = client.models.generate_content(model="gemini-2.0-flash", contents="...")
-print(f"Cost: ${b.spent:.4f}")
-```
-
-### Extensible Provider Architecture *(v0.2.5)*
-
-Add any LLM provider without touching shekel core:
-
-```python
-from shekel.providers.base import ADAPTER_REGISTRY, ProviderAdapter
-
-class MyProviderAdapter(ProviderAdapter):
-    @property
-    def name(self) -> str:
-        return "myprovider"
-
-    def install_patches(self) -> None: ...
-    def extract_tokens(self, response) -> tuple: ...
-    # ... and 4 more methods
-
-ADAPTER_REGISTRY.register(MyProviderAdapter())
-
-with budget(max_usd=10.00):
-    response = my_provider_client.call()  # Shekel tracks cost
-```
-
-### ✅ Comprehensive Integration Test Suite
-
-340 integration tests across real providers and feature domains — real API keys run in CI:
-
-| Provider / Feature | Tests | Coverage |
-|----------|-------|----------|
-| OpenAI | 26 | Sync, async, streaming, budget enforcement, callbacks, fallback, multi-turn |
-| Anthropic | 24 | Sync, async, streaming, budget enforcement, callbacks, multi-turn |
-| Groq | 30 | Custom pricing, nested budgets, streaming, concurrent calls, rate limiting |
-| Google Gemini | 42 | Multi-turn, streaming, JSON mode, function calling, token accuracy |
-| HuggingFace | 12 | Sync, streaming, custom pricing, budget enforcement |
-| LangGraph | 14 | Multi-node graphs, conditional edges, budget propagation |
-| Ollama | 38 | Local inference, streaming, nested budgets |
-| Temporal Budgets | 37 | Rolling windows, nesting, adapter events, async, multi-tenant, OTel |
-
----
-
-## ✨ Core Features
-
-### 🌳 Nested Budgets
-
-Enforce independent spend limits per workflow stage with automatic rollup:
-
-```python
-with budget(max_usd=10.00, name="workflow") as workflow:
-    with budget(max_usd=2.00, name="research"):
-        sources = search_papers()      # $0.80
-
-    with budget(max_usd=5.00, name="analysis"):
-        insights = analyze(sources)    # $3.50
-
-    final = polish(insights)           # $0.60
-
-print(workflow.tree())
-# workflow: $5.00 / $10.00
-#   research: $0.80 / $2.00
-#   analysis: $3.50 / $5.00
-```
-
-**Why you'll love this:**
-- 🎯 Per-stage budgets — Cap each phase independently
-- 🔒 Auto-capping — Child budgets can't exceed parent's remaining
-- 📊 Cost attribution — See exactly where money was spent
-- 🌳 Visual tree — Debug complex workflows instantly
-
-**[📖 Nested Budgets Guide](https://arieradle.github.io/shekel/usage/nested-budgets/)**
-
-### 🔧 Tool Budgets
-
-Stop runaway tool loops before they start. Cap any agent's tool calls at the source — LangChain, MCP, CrewAI, OpenAI Agents, or plain Python.
-
-```python
-with budget(max_tool_calls=50, tool_prices={"web_search": 0.01}) as b:
-    run_my_langgraph_agent()
-
-print(b.summary())
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# Total: $0.85  Tool calls: 23 / 50
-#
-# LLM spend:   $0.62  (12 calls)
-# Tool spend:  $0.23  (23 tool calls)
-#   web_search  $0.10  (10 calls)  [langchain]
-#   run_code    $0.09  ( 3 calls)  [mcp]
-#   read_file   $0.04  (10 calls)  [manual]
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-```
-
-Decorate plain Python tools once — shekel handles the rest:
-
-```python
-from shekel import tool
-
-@tool(price=0.005)          # priced — count + charge
-def web_search(query: str) -> str: ...
-
-@tool                       # free — just count calls
-def read_file(path: str) -> str: ...
-
-wrapped = tool(TavilySearchResults(), price=0.005)  # third-party wrapper
-```
-
-**[📖 Tool Budgets Guide](https://arieradle.github.io/shekel/usage/tool-budgets/)**
-
----
-
-### 🔭 Langfuse Integration
-
-See exactly where your budget is going and when it breaks. Circuit-break events, budget hierarchy, and per-call spend stream to Langfuse automatically:
-
-```python
-from langfuse import Langfuse
-from shekel.integrations import AdapterRegistry
-from shekel.integrations.langfuse import LangfuseAdapter
-
-lf = Langfuse(public_key="...", secret_key="...")
-adapter = LangfuseAdapter(client=lf, trace_name="my-app")
-AdapterRegistry.register(adapter)
-
-with budget(max_usd=10.00, name="agent") as b:
-    run_agent()  # Costs flow to Langfuse automatically!
-```
-
-**What you get:**
-- ⚠️ Circuit break events — Captured in Langfuse the moment a budget is exceeded
-- 🔄 Fallback annotations — Model switches recorded with timing and cost
-- 🌳 Nested budget hierarchy — Child budgets map to child spans
-- 💰 Per-call spend streaming — See cumulative cost after every LLM call
-
-**[📖 Langfuse Integration Guide](https://arieradle.github.io/shekel/integrations/langfuse/)**
+I woke up to a $47 AWS bill from a LangGraph agent that spent the night retrying a failed tool call. OpenAI was happy to keep charging. I built shekel so you don't have to learn that lesson yourself.
 
 ---
 
@@ -332,488 +30,278 @@ with budget(max_usd=10.00, name="agent") as b:
 ```bash
 pip install shekel[openai]       # OpenAI
 pip install shekel[anthropic]    # Anthropic
-pip install shekel[gemini]       # Google Gemini (google-genai SDK)
-pip install shekel[huggingface]  # HuggingFace Inference API
-pip install shekel[langfuse]     # Langfuse (budget visibility and circuit-break events)
-pip install shekel[litellm]      # LiteLLM (budget enforcement across 100+ providers)
-pip install shekel[otel]         # OpenTelemetry metrics (ShekelMeter)
-pip install shekel[all]          # All providers + Langfuse + OTel
-pip install shekel[all-models]   # All above + tokencost (400+ model pricing)
-pip install shekel[cli]          # CLI tools: shekel run, shekel estimate, shekel models
-# pipx install shekel[cli]       # install globally for use across all projects
+pip install shekel[all]          # OpenAI + Anthropic + LiteLLM + Gemini + HuggingFace
+pip install shekel[cli]          # shekel run — enforce budgets without touching code
 ```
 
 ---
 
-## Quick Start
-
-### Simple Budget Enforcement
-
-```python
-from shekel import budget, BudgetExceededError
-
-# Enforce a hard cap
-try:
-    with budget(max_usd=1.00, warn_at=0.8) as b:
-        response = client.chat.completions.create(
-            model="gpt-4o",
-            messages=[{"role": "user", "content": "Hello!"}]
-        )
-    print(f"Spent ${b.spent:.4f}")
-except BudgetExceededError as e:
-    print(f"Budget exceeded: ${e.spent:.2f} > ${e.limit:.2f}")
-```
-
-### Track Without Limits
-
-```python
-# Track spend without enforcing a limit
-with budget() as b:
-    run_my_agent()
-print(f"Cost: ${b.spent:.4f}")
-```
-
-### Fallback to Cheaper Model
-
-```python
-# Switch to gpt-4o-mini at 80% of budget instead of raising
-with budget(max_usd=0.50, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}) as b:
-    response = client.chat.completions.create(
-        model="gpt-4o",
-        messages=[{"role": "user", "content": prompt}]
-    )
-
-if b.model_switched:
-    print(f"Switched to {b.fallback['model']} at ${b.switched_at_usd:.4f}")
-```
-
-### Accumulating Sessions
-
-```python
-# Budget variables accumulate across multiple uses
-session = budget(max_usd=5.00, name="session")
-
-with session:
-    run_step_1()  # Spends $1.50
-
-with session:
-    run_step_2()  # Spends $2.00
-
-print(f"Session total: ${session.spent:.2f}")  # $3.50
-```
-
----
-
-## 🌳 Nested Budgets
-
-Perfect for **multi-stage agents**, **research workflows**, and **production AI pipelines**.
-
-### Real-World Example: AI Research Agent
+## The one-liner that changes everything
 
 ```python
 from shekel import budget
 
-def research_agent(topic: str, max_budget: float = 10.0):
-    """Research agent with per-stage budget control."""
-    
-    with budget(max_usd=max_budget, name="research_agent") as agent:
-        # Phase 1: Web search ($2 budget)
-        with budget(max_usd=2.00, name="web_search") as search:
-            results = search_web(topic)
-            if search.spent > 1.50:
-                print("⚠️  Search phase used 75% of budget")
-        
-        # Phase 2: Content analysis ($5 budget)
-        with budget(max_usd=5.00, name="analysis") as analysis:
-            key_points = extract_insights(results)
-            themes = identify_themes(key_points)
-        
-        # Phase 3: Report generation ($3 budget)
-        with budget(max_usd=3.00, name="report_gen") as report:
-            draft = generate_report(themes)
-            final = refine_report(draft)
-    
-    # Print cost breakdown
-    print(agent.tree())
-    return final
-
-# Run the agent
-report = research_agent("AI safety alignment", max_budget=15.0)
+with budget(max_usd=5.00):
+    run_my_agent()               # hard stop at $5. no config. no API keys. just works.
 ```
 
-### Auto-Capping: Smart Budget Management
+That's it. No wrapping your OpenAI client. No decorators. No SDK replacement. shekel monkey-patches the provider SDK on context entry and restores it on exit. Your existing code runs unchanged.
 
-```python
-with budget(max_usd=10.00, name="workflow") as workflow:
-    # Spend $7 on initial processing
-    process_data()  # Spends $7.00
-    
-    # Child wants $5, but only $3 left
-    # Shekel automatically caps child to $3!
-    with budget(max_usd=5.00, name="final_step") as step:
-        print(f"Requested: $5.00")
-        print(f"Actual limit: ${step.limit:.2f}")  # $3.00 (auto-capped!)
-        generate_output()  # Won't exceed $3
+Works with **OpenAI, Anthropic, Google Gemini, HuggingFace, LiteLLM, LangChain, LangGraph, CrewAI, MCP, OpenAI Agents SDK, AutoGen, LlamaIndex** — if it calls OpenAI or Anthropic under the hood, shekel sees it.
+
+---
+
+## Enforce from the CLI — zero code changes
+
+Don't want to touch the code at all? Don't.
+
+```bash
+pip install shekel[cli]
+
+shekel run agent.py --budget 5
+# exit 0 = success  |  exit 1 = budget exceeded  ← CI-friendly
 ```
 
-### Hierarchical Cost Attribution
+Drop it into any pipeline:
 
-```python
-with budget(max_usd=50.00, name="production_pipeline") as pipeline:
-    with budget(max_usd=10.00, name="ingestion"):
-        ingest_data()
-    
-    with budget(max_usd=20.00, name="processing"):
-        with budget(max_usd=8.00, name="validation"):
-            validate_data()
-        
-        with budget(max_usd=12.00, name="transformation"):
-            transform_data()
-    
-    with budget(max_usd=15.00, name="output"):
-        generate_report()
+```bash
+# Shell script / cron / Docker
+AGENT_BUDGET_USD=5 shekel run agent.py
 
-# Detailed breakdown
-print(f"Total: ${pipeline.spent:.2f}")
-print(f"Direct spend: ${pipeline.spent_direct:.2f}")
-print(f"Child spend: ${pipeline.spent_by_children:.2f}")
-print(f"\nFull tree:")
-print(pipeline.tree())
+# GitHub Actions
+- uses: ./.github/actions/enforce
+  with:
+    script: agent.py
+    budget: "5"
+
+# Docker — operator sets budget at runtime, no rebuild needed
+ENTRYPOINT ["shekel", "run", "agent.py"]
+# docker run -e AGENT_BUDGET_USD=5 my-agent-image
 ```
 
-### Track-Only Children
+Flags that matter:
 
-```python
-# Parent enforces budget, but track children without limits
-with budget(max_usd=20.00, name="workflow") as workflow:
-    # This child has no limit (max_usd=None)
-    with budget(max_usd=None, name="exploration"):
-        explore_options()  # Tracked but unlimited
-    
-    # This child is limited
-    with budget(max_usd=5.00, name="finalization"):
-        finalize()
-
-print(f"Exploration cost: ${workflow.children[0].spent:.2f}")
-print(f"Total cost: ${workflow.spent:.2f}")
+```bash
+--budget 5          # hard stop in USD
+--warn-at 0.8       # log warning at 80%, hard stop at 100%
+--max-llm-calls 20  # cap by call count instead of spend
+--max-tool-calls 50 # cap agent tool calls
+--warn-only         # log but never exit 1  (soft guardrail)
+--dry-run           # track costs, no enforcement
+--output json       # machine-readable spend summary for log pipelines
+--budget-file shekel.toml  # load limits from config file
 ```
 
 ---
 
-## Advanced Features
+## Every pattern you'll actually use
 
-### Async Support
+### Hard cap
 
 ```python
-async with budget(max_usd=1.00) as b:
-    response = await client.chat.completions.create(
-        model="gpt-4o",
-        messages=[{"role": "user", "content": "Hello!"}]
-    )
+with budget(max_usd=5.00):
+    run_my_agent()
+# raises BudgetExceededError the moment spend crosses $5
 ```
 
-Full async support — `async with budget(...)` works for both top-level and nested budgets.
+### Warn before the limit hits
 
-### Decorator Pattern
+```python
+with budget(max_usd=5.00, warn_at=0.8) as b:
+    run_my_agent()
+# logs a warning at $4.00, raises at $5.00
+```
+
+### Track spend without enforcing
+
+```python
+with budget() as b:
+    run_my_agent()
+print(f"that cost ${b.spent:.4f}")
+```
+
+### Switch to a cheaper model instead of crashing
+
+```python
+with budget(max_usd=1.00, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}) as b:
+    run_my_agent()
+# switches from gpt-4o → gpt-4o-mini at $0.80, hard stops at $1.00
+```
+
+### Cap tool calls — stop the web_search loop
+
+```python
+with budget(max_tool_calls=20, tool_prices={"web_search": 0.01}):
+    run_my_langgraph_agent()
+# ToolBudgetExceededError on call 21 — before the tool runs
+```
+
+Auto-intercepted with zero config: **LangChain, MCP, CrewAI, OpenAI Agents SDK**.
+
+### Per-stage budget control
+
+```python
+with budget(max_usd=10.00, name="pipeline") as pipeline:
+    with budget(max_usd=2.00, name="research"):
+        results = search_web(query)        # capped at $2
+
+    with budget(max_usd=5.00, name="analysis"):
+        report = analyze(results)          # capped at $5
+
+print(pipeline.tree())
+# pipeline: $4.80 / $10.00
+#   research:  $1.20 / $2.00
+#   analysis:  $3.60 / $5.00
+```
+
+Children auto-cap to the parent's remaining balance. `workflow.tree()` gives you a visual breakdown.
+
+### Rolling-window rate limits — `$5/hr`
+
+```python
+api_budget = budget("$5/hr", name="api-tier")
+
+async with api_budget:
+    response = await client.chat.completions.create(...)
+# BudgetExceededError carries retry_after and window_spent
+```
+
+### Accumulate across sessions
+
+```python
+session = budget(max_usd=20.00, name="session")
+
+with session: run_step_1()   # $3.20
+with session: run_step_2()   # $8.10
+with session: run_step_3()   # raises at $20
+
+print(f"total: ${session.spent:.2f}")
+```
+
+---
+
+## What the spend summary looks like
+
+```python
+with budget(max_usd=5.00) as b:
+    run_my_agent()
+
+print(b.summary())
+```
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+shekel spend summary
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Total: $1.2450 / $5.00 (25%)
+
+gpt-4o:       $1.1320  (5 calls)
+  Input:  45.2k tokens → $0.1130
+  Output: 11.3k tokens → $1.1320
+
+Tool spend:   $0.1130  (9 tool calls)
+  web_search  $0.090  (9 calls)  [langchain]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+Or machine-readable:
+
+```bash
+shekel run agent.py --budget 5 --output json
+# {"spent": 1.245, "limit": 5.0, "calls": 5, "tool_calls": 9, "status": "ok", "model": "gpt-4o"}
+```
+
+---
+
+## The decorator
 
 ```python
 from shekel import with_budget
 
 @with_budget(max_usd=0.10)
-def call_llm(prompt: str):
-    return client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[{"role": "user", "content": prompt}]
-    )
-```
-
-### Custom Pricing
-
-```python
-# Override model pricing
-with budget(
-    max_usd=1.00,
-    price_per_1k_tokens={"input": 0.001, "output": 0.003}
-) as b:
-    call_custom_model()
-```
-
-### Spend Summary
-
-```python
-with budget(max_usd=2.00) as b:
-    run_my_agent()
-
-print(b.summary())
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# shekel spend summary
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# Total: $1.2450 / $2.00 (62%)
-# 
-# gpt-4o: $1.2450 (5 calls)
-#   Input:  45.2k tokens → $0.1130
-#   Output: 11.3k tokens → $1.1320
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+def summarize(text: str) -> str:
+    return client.chat.completions.create(...).choices[0].message.content
+# budget enforced on every call, independently
 ```
 
 ---
 
-## CLI
+## How it works
+
+shekel monkey-patches `openai.chat.completions.create` and `anthropic.messages.create` on `__enter__` and restores originals on `__exit__`. Spend is tracked in a `ContextVar` — concurrent agents in the same process never share state. Nested `with budget()` blocks form a tree; child spend rolls up automatically.
+
+No background threads. No external services. No API keys. Nothing leaves your machine.
+
+---
+
+## Observability
+
+- **Langfuse** — cost streaming, circuit-break events, budget hierarchy in Langfuse spans
+- **OpenTelemetry** — 9 instruments: `shekel.llm.cost_usd`, `shekel.budget.utilization`, `shekel.budget.spend_rate`, `shekel.tool.calls_total`, and more
+
+```python
+from shekel.otel import ShekelMeter
+meter = ShekelMeter()  # attaches to global MeterProvider; silent no-op if OTel absent
+```
+
+---
+
+## Supported models
+
+Built-in pricing for GPT-4o, GPT-4o-mini, o1, o3, Claude 3.5/3/3.7 Sonnet, Claude 3 Haiku/Opus, Gemini 2.0/2.5 Flash/Pro, and more.
 
 ```bash
-pip install shekel[cli]
-
-# Enforce a budget on any Python agent — zero code changes
-shekel run agent.py --budget 5
-shekel run agent.py --budget 5 --warn-at 0.8
-shekel run agent.py --max-llm-calls 20 --max-tool-calls 100
-shekel run agent.py --output json        # machine-readable spend line
-shekel run agent.py --warn-only          # soft guardrail — log, never fail
-shekel run agent.py --dry-run            # track only, no enforcement
-shekel run agent.py --budget-file shekel.toml  # load limits from TOML
-AGENT_BUDGET_USD=5 shekel run agent.py  # env var — Docker / CI friendly
-
-# Estimate cost before running
+pip install shekel[all-models]   # 400+ models via tokencost
+shekel models                    # list all bundled models and pricing
 shekel estimate --model gpt-4o --input-tokens 1000 --output-tokens 500
-# Model:          gpt-4o
-# Input tokens:   1,000
-# Output tokens:  500
-# Estimated cost: $0.007500
-
-# List all bundled models with pricing
-shekel models
-shekel models --provider openai
-shekel models --provider anthropic
-```
-
-`shekel.toml` format:
-
-```toml
-[budget]
-max_usd       = 5.0
-warn_at       = 0.8
-max_llm_calls = 50
-max_tool_calls = 200
 ```
 
 ---
 
-## API Reference
-
-### `budget(...)`
-
-**String form** (returns `TemporalBudget`):
+## API
 
 ```python
-budget("$5/hr", name="api")          # $5 per hour rolling window
-budget("$10/30min", name="burst")    # $10 per 30-minute window
-budget("$1/60s", name="realtime")    # $1 per minute
+budget(
+    max_usd=5.00,           # hard USD cap
+    warn_at=0.8,            # warn at 80%
+    max_llm_calls=50,       # cap by call count
+    max_tool_calls=100,     # cap tool dispatches
+    tool_prices={"web_search": 0.01},  # charge per tool
+    fallback={"at_pct": 0.8, "model": "gpt-4o-mini"},  # switch instead of crash
+    name="my-agent",        # required for nesting + temporal budgets
+)
+
+budget("$5/hr", name="api-tier")   # temporal: rolling-window rate limit
 ```
 
-**Keyword form**:
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `max_usd` | `float \| None` | `None` | Hard spend cap in USD. `None` = track only. |
-| `window_seconds` | `float \| None` | `None` | Rolling window duration in seconds. Set to create a `TemporalBudget`. |
-| `name` | `str \| None` | `None` | Budget name. Required for `TemporalBudget` and nested budgets. |
-| `warn_at` | `float \| None` | `None` | Fraction of limit (0.0–1.0) at which to call `on_warn`. |
-| `on_warn` | `Callable \| None` | `None` | Callback at `warn_at` threshold. Receives `(spent, limit)`. |
-| `fallback` | `dict \| None` | `None` | Switch model at threshold: `{"at_pct": 0.8, "model": "gpt-4o-mini"}`. Same provider only. |
-| `on_fallback` | `Callable \| None` | `None` | Callback on fallback switch. Receives `(spent, limit, fallback_model)`. |
-| `max_llm_calls` | `int \| None` | `None` | Hard cap on number of LLM API calls. |
-| `max_tool_calls` | `int \| None` | `None` | Hard cap on total tool dispatches. Checked *before* each tool runs. |
-| `tool_prices` | `dict \| None` | `None` | Per-tool USD cost: `{"web_search": 0.01}`. Unknown tools count at `$0`. |
-| `price_per_1k_tokens` | `dict \| None` | `None` | Override pricing: `{"input": 0.001, "output": 0.003}`. |
-
-### Properties
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `spent` | `float` | Total USD spent (includes children). |
-| `remaining` | `float \| None` | USD remaining (based on effective limit). |
-| `limit` | `float \| None` | Effective limit (auto-capped if nested). |
-| `name` | `str \| None` | Budget name. |
-| `calls_used` | `int` | Number of LLM API calls made so far. |
-| `calls_remaining` | `int \| None` | Calls remaining before `max_llm_calls` is hit. |
-| `tool_calls_used` | `int` | Total tool dispatches recorded so far. |
-| `tool_calls_remaining` | `int \| None` | Tool calls left before `max_tool_calls` is hit. |
-| `tool_spent` | `float` | Total USD spent on tools (requires `tool_prices`). |
-| `parent` | `Budget \| None` | Parent budget, or `None` if root. |
-| `children` | `list[Budget]` | List of child budgets. |
-| `active_child` | `Budget \| None` | Currently active child. |
-| `full_name` | `str` | Hierarchical path (e.g., `"workflow.research"`). |
-| `spent_direct` | `float` | Direct spend on this budget (excluding children). |
-| `spent_by_children` | `float` | Sum of all child spend. |
-| `model_switched` | `bool` | `True` if fallback was activated. |
-| `switched_at_usd` | `float \| None` | Spend level when fallback triggered. |
-| `fallback_spent` | `float` | Cost incurred on the fallback model. |
-
-### Methods
-
-| Method | Returns | Description |
-|--------|---------|-------------|
-| `summary()` | `str` | Formatted spend summary with model breakdown. |
-| `summary_data()` | `dict` | Structured spend data as dictionary. |
-| `tree()` | `str` | Visual hierarchy of the budget tree. |
-| `reset()` | `None` | Reset spend tracking (only outside context). |
-
-### `BudgetExceededError`
-
-| Attribute | Description |
-|-----------|-------------|
-| `spent` | Total spend when limit was hit. |
-| `limit` | The configured `max_usd`. |
-| `model` | Model that triggered the error. |
-| `tokens` | `{"input": N, "output": N}` from the last call. |
-| `retry_after` | `float \| None` — seconds until `TemporalBudget` window resets. `None` for regular `Budget`. |
-| `window_spent` | `float \| None` — spend accumulated in the current rolling window. `None` for regular `Budget`. |
-
-### `ToolBudgetExceededError`
-
-```python
-from shekel import ToolBudgetExceededError
-```
-
-| Attribute | Description |
-|-----------|-------------|
-| `tool_name` | Name of the tool that was blocked. |
-| `calls_used` | Total tool calls made when the limit was hit. |
-| `calls_limit` | The `max_tool_calls` setting. |
-| `usd_spent` | Total tool USD spent when blocked. |
-| `usd_limit` | The `max_usd` budget limit. |
-| `framework` | What dispatched the tool: `"langchain"`, `"mcp"`, `"crewai"`, `"openai-agents"`, `"manual"`. |
-
-### `@tool` decorator
-
-```python
-from shekel import tool
-
-@tool                        # count calls, zero charge
-def read_file(path): ...
-
-@tool(price=0.005)           # count + charge $0.005/call
-def web_search(query): ...
-
-wrapped = tool(TavilySearchResults(), price=0.005)  # wrap any callable
-```
-
-Works with sync and async functions. Transparent pass-through when no budget is active.
-
----
-
-## Supported Models
-
-| Model | Input / 1k | Output / 1k |
-|-------|-----------|-------------|
-| gpt-4o | $0.00250 | $0.01000 |
-| gpt-4o-mini | $0.000150 | $0.000600 |
-| o1 | $0.01500 | $0.06000 |
-| o1-mini | $0.00300 | $0.01200 |
-| gpt-3.5-turbo | $0.000500 | $0.001500 |
-| claude-3-5-sonnet-20241022 | $0.00300 | $0.01500 |
-| claude-3-haiku-20240307 | $0.000250 | $0.001250 |
-| claude-3-opus-20240229 | $0.01500 | $0.07500 |
-| gemini-1.5-flash | $0.0000750 | $0.000300 |
-| gemini-1.5-pro | $0.00125 | $0.00500 |
-
-Versioned model names resolve automatically — `gpt-4o-2024-08-06` maps to `gpt-4o`.
-
-For unlisted models: pass `price_per_1k_tokens` or install `shekel[all-models]` for 400+ models via [tokencost](https://github.com/AgentOps-AI/tokencost).
-
----
-
-## Framework Integration
-
-Works seamlessly with:
-
-- **OpenTelemetry** — 8 instruments for cost/budget metrics; compatible with any OTel backend *(v0.2.7)*
-- **Langfuse** — Full observability: cost streaming, span hierarchy, circuit-break events, tool spans *(v0.2.4)*
-- **LangChain / LangGraph** — Auto-intercepts `BaseTool.invoke/ainvoke`; tool calls counted + priced *(v0.2.8)*
-- **MCP** — Auto-intercepts `ClientSession.call_tool` for any MCP tool server *(v0.2.8)*
-- **CrewAI** — Auto-intercepts `BaseTool._run/_arun`; per-agent tool tracking *(v0.2.8)*
-- **OpenAI Agents SDK** — Auto-intercepts `FunctionTool.on_invoke_tool` *(v0.2.8)*
-- **AutoGen** — Multi-agent cost control
-- **LlamaIndex** — RAG pipeline budgets
-- **Haystack** — Document processing budgets
-
-Any framework that calls `openai` or `anthropic` under the hood works automatically for LLM spend. For tool call tracking, use `@tool` or the auto-interception adapters above. See [`examples/`](examples/) for demos.
-
----
-
-## How It Works
-
-- **Monkey-patching** — Wraps `openai.chat.completions.create()` and `anthropic.messages.create()` on context entry
-- **Tool interception** — Patches LangChain `BaseTool`, MCP `ClientSession.call_tool`, CrewAI `BaseTool`, and OpenAI Agents `FunctionTool`; `@tool` for plain Python
-- **ContextVar isolation** — Each `budget()` stores its counter in a ContextVar; concurrent agents never share state
-- **Hierarchical tracking** — Parent/child relationships track spend propagation automatically; tool counts roll up too
-- **Ref-counted patching** — Nested contexts patch only once
-- **Zero config** — No API keys, no external services
+`BudgetExceededError` → `spent`, `limit`, `model`, `retry_after` (temporal)
+`ToolBudgetExceededError` → `tool_name`, `calls_used`, `calls_limit`, `framework`
 
 ---
 
 ## Documentation
 
-**Full documentation: [arieradle.github.io/shekel](https://arieradle.github.io/shekel/)**
+**[arieradle.github.io/shekel](https://arieradle.github.io/shekel/)**
 
-- [Quick Start Guide](https://arieradle.github.io/shekel/quickstart/)
-- [CLI Reference](https://arieradle.github.io/shekel/cli/) *(v0.2.9)*
-- [Docker & Container Guardrails](https://arieradle.github.io/shekel/docker/) *(v0.2.9)*
-- [Nested Budgets Guide](https://arieradle.github.io/shekel/usage/nested-budgets/)
-- [Langfuse Integration Guide](https://arieradle.github.io/shekel/langfuse-integration/) *(v0.2.4)*
+- [Quick Start](https://arieradle.github.io/shekel/quickstart/)
+- [CLI Reference](https://arieradle.github.io/shekel/cli/) — `shekel run` full options
+- [Docker & Containers](https://arieradle.github.io/shekel/docker/) — entrypoint patterns
+- [Nested Budgets](https://arieradle.github.io/shekel/usage/nested-budgets/)
+- [Tool Budgets](https://arieradle.github.io/shekel/usage/tool-budgets/)
+- [Temporal Budgets](https://arieradle.github.io/shekel/usage/temporal-budgets/)
 - [API Reference](https://arieradle.github.io/shekel/api-reference/)
-- [Framework Integrations](https://arieradle.github.io/shekel/integrations/)
 
 ---
 
-## Machine Discovery Metadata
+## Security
 
-This project provides:
-
-- LLM budget control
-- AI agent cost governance
-- Token budgeting for LLM APIs
-- Spend limits and usage quotas
-- Guardrails for agentic systems
-- Tool call budgets for AI agents
-- Agent tool usage caps and limits
-- Rolling-window rate limits for LLM APIs
-
-Works with ecosystems including:
-
-OpenAI, Anthropic Claude, LangChain, LangGraph, Langfuse, CrewAI, MCP, OpenAI Agents SDK
-
-Use cases include:
-
-- Preventing runaway LLM costs
-- Preventing runaway agent tool loops
-- Enforcing AI agent budgets
-- LLMOps governance
-- Token usage control
-- AI API spend guardrails
-- Per-user and per-tier rolling spend limits
+Every PR and push to `main` runs CodeQL, Trivy, Bandit, and pip-audit. See the [Security tab](https://github.com/arieradle/shekel/security/code-scanning) for results.
 
 ---
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md).
-
-## Security
-
-Shekel runs automated security checks on every pull request, every push to
-`main`, and on a weekly scheduled basis.
-
-| Tool | What it checks | Where results appear |
-|------|---------------|----------------------|
-| **GitHub CodeQL** | Static analysis — logic flaws, injection paths, unsafe patterns | GitHub Security tab → Code scanning |
-| **Trivy** | Known CVEs in dependencies + secrets/misconfig in source | GitHub Security tab → Code scanning |
-| **Bandit** | Python-specific issues (hardcoded passwords, use of `eval`, insecure hashing, etc.) | Actions log — fails the build |
-| **pip-audit** | Installed package versions against PyPI advisory database | Actions log — fails the build |
-
-**Reporting a vulnerability**: please open a [GitHub issue](https://github.com/arieradle/shekel/issues)
-marked _Security_ or email the maintainer directly. Do not post exploit details
-in public issues.
+See [CONTRIBUTING.md](CONTRIBUTING.md). PRs welcome.
 
 ## License
 
