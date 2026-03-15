@@ -279,7 +279,7 @@ class TestAdapterEventIntegration:
             with tb:
                 record(input_tokens=10000, output_tokens=5000, model="gpt-4o")
         except BudgetExceededError:
-            pass
+            pass  # expected — we intentionally exceed the budget to test the event
 
         # Budget exit should still fire even on exception
         exit_evts = [e for e in collector.budget_exits if e.get("budget_name") == "exceed_evt"]
@@ -559,7 +559,7 @@ class TestMultiTenantBackend:
             with make_budget("alice"):
                 record(input_tokens=10000, output_tokens=5000, model="gpt-4o")
         except BudgetExceededError:
-            pass
+            pass  # expected — verifying alice's spend doesn't affect bob
 
         # bob can still make calls
         with make_budget("bob") as bob_b:

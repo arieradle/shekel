@@ -42,7 +42,9 @@ def _parse_spec(spec: str) -> tuple[float, float]:
 
 @runtime_checkable
 class TemporalBudgetBackend(Protocol):
-    def get_state(self, budget_name: str) -> tuple[float, float | None]: ...
+    def get_state(self, budget_name: str) -> tuple[float, float | None]:
+        """Return (spent_usd, window_start_monotonic) for the named budget."""
+        pass
 
     def check_and_add(
         self,
@@ -50,9 +52,13 @@ class TemporalBudgetBackend(Protocol):
         amount: float,
         max_usd: float,
         window_seconds: float,
-    ) -> bool: ...
+    ) -> bool:
+        """Atomically check limit and add amount. Returns False if it would exceed."""
+        pass
 
-    def reset(self, budget_name: str) -> None: ...
+    def reset(self, budget_name: str) -> None:
+        """Reset the window state for the given budget name."""
+        pass
 
 
 class InMemoryBackend:
@@ -142,7 +148,7 @@ class TemporalBudget(Budget):
                         "previous_spent": spent,
                     },
                 )
-            except Exception:
+            except Exception:  # noqa: BLE001 — adapter must never crash user code
                 pass
 
     def _record_spend(self, cost: float, model: str, tokens: dict[str, int]) -> None:

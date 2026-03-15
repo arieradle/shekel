@@ -155,13 +155,13 @@ class _OtelMetricsAdapter(ObservabilityAdapter):
                         "to_model": data["to_model"],
                     },
                 )
-        except Exception:
+        except Exception:  # noqa: BLE001 — OTel adapter must never crash user code
             pass
 
     def on_window_reset(self, data: dict[str, Any]) -> None:
         try:
             self._window_resets.add(1, {"budget_name": data.get("budget_name", "unnamed")})
-        except Exception:
+        except Exception:  # noqa: BLE001 — OTel adapter must never crash user code
             pass
 
     def on_autocap(self, data: dict[str, Any]) -> None:
