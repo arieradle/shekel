@@ -37,34 +37,6 @@ try:
 except ImportError:
     pass
 
-try:
-    from shekel.providers.mcp import MCPAdapter
-
-    ADAPTER_REGISTRY.register(MCPAdapter())
-except ImportError:  # pragma: no cover
-    pass
-
-try:
-    from shekel.providers.langchain import LangChainAdapter
-
-    ADAPTER_REGISTRY.register(LangChainAdapter())
-except ImportError:  # pragma: no cover
-    pass
-
-try:
-    from shekel.providers.crewai import CrewAIAdapter
-
-    ADAPTER_REGISTRY.register(CrewAIAdapter())
-except ImportError:  # pragma: no cover
-    pass
-
-try:
-    from shekel.providers.openai_agents import OpenAIAgentsAdapter
-
-    ADAPTER_REGISTRY.register(OpenAIAgentsAdapter())
-except ImportError:  # pragma: no cover
-    pass
-
 __all__ = [
     "ADAPTER_REGISTRY",
     "ProviderAdapter",
@@ -74,8 +46,4 @@ __all__ = [
     "LiteLLMAdapter",
     "GeminiAdapter",
     "HuggingFaceAdapter",
-    "MCPAdapter",
-    "LangChainAdapter",
-    "CrewAIAdapter",
-    "OpenAIAgentsAdapter",
 ]
