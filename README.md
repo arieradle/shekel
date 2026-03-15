@@ -21,27 +21,56 @@ I spent $47 debugging a LangGraph retry loop. The agent kept failing, LangGraph 
 
 ---
 
-## ⚡️ What's New in v0.2.7: OpenTelemetry Metrics Integration
+## ⚡️ What's New in v0.2.8: Temporal Budgets
 
-**Shekel now exposes LLM cost and budget lifecycle data via OpenTelemetry — filling the gap the OTel GenAI spec leaves around cost and budget metrics.**
+**Rolling-window LLM spend limits — enforce `$5/hr` per API tier, user, or agent with a single line.**
+
+```python
+from shekel import budget, BudgetExceededError
+
+# String DSL
+api_budget = budget("$5/hr", name="api-tier")
+
+async with api_budget:
+    response = await client.chat.completions.create(...)
+```
+
+```python
+# Or explicit kwargs
+api_budget = budget(max_usd=5.0, window_seconds=3600, name="api-tier")
+```
+
+When the window limit is hit, `BudgetExceededError` now carries `retry_after` (seconds until reset) and `window_spent`:
+
+```python
+try:
+    async with api_budget:
+        response = await client.chat(...)
+except BudgetExceededError as e:
+    print(f"Window exceeded — retry in {e.retry_after:.0f}s (spent ${e.window_spent:.2f})")
+```
+
+**Design decisions:**
+- Rolling window only (no fixed calendar windows) — simpler, no clock-sync issues
+- Lazy reset on `__enter__` — no background threads
+- `TemporalBudgetBackend` Protocol — bring your own Redis/Postgres backend
+- Temporal-in-temporal nesting raises `ValueError` (regular `Budget` nesting is fine)
+- `name=` is required on `TemporalBudget` — prevents ambiguous metrics
+
+### Previous: OpenTelemetry Metrics *(v0.2.7)*
+
+**Shekel exposes LLM cost and budget lifecycle data via OpenTelemetry — filling the gap the OTel GenAI spec leaves around cost and budget metrics.**
 
 ```bash
 pip install shekel[otel]
 ```
 
 ```python
-from shekel import budget
 from shekel.otel import ShekelMeter
-
 meter = ShekelMeter()  # uses global MeterProvider; silent no-op if OTel absent
-
-with budget(max_usd=1.00, name="workflow") as b:
-    run_my_agent()
-
-meter.unregister()
 ```
 
-Eight instruments ship out of the box:
+Nine instruments ship out of the box:
 
 | Instrument | Type | What it tracks |
 |---|---|---|
@@ -55,8 +84,7 @@ Eight instruments ship out of the box:
 | `shekel.budget.spend_rate` | Histogram | USD/second spend rate |
 | `shekel.budget.fallbacks_total` | Counter | Fallback model activations |
 | `shekel.budget.autocaps_total` | Counter | Child budget auto-cap events |
-
-Two new `ObservabilityAdapter` events are also available for custom integrations: `on_budget_exit` and `on_autocap`.
+| `shekel.budget.window_resets_total` | Counter | Temporal budget window resets *(v0.2.8)* |
 
 **[📖 OTel Integration Guide](https://arieradle.github.io/shekel/integrations/otel/)**
 
@@ -422,10 +450,21 @@ shekel models --provider anthropic
 
 ### `budget(...)`
 
+**String form** (returns `TemporalBudget`):
+
+```python
+budget("$5/hr", name="api")          # $5 per hour rolling window
+budget("$10/30min", name="burst")    # $10 per 30-minute window
+budget("$1/60s", name="realtime")    # $1 per minute
+```
+
+**Keyword form**:
+
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `max_usd` | `float \| None` | `None` | Hard spend cap in USD. `None` = track only. |
-| `name` | `str \| None` | `None` | Budget name. Required for nested budgets. |
+| `window_seconds` | `float \| None` | `None` | Rolling window duration in seconds. Set to create a `TemporalBudget`. |
+| `name` | `str \| None` | `None` | Budget name. Required for `TemporalBudget` and nested budgets. |
 | `warn_at` | `float \| None` | `None` | Fraction of limit (0.0–1.0) at which to call `on_warn`. |
 | `on_warn` | `Callable \| None` | `None` | Callback at `warn_at` threshold. Receives `(spent, limit)`. |
 | `fallback` | `dict \| None` | `None` | Switch model at threshold: `{"at_pct": 0.8, "model": "gpt-4o-mini"}`. Same provider only. |
@@ -470,6 +509,8 @@ shekel models --provider anthropic
 | `limit` | The configured `max_usd`. |
 | `model` | Model that triggered the error. |
 | `tokens` | `{"input": N, "output": N}` from the last call. |
+| `retry_after` | `float \| None` — seconds until `TemporalBudget` window resets. `None` for regular `Budget`. |
+| `window_spent` | `float \| None` — spend accumulated in the current rolling window. `None` for regular `Budget`. |
 
 ---
 
