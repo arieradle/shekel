@@ -19,7 +19,6 @@ import asyncio
 from shekel import budget, tool
 from shekel.exceptions import ToolBudgetExceededError
 
-
 # ---------------------------------------------------------------------------
 # Declare tools once — shekel tracks them everywhere
 # ---------------------------------------------------------------------------
@@ -81,6 +80,7 @@ def demo_decorator() -> None:
 
 def demo_cap() -> None:
     print("=== B) max_tool_calls cap ===")
+    b = None
     try:
         with budget(max_tool_calls=3) as b:
             web_search("query 1")
@@ -89,7 +89,8 @@ def demo_cap() -> None:
             web_search("query 4")  # ← blocked here, never executes
     except ToolBudgetExceededError as e:
         print(f"Blocked '{e.tool_name}' — {e.calls_used}/{e.calls_limit} calls used")
-    print(f"Calls recorded: {b.tool_calls_used}")
+    if b is not None:
+        print(f"Calls recorded: {b.tool_calls_used}")
     print()
 
 
@@ -214,9 +215,9 @@ def demo_nested() -> None:
         with budget(max_tool_calls=10, name="analysis") as analysis:
             run_code("analyze()")
 
-    print(f"Research tools: {research.tool_calls_used}")   # 3
-    print(f"Analysis tools: {analysis.tool_calls_used}")   # 1
-    print(f"Total tools:    {workflow.tool_calls_used}")   # 4
+    print(f"Research tools: {research.tool_calls_used}")  # 3
+    print(f"Analysis tools: {analysis.tool_calls_used}")  # 1
+    print(f"Total tools:    {workflow.tool_calls_used}")  # 4
     print()
 
 
