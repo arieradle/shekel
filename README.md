@@ -40,10 +40,10 @@ with budget(max_tool_calls=50):
 # Charge per tool + hard USD cap — full cost picture
 from shekel import tool
 
-@tool(price=0.005)
+@tool(price=0.005)          # price set once on the decorator
 def web_search(query: str) -> str: ...
 
-with budget(max_usd=2.00, tool_prices={"web_search": 0.005}, max_tool_calls=100) as b:
+with budget(max_usd=2.00, max_tool_calls=100) as b:
     run_agent()
 
 print(b.summary())  # LLM spend + tool spend, broken out by tool and framework

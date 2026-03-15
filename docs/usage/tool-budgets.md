@@ -42,6 +42,18 @@ except ToolBudgetExceededError as e:
 
 ## `tool_prices` — Cost per tool call
 
+Use `@tool(price=...)` for plain Python functions you control — price is set once on the decorator:
+
+```python
+@tool(price=0.005)
+def web_search(query: str) -> str: ...
+
+with budget(max_usd=2.00, max_tool_calls=100) as b:
+    run_agent()  # price comes from the decorator
+```
+
+Use `tool_prices` on `budget()` for **auto-intercepted** tools (LangChain, MCP, CrewAI, OpenAI Agents) where you can't add a decorator:
+
 ```python
 with budget(
     tool_prices={
@@ -55,7 +67,9 @@ print(f"Tool calls: {b.tool_calls_used}")
 print(f"Tool cost:  ${b.tool_spent:.4f}")
 ```
 
-Unknown tools — not in `tool_prices` — still count toward `max_tool_calls` at `$0`. No silent gaps.
+If both are set for the same tool, `tool_prices` on the budget takes priority (useful for per-run price overrides).
+
+Unknown tools — not in `tool_prices` and no decorator price — still count toward `max_tool_calls` at `$0`. No silent gaps.
 
 ---
 
