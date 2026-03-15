@@ -255,7 +255,7 @@ print(f"Remaining: ${b.remaining:.4f}")
 
 ---
 
-## What's New in v0.2.9
+## What's New in v0.2.8
 
 <div class="grid cards" markdown>
 

@@ -26,7 +26,7 @@ I spent $47 debugging a LangGraph retry loop. The agent kept failing, LangGraph 
 
 ---
 
-## ⚡️ What's New in v0.2.9: Tool Budgets
+## ⚡️ What's New in v0.2.8: Tool Budgets
 
 **Your agent just called `web_search` 847 times. Here's your bill. shekel stops that.**
 
@@ -75,7 +75,7 @@ with budget(max_tool_calls=100):
 
 ---
 
-### What's New in v0.2.8: Temporal Budgets
+### Also in v0.2.8: Temporal Budgets
 
 **Rolling-window LLM spend limits — enforce `$5/hr` per API tier, user, or agent with a single line.**
 
@@ -657,10 +657,10 @@ Works seamlessly with:
 
 - **OpenTelemetry** — 8 instruments for cost/budget metrics; compatible with any OTel backend *(v0.2.7)*
 - **Langfuse** — Full observability: cost streaming, span hierarchy, circuit-break events, tool spans *(v0.2.4)*
-- **LangChain / LangGraph** — Auto-intercepts `BaseTool.invoke/ainvoke`; tool calls counted + priced *(v0.2.9)*
-- **MCP** — Auto-intercepts `ClientSession.call_tool` for any MCP tool server *(v0.2.9)*
-- **CrewAI** — Auto-intercepts `BaseTool._run/_arun`; per-agent tool tracking *(v0.2.9)*
-- **OpenAI Agents SDK** — Auto-intercepts `FunctionTool.on_invoke_tool` *(v0.2.9)*
+- **LangChain / LangGraph** — Auto-intercepts `BaseTool.invoke/ainvoke`; tool calls counted + priced *(v0.2.8)*
+- **MCP** — Auto-intercepts `ClientSession.call_tool` for any MCP tool server *(v0.2.8)*
+- **CrewAI** — Auto-intercepts `BaseTool._run/_arun`; per-agent tool tracking *(v0.2.8)*
+- **OpenAI Agents SDK** — Auto-intercepts `FunctionTool.on_invoke_tool` *(v0.2.8)*
 - **AutoGen** — Multi-agent cost control
 - **LlamaIndex** — RAG pipeline budgets
 - **Haystack** — Document processing budgets

@@ -39,11 +39,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Development guidelines** updated (`CLAUDE.md`) — TDD required for all new development; 100% code coverage required before PR
 
+- **🔧 Tool Budgets** — Cap agent tool call count and cost; stop runaway tool loops before they start
+  - `max_tool_calls: int | None` — hard cap on total tool dispatches, checked *before* each tool runs
+  - `tool_prices: dict[str, float] | None` — per-tool USD cost; unknown tools count at `$0` toward cap
+  - `@tool` / `tool()` decorator (`shekel/_tool.py`) — wrap any sync/async function or callable; transparent pass-through when no budget is active
+  - `ToolBudgetExceededError` (`shekel/exceptions.py`) — raised pre-dispatch; fields: `tool_name`, `calls_used`, `calls_limit`, `usd_spent`, `usd_limit`, `framework`
+  - Auto-interception adapters (zero config): LangChain `BaseTool.invoke/ainvoke`, MCP `ClientSession.call_tool`, CrewAI `BaseTool._run/_arun`, OpenAI Agents SDK `FunctionTool.on_invoke_tool`
+  - New `Budget` properties: `tool_calls_used`, `tool_calls_remaining`, `tool_spent`
+  - `summary()` extended — tool spend section with per-tool breakdown by framework
+  - Three new adapter events: `on_tool_call`, `on_tool_budget_exceeded`, `on_tool_warn`
+  - Four new OTel instruments: `shekel.tool.calls_total`, `shekel.tool.cost_usd_total`, `shekel.tool.budget_exceeded_total`, `shekel.tool.calls_remaining`
+  - 111 new unit tests in `tests/test_tool_budgets.py` (TDD, Groups A–T)
+  - `pyproject.toml` version synced to `0.2.8`
+
 ### Technical
 - `TemporalBudget._record_spend()` overrides `Budget._record_spend()` to call `backend.check_and_add()` before propagating cost to parent; raises `BudgetExceededError` with `retry_after` and `window_spent` if the window limit is exceeded
 - Window reset detection happens at both `__enter__` (for `on_window_reset` event) and `_record_spend` (for correct `window_spent` payload when window expires mid-context)
 - `shekel.__version__` bumped to `0.2.8`
 - `TemporalBudget` exported in `shekel.__all__`
+- `tool` and `ToolBudgetExceededError` exported in `shekel.__all__`
 
 ## [0.2.7] - 2026-03-14
 
@@ -257,7 +271,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - `UnknownModelError` is kept for backwards compatibility but no longer raised internally
 
-[Unreleased]: https://github.com/arieradle/shekel/compare/v0.2.7...HEAD
+[Unreleased]: https://github.com/arieradle/shekel/compare/v0.2.8...HEAD
+[0.2.8]: https://github.com/arieradle/shekel/compare/v0.2.7...v0.2.8
 [0.2.7]: https://github.com/arieradle/shekel/compare/v0.2.6...v0.2.7
 [0.2.6]: https://github.com/arieradle/shekel/compare/v0.2.5...v0.2.6
 [0.2.5]: https://github.com/arieradle/shekel/compare/v0.2.4...v0.2.5
