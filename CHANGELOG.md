@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.9] - 2026-03-15
+
+### Added
+
+- **🖥️ `shekel run` CLI command** (`shekel/_cli.py`) — Run any Python agent script with budget enforcement from the command line; zero code changes required
+  - `shekel run agent.py --budget 5` — hard USD cap; exits 1 on budget exceeded (CI-friendly)
+  - `--budget N` / `AGENT_BUDGET_USD=N` — env-var fallback enables Docker/CI operator control without rebuilding images
+  - `--warn-at F` — warn fraction 0.0–1.0 (e.g. `0.8` = warn at 80% of budget)
+  - `--max-llm-calls N` / `--max-tool-calls N` — count-based caps
+  - `--warn-only` — log warning, never exit 1; soft guardrail for dev environments
+  - `--dry-run` — track costs only, no enforcement; implies `--warn-only`
+  - `--output json` — machine-readable spend line (`{"spent":…,"limit":…,"calls":…,"status":…}`) for log pipelines
+  - `--budget-file shekel.toml` — load limits from a TOML config file; CLI flags override file values
+  - `--fallback-model` / `--fallback-at` — model fallback via CLI
+  - Exit codes: `0` ok, `1` budget exceeded, `2` config error
+
+- **`Budget(warn_only=True)`** (`shekel/_budget.py`) — new parameter; suppresses `BudgetExceededError` / `ToolBudgetExceededError` raises while still firing `on_warn` callbacks and tracking spend
+
+- **`shekel._run_utils`** — provider detection (`detect_patched_providers`) and spend summary formatting (`format_spend_summary`) used by the `run` command
+
+- **`shekel._run_config`** — `load_budget_file(path)` parses `shekel.toml` TOML budget config files; supports `max_usd`, `warn_at`, `max_llm_calls`, `max_tool_calls`
+
+- **GitHub Actions composite action** (`.github/actions/enforce/action.yml`) — wrap any Python script in a budget-enforced GHA step; maps all `shekel run` flags to action inputs
+
+- **Docker entrypoint docs** (`docs/docker.md`) — patterns for using `shekel run` as a container entrypoint; env-var budget control, TOML mount, JSON logging, shell script wrapper, GHA usage
+
+- **85 new tests** across `test_cli_run.py`, `test_cli_run_output.py`, `test_cli_run_config.py`, `test_budget_warn_only.py`, `tests/performance/test_run_overhead.py` (TDD)
+
+- **Performance**: `shekel run` on a no-op script completes in < 100 ms wall clock (benchmark median ~230 µs)
+
 ## [0.2.8] - 2026-03-15
 
 ### Added
