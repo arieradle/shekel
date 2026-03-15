@@ -10,6 +10,10 @@
 [![codecov](https://codecov.io/gh/arieradle/shekel/branch/main/graph/badge.svg)](https://codecov.io/gh/arieradle/shekel)
 [![Downloads](https://img.shields.io/pypi/dm/shekel)](https://pypi.org/project/shekel/)
 [![Documentation](https://img.shields.io/badge/docs-mkdocs-blue)](https://arieradle.github.io/shekel/)
+[![Security Scan](https://github.com/arieradle/shekel/actions/workflows/security.yml/badge.svg)](https://github.com/arieradle/shekel/actions/workflows/security.yml)
+[![CodeQL](https://img.shields.io/badge/CodeQL-passing-brightgreen)](https://github.com/arieradle/shekel/security/code-scanning)
+[![Trivy](https://img.shields.io/badge/Trivy-scanned-brightgreen)](https://github.com/arieradle/shekel/actions/workflows/security.yml)
+[![pip-audit](https://img.shields.io/badge/pip--audit-passing-brightgreen)](https://github.com/arieradle/shekel/actions/workflows/security.yml)
 
 **LLM budget enforcement and cost tracking for Python. One line. Zero config.**
 
