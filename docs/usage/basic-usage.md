@@ -26,6 +26,23 @@ print(f"Limit: {b.limit}")  # None in track-only mode
 !!! tip "Track-Only Mode"
     Without `max_usd`, shekel records spend but never raises `BudgetExceededError`. Use this to measure baseline costs before setting a hard cap, or in production when you want visibility without the risk of interrupting service.
 
+    You can also track from the CLI without touching the script:
+    ```bash
+    shekel run agent.py          # no --budget = track only
+    shekel run agent.py --dry-run  # explicit dry-run mode
+    ```
+
+## Enforcing a Budget
+
+Add a hard cap to any script — two ways:
+
+```python
+with budget(max_usd=1.00) as b:
+    run_agent()
+# or from the CLI — zero code changes:
+# shekel run agent.py --budget 1
+```
+
 ## Accessing Budget Information
 
 The budget context manager provides several properties:
@@ -266,6 +283,8 @@ print(f"Models used: {list(data['by_model'].keys())}")
 
 ## Next Steps
 
+- **[CLI Reference](../cli.md)** - `shekel run` options for code-free enforcement
+- **[Docker & Containers](../docker.md)** - Entrypoint patterns and env-var budgets
 - **[Budget Enforcement](budget-enforcement.md)** - Learn about hard caps and warnings
 - **[Fallback Models](fallback-models.md)** - Automatic model switching
 - **[Accumulating Budgets](accumulating-budgets.md)** - Multi-session tracking

@@ -78,15 +78,26 @@ To use the `shekel` command-line tools:
 
 ```bash
 pip install shekel[cli]
+# or install globally so it works across all projects:
+# pipx install "shekel[cli]"
 ```
 
-This enables commands like:
+This enables:
 
 ```bash
+# Run any Python agent with a hard USD cap — zero code changes
+shekel run agent.py --budget 5
+shekel run agent.py --budget 5 --warn-at 0.8
+shekel run agent.py --max-llm-calls 20
+AGENT_BUDGET_USD=5 shekel run agent.py   # Docker / CI env var
+
+# Cost estimation and model lookup
 shekel estimate --model gpt-4o --input-tokens 1000 --output-tokens 500
 shekel models
 shekel models --provider openai
 ```
+
+See the [CLI Reference](cli.md) and [Docker & Containers](docker.md) for full details.
 
 ### Development Installation
 
@@ -109,7 +120,7 @@ import shekel
 print(shekel.__version__)
 ```
 
-You should see the version number printed (e.g., `0.2.2`).
+You should see the version number printed (e.g., `0.2.9`).
 
 ## No API Keys Required
 

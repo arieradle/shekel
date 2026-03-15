@@ -20,13 +20,62 @@
 ```python
 with budget(max_usd=1.00):
     run_my_agent()  # raises BudgetExceededError if spend exceeds $1.00
+# or enforce from the CLI — zero code changes:
+# shekel run agent.py --budget 1
 ```
 
 I spent $47 debugging a LangGraph retry loop. The agent kept failing, LangGraph kept retrying, and OpenAI kept charging — all while I slept. I built shekel so you don't have to learn that lesson yourself.
 
 ---
 
-## ⚡️ What's New in v0.2.8: Tool Budgets
+## ⚡️ What's New in v0.2.9: CLI Budget Enforcement
+
+**Run any Python agent with a hard USD cap — zero code changes.**
+
+```bash
+pip install shekel[cli]
+
+shekel run agent.py --budget 5           # hard stop at $5
+shekel run agent.py --budget 5 --warn-at 0.8  # warn at 80%, stop at 100%
+shekel run agent.py --max-llm-calls 20   # cap by call count
+shekel run agent.py --output json        # machine-readable spend line (CI logs)
+shekel run agent.py --warn-only          # soft guardrail — log, never exit 1
+AGENT_BUDGET_USD=5 shekel run agent.py  # Docker / CI operator control via env var
+```
+
+Exit code 1 on budget exceeded — works as a CI pipeline gate with zero pipeline config:
+
+```yaml
+# GitHub Actions — one step, no code changes
+- uses: ./.github/actions/enforce
+  with:
+    script: agent.py
+    budget: "5"
+```
+
+Docker entrypoint pattern:
+
+```dockerfile
+pip install shekel[cli]
+ENTRYPOINT ["shekel", "run", "agent.py"]
+# docker run -e AGENT_BUDGET_USD=5 my-agent-image
+```
+
+**What's new:**
+- `shekel run` — wraps any Python script in-process; shekel patches are already active
+- `--budget N` / `AGENT_BUDGET_USD=N` — USD cap with Docker/CI env-var support
+- `--warn-only` — log warning, never exit 1; soft guardrail
+- `--dry-run` — track costs only, no enforcement; implies `--warn-only`
+- `--output json` — machine-readable spend summary for log pipelines
+- `--budget-file shekel.toml` — load limits from a TOML config file
+- `Budget(warn_only=True)` — new parameter suppresses raises, fires warn callback
+- GitHub Actions composite action: `.github/actions/enforce/action.yml`
+
+**[📖 CLI Reference](https://arieradle.github.io/shekel/cli/)** · **[📖 Docker & Containers](https://arieradle.github.io/shekel/docker/)**
+
+---
+
+## ⚡️ Previous: v0.2.8 — Tool Budgets
 
 **Your agent just called `web_search` 847 times. Here's your bill. shekel stops that.**
 
@@ -290,7 +339,8 @@ pip install shekel[litellm]      # LiteLLM (budget enforcement across 100+ provi
 pip install shekel[otel]         # OpenTelemetry metrics (ShekelMeter)
 pip install shekel[all]          # All providers + Langfuse + OTel
 pip install shekel[all-models]   # All above + tokencost (400+ model pricing)
-pip install shekel[cli]          # CLI tools (shekel estimate, shekel models)
+pip install shekel[cli]          # CLI tools: shekel run, shekel estimate, shekel models
+# pipx install shekel[cli]       # install globally for use across all projects
 ```
 
 ---
@@ -511,6 +561,18 @@ print(b.summary())
 ## CLI
 
 ```bash
+pip install shekel[cli]
+
+# Enforce a budget on any Python agent — zero code changes
+shekel run agent.py --budget 5
+shekel run agent.py --budget 5 --warn-at 0.8
+shekel run agent.py --max-llm-calls 20 --max-tool-calls 100
+shekel run agent.py --output json        # machine-readable spend line
+shekel run agent.py --warn-only          # soft guardrail — log, never fail
+shekel run agent.py --dry-run            # track only, no enforcement
+shekel run agent.py --budget-file shekel.toml  # load limits from TOML
+AGENT_BUDGET_USD=5 shekel run agent.py  # env var — Docker / CI friendly
+
 # Estimate cost before running
 shekel estimate --model gpt-4o --input-tokens 1000 --output-tokens 500
 # Model:          gpt-4o
@@ -522,6 +584,16 @@ shekel estimate --model gpt-4o --input-tokens 1000 --output-tokens 500
 shekel models
 shekel models --provider openai
 shekel models --provider anthropic
+```
+
+`shekel.toml` format:
+
+```toml
+[budget]
+max_usd       = 5.0
+warn_at       = 0.8
+max_llm_calls = 50
+max_tool_calls = 200
 ```
 
 ---
@@ -685,6 +757,8 @@ Any framework that calls `openai` or `anthropic` under the hood works automatica
 **Full documentation: [arieradle.github.io/shekel](https://arieradle.github.io/shekel/)**
 
 - [Quick Start Guide](https://arieradle.github.io/shekel/quickstart/)
+- [CLI Reference](https://arieradle.github.io/shekel/cli/) *(v0.2.9)*
+- [Docker & Container Guardrails](https://arieradle.github.io/shekel/docker/) *(v0.2.9)*
 - [Nested Budgets Guide](https://arieradle.github.io/shekel/usage/nested-budgets/)
 - [Langfuse Integration Guide](https://arieradle.github.io/shekel/langfuse-integration/) *(v0.2.4)*
 - [API Reference](https://arieradle.github.io/shekel/api-reference/)

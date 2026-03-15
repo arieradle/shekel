@@ -130,6 +130,7 @@ nav:
     - OpenTelemetry: integrations/otel.md
   - Reference:
     - CLI Tools: cli.md
+    - Docker & Containers: docker.md
     - API Reference: api-reference.md
     - Supported Models: models.md
     - Changelog: changelog.md

@@ -32,6 +32,12 @@ with budget(max_usd=1.00):
     run_my_agent()  # raises BudgetExceededError if spend exceeds $1.00
 ```
 
+Or enforce from the command line — no code changes needed:
+
+```bash
+shekel run agent.py --budget 1
+```
+
 ---
 
 ## The Story
@@ -55,6 +61,7 @@ I built shekel so you don't have to learn that lesson yourself.
     ```python
     with budget(max_usd=1.00):
         run_agent()
+    # or: shekel run agent.py --budget 1
     ```
 
 -   :material-shield-check:{ .lg .middle } **Budget Enforcement**
@@ -255,7 +262,36 @@ print(f"Remaining: ${b.remaining:.4f}")
 
 ---
 
-## What's New in v0.2.8
+## What's New in v0.2.9
+
+<div class="grid cards" markdown>
+
+-   :material-console:{ .lg .middle } **[CLI Budget Enforcement](cli.md)**
+
+    ---
+
+    Run any Python agent with a hard USD cap — zero code changes. CI-friendly exit code 1. Docker, GitHub Actions, `.sh` scripts.
+
+    ```bash
+    shekel run agent.py --budget 5
+    AGENT_BUDGET_USD=5 shekel run agent.py
+    ```
+
+-   :material-docker:{ .lg .middle } **[Docker & Container Guardrails](docker.md)**
+
+    ---
+
+    Use `shekel run` as a Docker entrypoint wrapper. Set `AGENT_BUDGET_USD` at runtime — no rebuild needed.
+
+    ```dockerfile
+    ENTRYPOINT ["shekel", "run", "agent.py"]
+    ```
+
+</div>
+
+---
+
+## Previous: v0.2.8
 
 <div class="grid cards" markdown>
 

@@ -64,7 +64,9 @@ print(f"That cost: ${b.spent:.4f}")
 
 ## Step 4: Enforce a Budget
 
-Add a hard cap to prevent runaway costs:
+Add a hard cap to prevent runaway costs — two ways:
+
+**In code:**
 
 ```python
 from shekel import budget, BudgetExceededError
@@ -76,6 +78,14 @@ try:
 except BudgetExceededError as e:
     print(f"Budget exceeded: {e}")
     print(f"Spent: ${e.spent:.4f} / ${e.limit:.2f}")
+```
+
+**From the CLI — zero code changes:**
+
+```bash
+pip install shekel[cli]
+shekel run agent.py --budget 0.50
+# exits with code 1 if budget exceeded — CI-friendly
 ```
 
 ## Step 5: Add Early Warnings
@@ -314,10 +324,25 @@ Output:
 
 ## CLI Tools
 
-Estimate costs before making API calls:
+### Budget enforcement from the command line
+
+Run any Python agent with a hard cap — no code changes required:
 
 ```bash
-# Estimate cost
+pip install shekel[cli]
+
+shekel run agent.py --budget 5           # hard stop at $5, exit 1
+shekel run agent.py --budget 5 --warn-at 0.8  # warn at 80%
+shekel run agent.py --max-llm-calls 20   # cap by call count
+shekel run agent.py --warn-only          # log, never exit 1
+shekel run agent.py --output json        # machine-readable spend line
+AGENT_BUDGET_USD=5 shekel run agent.py  # Docker / CI env var
+```
+
+### Cost estimation
+
+```bash
+# Estimate cost before making API calls
 shekel estimate --model gpt-4o --input-tokens 1000 --output-tokens 500
 # Model:          gpt-4o
 # Input tokens:   1,000
@@ -336,6 +361,8 @@ shekel models --provider anthropic
 
 Now that you've seen the basics, dive deeper:
 
+- **[CLI Reference](cli.md)** - Full `shekel run` options, flags, and exit codes
+- **[Docker & Containers](docker.md)** - Entrypoint patterns, env vars, JSON logging
 - **[Nested Budgets](usage/nested-budgets.md)** - Hierarchical tracking for multi-stage workflows
 - **[Budget Enforcement](usage/budget-enforcement.md)** - Learn about hard caps, warnings, and callbacks
 - **[Fallback Models](usage/fallback-models.md)** - Automatic model switching

@@ -2,6 +2,35 @@
 
 All notable changes to this project are documented here. For detailed information, see [CHANGELOG.md](https://github.com/arieradle/shekel/blob/main/CHANGELOG.md) on GitHub.
 
+## [0.2.9] {#029}
+
+### 🖥️ CLI Budget Enforcement — `shekel run`
+
+Run any Python agent with a hard USD cap from the command line — zero code changes required.
+
+```bash
+shekel run agent.py --budget 5          # hard cap at $5
+shekel run agent.py --budget 5 --warn-at 0.8   # warn at 80%
+AGENT_BUDGET_USD=5 shekel run agent.py  # env var (Docker / CI)
+```
+
+- `shekel run SCRIPT [OPTIONS]` — wraps any Python script in-process; shekel's monkey-patches are already active when the script runs
+- `--budget N` / `AGENT_BUDGET_USD=N` — USD cap; env var enables Docker/CI operator control without code changes
+- `--warn-at F` — warn fraction 0.0–1.0 (e.g. `0.8` = warn at 80%)
+- `--max-llm-calls N` / `--max-tool-calls N` — count-based caps
+- `--warn-only` — log warning, never exit 1; soft guardrail for dev environments
+- `--dry-run` — track costs only, no enforcement; implies `--warn-only`
+- `--output json` — machine-readable spend line for log pipelines
+- `--budget-file shekel.toml` — load limits from a TOML config file
+- `Budget(warn_only=True)` — new parameter suppresses raises, fires warn callback instead
+- GitHub Actions composite action: `.github/actions/enforce/action.yml`
+- New docs: [CLI reference](cli.md) · [Docker & Containers](docker.md)
+- Exit code 1 on budget exceeded — works as a CI pipeline gate with zero pipeline config
+
+[Full CHANGELOG →](https://github.com/arieradle/shekel/blob/main/CHANGELOG.md#029)
+
+---
+
 ## [0.2.8] {#028}
 
 ### 🔧 Tool Budgets
