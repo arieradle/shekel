@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "shekel"
-version = "0.2.7"
+version = "0.2.8"
 description = "LLM budget enforcement and cost tracking. Zero config — with budget(max_usd=1.00): run_agent(). Works with LangGraph, CrewAI, raw OpenAI/Anthropic/Gemini."
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -165,6 +165,22 @@ ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = ["opentelemetry", "opentelemetry.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["mcp", "mcp.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["langchain_core", "langchain_core.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["crewai", "crewai.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["agents", "agents.*"]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]

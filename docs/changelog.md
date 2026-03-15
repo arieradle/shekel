@@ -2,6 +2,34 @@
 
 All notable changes to this project are documented here. For detailed information, see [CHANGELOG.md](https://github.com/arieradle/shekel/blob/main/CHANGELOG.md) on GitHub.
 
+## [0.2.8] {#028}
+
+### 🔧 Tool Budgets
+
+Cap agent tool call count and cost — stop runaway tool loops before they bankrupt you.
+
+- `max_tool_calls` — hard cap on total dispatches, checked *before* each tool runs
+- `tool_prices` — per-tool USD cost; unknown tools count at `$0` toward the cap
+- `@tool` / `tool()` decorator — one line for any sync/async function or callable
+- `ToolBudgetExceededError` — `tool_name`, `calls_used`, `calls_limit`, `usd_spent`, `framework`
+- Auto-interception: LangChain `BaseTool`, MCP `ClientSession.call_tool`, CrewAI `BaseTool`, OpenAI Agents SDK `FunctionTool` — zero config
+- `summary()` extended with tool spend breakdown by tool name and framework
+- Four new OTel instruments: `shekel.tool.calls_total`, `shekel.tool.cost_usd_total`, `shekel.tool.budget_exceeded_total`, `shekel.tool.calls_remaining`
+- 111 new unit tests (TDD)
+
+### ⏱️ Temporal Budgets
+
+Rolling-window LLM spend limits — enforce `$5/hr` per API tier, user, or agent.
+
+- `budget("$5/hr", name="api-tier")` — string DSL
+- `TemporalBudgetBackend` Protocol — bring your own Redis/Postgres backend
+- `BudgetExceededError` enriched with `retry_after` and `window_spent`
+- `on_window_reset` adapter event + `shekel.budget.window_resets_total` OTel counter
+
+[Full CHANGELOG →](https://github.com/arieradle/shekel/blob/main/CHANGELOG.md#028)
+
+---
+
 ## [0.2.7] {#027}
 
 ### 📡 OpenTelemetry Metrics Integration

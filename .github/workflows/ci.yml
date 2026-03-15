@@ -97,6 +97,7 @@ jobs:
         if: matrix.python-version == '3.11'
         with:
           files: coverage.xml
+          flags: unittests
           fail_ci_if_error: false
 
   integration-tests:
@@ -127,6 +128,7 @@ jobs:
         uses: codecov/codecov-action@v4
         with:
           files: coverage.xml
+          flags: integration
           fail_ci_if_error: false
 
   performance:

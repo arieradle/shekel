@@ -4,10 +4,19 @@ from typing import Any
 
 from shekel._budget import Budget
 from shekel._decorator import with_budget
-from shekel.exceptions import BudgetExceededError
+from shekel._tool import tool
+from shekel.exceptions import BudgetExceededError, ToolBudgetExceededError
 
 __version__ = "0.2.8"
-__all__ = ["budget", "Budget", "TemporalBudget", "with_budget", "BudgetExceededError"]
+__all__ = [
+    "budget",
+    "Budget",
+    "TemporalBudget",
+    "with_budget",
+    "BudgetExceededError",
+    "ToolBudgetExceededError",
+    "tool",
+]
 
 
 def budget(

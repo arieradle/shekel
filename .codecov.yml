@@ -1,0 +1,28 @@
+coverage:
+  precision: 2
+  round: down
+  range: "70...100"
+
+  status:
+    project:
+      default:
+        target: auto
+        threshold: 1%
+    patch:
+      default:
+        # Use only unit-test coverage for patch analysis.
+        # Integration tests run against live APIs and don't cover adapter code.
+        target: auto
+        threshold: 5%
+        flags:
+          - unittests
+
+flags:
+  unittests:
+    paths:
+      - shekel/
+    carryforward: false
+  integration:
+    paths:
+      - shekel/
+    carryforward: false

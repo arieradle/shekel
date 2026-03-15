@@ -114,6 +114,7 @@ nav:
     - Budget Enforcement: usage/budget-enforcement.md
     - Fallback Models: usage/fallback-models.md
     - Temporal Budgets: usage/temporal-budgets.md
+    - Tool Budgets: usage/tool-budgets.md
     - Accumulating Budgets: usage/accumulating-budgets.md
     - Streaming: usage/streaming.md
     - Decorators: usage/decorators.md

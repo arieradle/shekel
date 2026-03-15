@@ -119,6 +119,17 @@ I built shekel so you don't have to learn that lesson yourself.
         response = await client.chat(...)
     ```
 
+-   :material-tools:{ .lg .middle } **Tool Budgets**
+
+    ---
+
+    Cap agent tool calls before they bankrupt you. Auto-intercepts LangChain, MCP, CrewAI, OpenAI Agents. `@tool` decorator for plain Python.
+
+    ```python
+    with budget(max_tool_calls=50):
+        run_agent()  # ToolBudgetExceededError on call 51
+    ```
+
 -   :material-chart-line:{ .lg .middle } **OpenTelemetry Metrics**
 
     ---
@@ -248,7 +259,21 @@ print(f"Remaining: ${b.remaining:.4f}")
 
 <div class="grid cards" markdown>
 
--   :material-clock-time-four:{ .lg .middle } **[Temporal Budgets](usage/temporal-budgets.md)**
+-   :material-tools:{ .lg .middle } **[Tool Budgets](usage/tool-budgets.md)**
+
+    ---
+
+    Cap agent tool calls and charge per-tool USD. Auto-intercepts LangChain, MCP, CrewAI, and OpenAI Agents SDK. One decorator for plain Python tools.
+
+    ```python
+    with budget(max_tool_calls=50):
+        run_agent()
+
+    @tool(price=0.005)
+    def web_search(query): ...
+    ```
+
+-   :material-clock-time-four:{ .lg .middle } **[Temporal Budgets *(v0.2.8)*](usage/temporal-budgets.md)**
 
     ---
 

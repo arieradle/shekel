@@ -451,7 +451,7 @@ def test_fallback_async() -> None:
                     await client.chat.completions.create(model="gpt-4o", messages=[])
         return b  # type: ignore[return-value]
 
-    b = asyncio.get_event_loop().run_until_complete(run())
+    b = asyncio.run(run())
     assert b.model_switched is True
     assert captured_models[1] == "gpt-4o-mini"
 
