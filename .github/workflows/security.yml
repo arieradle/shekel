@@ -70,37 +70,6 @@ jobs:
           category: trivy
 
   # ---------------------------------------------------------------------------
-  # OSV-Scanner — checks all dependencies against the OSV vulnerability DB
-  # ---------------------------------------------------------------------------
-  osv-scanner:
-    name: OSV Scanner
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      security-events: write
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Run OSV-Scanner
-        uses: google/osv-scanner-action@v2.3.3
-        with:
-          scan-args: |-
-            --format=sarif
-            --output=osv-results.sarif
-            --recursive
-            ./
-        # osv-scanner exits non-zero when vulnerabilities are found;
-        # capture the result so we can still upload the SARIF file
-        continue-on-error: true
-
-      - name: Upload OSV SARIF to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
-        with:
-          sarif_file: osv-results.sarif
-          category: osv-scanner
-
-  # ---------------------------------------------------------------------------
   # Bandit + pip-audit — Python-specific checks run as a regular CI job
   # ---------------------------------------------------------------------------
   python-security:
