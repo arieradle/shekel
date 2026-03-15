@@ -4,7 +4,7 @@
 [![Python versions](https://img.shields.io/pypi/pyversions/shekel)](https://pypi.org/project/shekel/)
 [![License](https://img.shields.io/pypi/l/shekel)](https://pypi.org/project/shekel/)
 [![CI](https://github.com/arieradle/shekel/actions/workflows/ci.yml/badge.svg)](https://github.com/arieradle/shekel/actions/workflows/ci.yml)
-[![Unit Tests](https://img.shields.io/badge/unit%20tests-491%20passed-brightgreen)](https://github.com/arieradle/shekel/actions/workflows/ci.yml)
+[![Unit Tests](https://img.shields.io/badge/unit%20tests-602%20passed-brightgreen)](https://github.com/arieradle/shekel/actions/workflows/ci.yml)
 [![Integration Tests](https://img.shields.io/badge/integration%20tests-340%20passed-brightgreen)](https://github.com/arieradle/shekel/actions/workflows/ci.yml)
 [![Performance Tests](https://img.shields.io/badge/performance%20tests-148%20passed-brightgreen)](https://github.com/arieradle/shekel/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/arieradle/shekel/branch/main/graph/badge.svg)](https://codecov.io/gh/arieradle/shekel)
@@ -26,41 +26,77 @@ I spent $47 debugging a LangGraph retry loop. The agent kept failing, LangGraph 
 
 ---
 
-## ⚡️ What's New in v0.2.8: Temporal Budgets
+## ⚡️ What's New in v0.2.9: Tool Budgets
+
+**Your agent just called `web_search` 847 times. Here's your bill. shekel stops that.**
+
+```python
+# Hard cap — works with LangChain, MCP, CrewAI, OpenAI Agents. Zero changes to your agent.
+with budget(max_tool_calls=50):
+    run_agent()  # raises ToolBudgetExceededError on the 51st tool call
+```
+
+```python
+# Charge per tool + hard USD cap — full cost picture
+from shekel import tool
+
+@tool(price=0.005)
+def web_search(query: str) -> str: ...
+
+with budget(max_usd=2.00, tool_prices={"web_search": 0.005}, max_tool_calls=100) as b:
+    run_agent()
+
+print(b.summary())  # LLM spend + tool spend, broken out by tool and framework
+```
+
+Auto-intercepted — **no changes to your agent code**:
+
+```python
+# LangChain / LangGraph — BaseTool.invoke tracked automatically
+with budget(max_tool_calls=20):
+    agent.invoke({"input": "research quantum computing"})
+
+# MCP — session.call_tool tracked automatically
+with budget(max_tool_calls=100):
+    result = await session.call_tool("brave_search", {"query": "..."})
+
+# CrewAI and OpenAI Agents SDK — same one-liner
+```
+
+**What's new:**
+- `max_tool_calls` — hard cap on total tool dispatches; checked *before* the tool runs
+- `tool_prices` — `{"tool_name": USD}` per call; unknown tools count at `$0` but still cap
+- `@tool` / `tool()` — one decorator for any Python function or third-party callable
+- Auto-interception — LangChain, MCP, CrewAI, OpenAI Agents SDK; zero config
+- `ToolBudgetExceededError` — `tool_name`, `calls_used`, `calls_limit`, `usd_spent`, `framework`
+- `summary()` extended — tool spend broken out by tool name and framework
+
+**[📖 Tool Budgets Guide](https://arieradle.github.io/shekel/usage/tool-budgets/)**
+
+---
+
+### What's New in v0.2.8: Temporal Budgets
 
 **Rolling-window LLM spend limits — enforce `$5/hr` per API tier, user, or agent with a single line.**
 
 ```python
-from shekel import budget, BudgetExceededError
-
-# String DSL
 api_budget = budget("$5/hr", name="api-tier")
 
 async with api_budget:
     response = await client.chat.completions.create(...)
 ```
 
-```python
-# Or explicit kwargs
-api_budget = budget(max_usd=5.0, window_seconds=3600, name="api-tier")
-```
-
-When the window limit is hit, `BudgetExceededError` now carries `retry_after` (seconds until reset) and `window_spent`:
+When the window limit is hit, `BudgetExceededError` carries `retry_after` and `window_spent`:
 
 ```python
-try:
-    async with api_budget:
-        response = await client.chat(...)
 except BudgetExceededError as e:
     print(f"Window exceeded — retry in {e.retry_after:.0f}s (spent ${e.window_spent:.2f})")
 ```
 
-**Design decisions:**
-- Rolling window only (no fixed calendar windows) — simpler, no clock-sync issues
-- Lazy reset on `__enter__` — no background threads
+- Rolling window only — no clock-sync issues, no background threads
 - `TemporalBudgetBackend` Protocol — bring your own Redis/Postgres backend
-- Temporal-in-temporal nesting raises `ValueError` (regular `Budget` nesting is fine)
-- `name=` is required on `TemporalBudget` — prevents ambiguous metrics
+
+**[📖 Temporal Budgets Guide](https://arieradle.github.io/shekel/usage/temporal-budgets/)**
 
 ### Previous: OpenTelemetry Metrics *(v0.2.7)*
 
@@ -176,6 +212,44 @@ print(workflow.tree())
 - 🌳 Visual tree — Debug complex workflows instantly
 
 **[📖 Nested Budgets Guide](https://arieradle.github.io/shekel/usage/nested-budgets/)**
+
+### 🔧 Tool Budgets
+
+Stop runaway tool loops before they start. Cap any agent's tool calls at the source — LangChain, MCP, CrewAI, OpenAI Agents, or plain Python.
+
+```python
+with budget(max_tool_calls=50, tool_prices={"web_search": 0.01}) as b:
+    run_my_langgraph_agent()
+
+print(b.summary())
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Total: $0.85  Tool calls: 23 / 50
+#
+# LLM spend:   $0.62  (12 calls)
+# Tool spend:  $0.23  (23 tool calls)
+#   web_search  $0.10  (10 calls)  [langchain]
+#   run_code    $0.09  ( 3 calls)  [mcp]
+#   read_file   $0.04  (10 calls)  [manual]
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+Decorate plain Python tools once — shekel handles the rest:
+
+```python
+from shekel import tool
+
+@tool(price=0.005)          # priced — count + charge
+def web_search(query: str) -> str: ...
+
+@tool                       # free — just count calls
+def read_file(path: str) -> str: ...
+
+wrapped = tool(TavilySearchResults(), price=0.005)  # third-party wrapper
+```
+
+**[📖 Tool Budgets Guide](https://arieradle.github.io/shekel/usage/tool-budgets/)**
+
+---
 
 ### 🔭 Langfuse Integration
 
@@ -476,6 +550,8 @@ budget("$1/60s", name="realtime")    # $1 per minute
 | `fallback` | `dict \| None` | `None` | Switch model at threshold: `{"at_pct": 0.8, "model": "gpt-4o-mini"}`. Same provider only. |
 | `on_fallback` | `Callable \| None` | `None` | Callback on fallback switch. Receives `(spent, limit, fallback_model)`. |
 | `max_llm_calls` | `int \| None` | `None` | Hard cap on number of LLM API calls. |
+| `max_tool_calls` | `int \| None` | `None` | Hard cap on total tool dispatches. Checked *before* each tool runs. |
+| `tool_prices` | `dict \| None` | `None` | Per-tool USD cost: `{"web_search": 0.01}`. Unknown tools count at `$0`. |
 | `price_per_1k_tokens` | `dict \| None` | `None` | Override pricing: `{"input": 0.001, "output": 0.003}`. |
 
 ### Properties
@@ -488,6 +564,9 @@ budget("$1/60s", name="realtime")    # $1 per minute
 | `name` | `str \| None` | Budget name. |
 | `calls_used` | `int` | Number of LLM API calls made so far. |
 | `calls_remaining` | `int \| None` | Calls remaining before `max_llm_calls` is hit. |
+| `tool_calls_used` | `int` | Total tool dispatches recorded so far. |
+| `tool_calls_remaining` | `int \| None` | Tool calls left before `max_tool_calls` is hit. |
+| `tool_spent` | `float` | Total USD spent on tools (requires `tool_prices`). |
 | `parent` | `Budget \| None` | Parent budget, or `None` if root. |
 | `children` | `list[Budget]` | List of child budgets. |
 | `active_child` | `Budget \| None` | Currently active child. |
@@ -518,6 +597,37 @@ budget("$1/60s", name="realtime")    # $1 per minute
 | `retry_after` | `float \| None` — seconds until `TemporalBudget` window resets. `None` for regular `Budget`. |
 | `window_spent` | `float \| None` — spend accumulated in the current rolling window. `None` for regular `Budget`. |
 
+### `ToolBudgetExceededError`
+
+```python
+from shekel import ToolBudgetExceededError
+```
+
+| Attribute | Description |
+|-----------|-------------|
+| `tool_name` | Name of the tool that was blocked. |
+| `calls_used` | Total tool calls made when the limit was hit. |
+| `calls_limit` | The `max_tool_calls` setting. |
+| `usd_spent` | Total tool USD spent when blocked. |
+| `usd_limit` | The `max_usd` budget limit. |
+| `framework` | What dispatched the tool: `"langchain"`, `"mcp"`, `"crewai"`, `"openai-agents"`, `"manual"`. |
+
+### `@tool` decorator
+
+```python
+from shekel import tool
+
+@tool                        # count calls, zero charge
+def read_file(path): ...
+
+@tool(price=0.005)           # count + charge $0.005/call
+def web_search(query): ...
+
+wrapped = tool(TavilySearchResults(), price=0.005)  # wrap any callable
+```
+
+Works with sync and async functions. Transparent pass-through when no budget is active.
+
 ---
 
 ## Supported Models
@@ -546,22 +656,25 @@ For unlisted models: pass `price_per_1k_tokens` or install `shekel[all-models]` 
 Works seamlessly with:
 
 - **OpenTelemetry** — 8 instruments for cost/budget metrics; compatible with any OTel backend *(v0.2.7)*
-- **Langfuse** — Full observability: cost streaming, span hierarchy, circuit-break events *(v0.2.4)*
-- **LangGraph** — Budget entire agent workflows
-- **CrewAI** — Per-agent budget tracking
+- **Langfuse** — Full observability: cost streaming, span hierarchy, circuit-break events, tool spans *(v0.2.4)*
+- **LangChain / LangGraph** — Auto-intercepts `BaseTool.invoke/ainvoke`; tool calls counted + priced *(v0.2.9)*
+- **MCP** — Auto-intercepts `ClientSession.call_tool` for any MCP tool server *(v0.2.9)*
+- **CrewAI** — Auto-intercepts `BaseTool._run/_arun`; per-agent tool tracking *(v0.2.9)*
+- **OpenAI Agents SDK** — Auto-intercepts `FunctionTool.on_invoke_tool` *(v0.2.9)*
 - **AutoGen** — Multi-agent cost control
 - **LlamaIndex** — RAG pipeline budgets
 - **Haystack** — Document processing budgets
 
-Any framework that calls `openai` or `anthropic` under the hood works automatically. See [`examples/`](examples/) for demos.
+Any framework that calls `openai` or `anthropic` under the hood works automatically for LLM spend. For tool call tracking, use `@tool` or the auto-interception adapters above. See [`examples/`](examples/) for demos.
 
 ---
 
 ## How It Works
 
 - **Monkey-patching** — Wraps `openai.chat.completions.create()` and `anthropic.messages.create()` on context entry
+- **Tool interception** — Patches LangChain `BaseTool`, MCP `ClientSession.call_tool`, CrewAI `BaseTool`, and OpenAI Agents `FunctionTool`; `@tool` for plain Python
 - **ContextVar isolation** — Each `budget()` stores its counter in a ContextVar; concurrent agents never share state
-- **Hierarchical tracking** — Parent/child relationships track spend propagation automatically
+- **Hierarchical tracking** — Parent/child relationships track spend propagation automatically; tool counts roll up too
 - **Ref-counted patching** — Nested contexts patch only once
 - **Zero config** — No API keys, no external services
 
@@ -588,18 +701,23 @@ This project provides:
 - Token budgeting for LLM APIs
 - Spend limits and usage quotas
 - Guardrails for agentic systems
+- Tool call budgets for AI agents
+- Agent tool usage caps and limits
+- Rolling-window rate limits for LLM APIs
 
 Works with ecosystems including:
 
-OpenAI, Anthropic Claude, LangChain, LangGraph, Langfuse, CrewAI
+OpenAI, Anthropic Claude, LangChain, LangGraph, Langfuse, CrewAI, MCP, OpenAI Agents SDK
 
 Use cases include:
 
 - Preventing runaway LLM costs
+- Preventing runaway agent tool loops
 - Enforcing AI agent budgets
 - LLMOps governance
 - Token usage control
 - AI API spend guardrails
+- Per-user and per-tier rolling spend limits
 
 ---
 
