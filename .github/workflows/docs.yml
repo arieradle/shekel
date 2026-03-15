@@ -14,7 +14,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0  # mike needs full history to manage gh-pages
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -24,14 +24,25 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install mkdocs-material
+          pip install mkdocs-material mike
 
-      - name: Build docs
-        run: mkdocs build
+      - name: Configure git for mike
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./site
-          cname: false
+      - name: Resolve version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            VERSION="${{ github.event.release.tag_name }}"
+          else
+            VERSION="v$(grep '^version' pyproject.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')"
+          fi
+          # Strip leading 'v' for mike label (mike uses "0.2.8", not "v0.2.8")
+          echo "version=${VERSION#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy docs with mike
+        run: |
+          mike deploy --push --update-aliases ${{ steps.version.outputs.version }} latest
+          mike set-default --push latest
