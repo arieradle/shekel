@@ -71,7 +71,7 @@ def test_async_function_wrapped() -> None:
         return fake
 
     with patch(ASYNC_OPENAI_CREATE, new=fake_create_async):
-        asyncio.get_event_loop().run_until_complete(run_async())
+        asyncio.run(run_async())
 
     expected = calculate_cost("gpt-4o", 500, 200)
     assert results[0] == pytest.approx(expected)

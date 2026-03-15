@@ -226,7 +226,7 @@ def test_persistent_async() -> None:
                 async with session:
                     await client.chat.completions.create(model="gpt-4o", messages=[])
 
-    asyncio.get_event_loop().run_until_complete(run())
+    asyncio.run(run())
     assert session.spent == pytest.approx(expected_per_call * 3)
 
 

@@ -104,3 +104,50 @@ class ObservabilityAdapter:
                 - previous_spent: float - Amount spent in the previous window
         """
         pass
+
+    def on_tool_call(self, tool_data: dict[str, Any]) -> None:
+        """Called after every successful tool dispatch.
+
+        Args:
+            tool_data: Dictionary containing:
+                - tool_name: str - Name of the tool that was called
+                - cost: float - USD cost of this call (0.0 if unpriced)
+                - framework: str - Source framework ('manual', 'mcp', 'langchain', etc.)
+                - budget_name: str - Name of the active budget
+                - calls_used: int - Tool calls used so far (including this one)
+                - calls_remaining: int | None - Remaining tool call budget
+                - usd_spent: float - Total tool USD spent so far
+        """
+        pass
+
+    def on_tool_budget_exceeded(self, error_data: dict[str, Any]) -> None:
+        """Called when a tool call is blocked due to budget exhaustion.
+
+        Fired *before* the tool executes — the tool never runs.
+
+        Args:
+            error_data: Dictionary containing:
+                - tool_name: str - Name of the tool that was blocked
+                - calls_used: int - Tool calls used at the time of blocking
+                - calls_limit: int | None - The tool call limit
+                - usd_spent: float - Total tool USD spent so far
+                - usd_limit: float | None - The USD limit (None if not set)
+                - framework: str - Source framework
+                - budget_name: str - Name of the active budget
+        """
+        pass
+
+    def on_tool_warn(self, warn_data: dict[str, Any]) -> None:
+        """Called when tool calls reach the warn_at threshold.
+
+        Fires once per budget context when tool_calls_used >= warn_at × max_tool_calls.
+
+        Args:
+            warn_data: Dictionary containing:
+                - tool_name: str - Name of the tool that triggered the warning
+                - calls_used: int - Tool calls used at the time of warning
+                - calls_limit: int | None - The tool call limit
+                - budget_name: str - Name of the active budget
+                - warn_at: float - The threshold fraction that was configured
+        """
+        pass

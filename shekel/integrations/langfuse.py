@@ -256,3 +256,48 @@ class LangfuseAdapter(ObservabilityAdapter):
         except Exception:
             # Don't break Shekel if Langfuse fails
             pass
+
+    def on_tool_call(self, tool_data: dict[str, Any]) -> None:
+        """Called after every tool dispatch. Creates a Langfuse span with cost field.
+
+        Populates Langfuse's native ``cost`` field so the platform's cost UI
+        shows full agent cost (LLM + tools), not just LLM spend.
+
+        Args:
+            tool_data: Dictionary containing:
+                - tool_name: str - Name of the tool
+                - cost: float - USD cost of this call
+                - framework: str - Source framework
+                - budget_name: str - Active budget name
+                - calls_used: int - Tool calls used so far
+                - calls_remaining: int | None - Remaining tool call budget
+                - usd_spent: float - Total tool USD spent so far
+        """
+        try:
+            if self._trace is None:
+                self._trace = self.client.trace(
+                    name=self.trace_name,
+                    tags=self.tags if self.tags else None,
+                )
+
+            tool_name = tool_data.get("tool_name", "unknown")
+            cost = float(tool_data.get("cost", 0.0) or 0.0)
+
+            # Determine parent (trace or current span)
+            parent = self._span_stack[-1] if self._span_stack else self._trace
+
+            if parent is not None:
+                parent.span(
+                    name=f"tool:{tool_name}",
+                    metadata={
+                        "tool_name": tool_name,
+                        "framework": tool_data.get("framework", "unknown"),
+                        "budget_name": tool_data.get("budget_name", "unnamed"),
+                        "calls_used": tool_data.get("calls_used"),
+                        "calls_remaining": tool_data.get("calls_remaining"),
+                        "usd_spent": tool_data.get("usd_spent"),
+                    },
+                    cost=cost if cost > 0.0 else None,
+                )
+        except Exception:
+            pass

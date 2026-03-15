@@ -81,6 +81,25 @@ class _OtelMetricsAdapter(ObservabilityAdapter):
             description="Number of TemporalBudget rolling-window resets",
         )
 
+        # Tool metrics (v0.2.8)
+        self._tool_calls = meter.create_counter(
+            "shekel.tool.calls_total",
+            description="Total number of tool calls tracked by Shekel",
+        )
+        self._tool_cost = meter.create_counter(
+            "shekel.tool.cost_usd_total",
+            unit="USD",
+            description="Total USD cost of tool calls tracked by Shekel",
+        )
+        self._tool_exceeded = meter.create_counter(
+            "shekel.tool.budget_exceeded_total",
+            description="Number of tool calls blocked by budget enforcement",
+        )
+        self._tool_remaining = meter.create_observable_gauge(
+            "shekel.tool.calls_remaining",
+            description="Remaining tool call budget for the active budget context",
+        )
+
         # Optional token counters
         if emit_tokens:
             self._tokens_in: Any = meter.create_counter(
@@ -162,6 +181,30 @@ class _OtelMetricsAdapter(ObservabilityAdapter):
         try:
             self._window_resets.add(1, {"budget_name": data.get("budget_name", "unnamed")})
         except Exception:  # noqa: BLE001 — OTel adapter must never crash user code
+            pass
+
+    def on_tool_call(self, data: dict[str, Any]) -> None:
+        try:
+            attrs = {
+                "tool_name": data.get("tool_name") or "unknown",
+                "budget_name": data.get("budget_name") or "unnamed",
+                "framework": data.get("framework") or "unknown",
+            }
+            self._tool_calls.add(1, attrs)
+            cost = float(data.get("cost", 0.0) or 0.0)
+            if cost > 0.0:
+                self._tool_cost.add(cost, attrs)
+        except Exception:  # noqa: BLE001
+            pass
+
+    def on_tool_budget_exceeded(self, data: dict[str, Any]) -> None:
+        try:
+            attrs = {
+                "tool_name": data.get("tool_name") or "unknown",
+                "budget_name": data.get("budget_name") or "unnamed",
+            }
+            self._tool_exceeded.add(1, attrs)
+        except Exception:  # noqa: BLE001
             pass
 
     def on_autocap(self, data: dict[str, Any]) -> None:

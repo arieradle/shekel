@@ -7,7 +7,7 @@ from contextvars import Token
 from typing import TYPE_CHECKING, Any, Callable, TypedDict
 
 from shekel import _context, _patch
-from shekel.exceptions import BudgetExceededError
+from shekel.exceptions import BudgetExceededError, ToolBudgetExceededError
 
 if TYPE_CHECKING:
     pass
@@ -19,6 +19,12 @@ class CallRecord(TypedDict):
     input_tokens: int
     output_tokens: int
     fallback: bool
+
+
+class ToolCallRecord(TypedDict):
+    tool_name: str
+    cost: float
+    framework: str
 
 
 class Budget:
@@ -66,6 +72,8 @@ class Budget:
         on_fallback: Callable[[float, float, str], None] | None = None,
         name: str | None = None,
         max_llm_calls: int | None = None,
+        max_tool_calls: int | None = None,
+        tool_prices: dict[str, float] | None = None,
     ) -> None:
 
         if max_usd is not None and max_usd <= 0:
@@ -126,6 +134,12 @@ class Budget:
                 f"Got: {max_llm_calls}"
             )
 
+        if max_tool_calls is not None and max_tool_calls <= 0:
+            raise ValueError(
+                "max_tool_calls must be positive or None for track-only mode. "
+                f"Got: {max_tool_calls}"
+            )
+
         self.max_usd = max_usd
         self.warn_at = warn_at
         self.on_warn = on_warn
@@ -145,6 +159,11 @@ class Budget:
         self.max_llm_calls: int | None = max_llm_calls
         self._effective_call_limit: int | None = max_llm_calls  # Auto-capped in __enter__
 
+        # --- Tool budget support (v0.2.8) ---
+        self.max_tool_calls: int | None = max_tool_calls
+        self.tool_prices: dict[str, float] | None = tool_prices
+        self._effective_tool_call_limit: int | None = max_tool_calls  # Auto-capped in __enter__
+
         self._ctx_token: Token[Budget | None] | None = None
         self._enter_time: float | None = None
 
@@ -159,6 +178,12 @@ class Budget:
         self._switched_at_usd: float | None = None
         self._calls: list[CallRecord] = []
         self._calls_made: int = 0
+
+        # Tool tracking state (v0.2.8)
+        self._tool_calls_made: int = 0
+        self._tool_spent: float = 0.0
+        self._tool_calls: list[ToolCallRecord] = []
+        self._tool_warn_fired: bool = False
 
     # ------------------------------------------------------------------
     # Internal state reset
@@ -177,6 +202,11 @@ class Budget:
         self._calls = []
         self._calls_made = 0
         self._enter_time = None
+        # Tool tracking reset (v0.2.8)
+        self._tool_calls_made = 0
+        self._tool_spent = 0.0
+        self._tool_calls = []
+        self._tool_warn_fired = False
 
     # ------------------------------------------------------------------
     # Sync context manager
@@ -248,9 +278,18 @@ class Budget:
                 self._effective_call_limit = min(self.max_llm_calls, current_budget.calls_remaining)
             else:
                 self._effective_call_limit = self.max_llm_calls
+
+            # Auto-cap child tool call limit to parent's remaining tool calls
+            if self.max_tool_calls is not None and current_budget.tool_calls_remaining is not None:
+                self._effective_tool_call_limit = min(
+                    self.max_tool_calls, current_budget.tool_calls_remaining
+                )
+            else:
+                self._effective_tool_call_limit = self.max_tool_calls
         else:
             self._effective_limit = self.max_usd
             self._effective_call_limit = self.max_llm_calls
+            self._effective_tool_call_limit = self.max_tool_calls
 
         self._ctx_token = _context.set_active_budget(self)
         return self
@@ -296,6 +335,8 @@ class Budget:
         if self.parent is not None:
             self.parent._spent += self._spent
             self.parent._calls_made += self._calls_made
+            self.parent._tool_calls_made += self._tool_calls_made
+            self.parent._tool_spent += self._tool_spent
             self.parent.active_child = None
 
         if self._ctx_token is not None:
@@ -371,9 +412,18 @@ class Budget:
                 self._effective_call_limit = min(self.max_llm_calls, current_budget.calls_remaining)
             else:
                 self._effective_call_limit = self.max_llm_calls
+
+            # Auto-cap child tool call limit to parent's remaining tool calls
+            if self.max_tool_calls is not None and current_budget.tool_calls_remaining is not None:
+                self._effective_tool_call_limit = min(
+                    self.max_tool_calls, current_budget.tool_calls_remaining
+                )
+            else:
+                self._effective_tool_call_limit = self.max_tool_calls
         else:
             self._effective_limit = self.max_usd
             self._effective_call_limit = self.max_llm_calls
+            self._effective_tool_call_limit = self.max_tool_calls
 
         self._ctx_token = _context.set_active_budget(self)
         return self
@@ -418,6 +468,8 @@ class Budget:
         if self.parent is not None:
             self.parent._spent += self._spent
             self.parent._calls_made += self._calls_made
+            self.parent._tool_calls_made += self._tool_calls_made
+            self.parent._tool_spent += self._tool_spent
             self.parent.active_child = None
 
         if self._ctx_token is not None:
@@ -578,6 +630,117 @@ class Budget:
                 self._last_tokens,
             )
 
+    # ------------------------------------------------------------------
+    # Tool budget enforcement (v0.2.8)
+    # ------------------------------------------------------------------
+
+    def _check_tool_limit(self, tool_name: str, framework: str) -> None:
+        """Pre-dispatch check: raise ToolBudgetExceededError if limit reached.
+
+        Called BEFORE the tool executes — the tool never runs when budget is exceeded.
+        Also checks USD limit when tool_prices are configured.
+        """
+        limit = self._effective_tool_call_limit
+        if limit is not None and self._tool_calls_made >= limit:
+            self._emit_tool_budget_exceeded_event(tool_name, framework)
+            raise ToolBudgetExceededError(
+                tool_name=tool_name,
+                calls_used=self._tool_calls_made,
+                calls_limit=limit,
+                usd_spent=self._tool_spent,
+                usd_limit=self.max_usd,
+                framework=framework,
+            )
+
+        # Also check USD limit if tool_prices configured for this tool
+        if self.max_usd is not None and self.tool_prices is not None:
+            price = self.tool_prices.get(tool_name)
+            if price is not None and self._tool_spent + price > self.max_usd:
+                self._emit_tool_budget_exceeded_event(tool_name, framework)
+                raise ToolBudgetExceededError(
+                    tool_name=tool_name,
+                    calls_used=self._tool_calls_made,
+                    calls_limit=limit,
+                    usd_spent=self._tool_spent,
+                    usd_limit=self.max_usd,
+                    framework=framework,
+                )
+
+    def _record_tool_call(self, tool_name: str, cost: float, framework: str) -> None:
+        """Post-dispatch: record the tool call and emit events."""
+        self._tool_calls_made += 1
+        self._tool_spent += cost
+        self._tool_calls.append(ToolCallRecord(tool_name=tool_name, cost=cost, framework=framework))
+        self._emit_tool_call_event(tool_name, cost, framework)
+        self._check_tool_warn(tool_name)
+
+    def _check_tool_warn(self, tool_name: str) -> None:
+        """Fire on_tool_warn once when tool calls reach warn_at × max_tool_calls."""
+        limit = self._effective_tool_call_limit
+        if (
+            self.warn_at is not None
+            and limit is not None
+            and not self._tool_warn_fired
+            and self._tool_calls_made >= self.warn_at * limit
+        ):
+            self._tool_warn_fired = True
+            self._emit_tool_warn_event(tool_name)
+
+    def _emit_tool_call_event(self, tool_name: str, cost: float, framework: str) -> None:
+        try:
+            from shekel.integrations import AdapterRegistry
+
+            AdapterRegistry.emit_event(
+                "on_tool_call",
+                {
+                    "tool_name": tool_name,
+                    "cost": cost,
+                    "framework": framework,
+                    "budget_name": self.name or "unnamed",
+                    "calls_used": self._tool_calls_made,
+                    "calls_remaining": self.tool_calls_remaining,
+                    "usd_spent": self._tool_spent,
+                },
+            )
+        except Exception:
+            pass
+
+    def _emit_tool_budget_exceeded_event(self, tool_name: str, framework: str) -> None:
+        try:
+            from shekel.integrations import AdapterRegistry
+
+            AdapterRegistry.emit_event(
+                "on_tool_budget_exceeded",
+                {
+                    "tool_name": tool_name,
+                    "calls_used": self._tool_calls_made,
+                    "calls_limit": self._effective_tool_call_limit,
+                    "usd_spent": self._tool_spent,
+                    "usd_limit": self.max_usd,
+                    "framework": framework,
+                    "budget_name": self.name or "unnamed",
+                },
+            )
+        except Exception:
+            pass
+
+    def _emit_tool_warn_event(self, tool_name: str) -> None:
+        try:
+            from shekel.integrations import AdapterRegistry
+
+            AdapterRegistry.emit_event(
+                "on_tool_warn",
+                {
+                    "tool_name": tool_name,
+                    "calls_used": self._tool_calls_made,
+                    "calls_limit": self._effective_tool_call_limit,
+                    "budget_name": self.name or "unnamed",
+                    "warn_at": self.warn_at,
+                },
+            )
+        except Exception:
+            pass
+
     def _emit_fallback_activated_event(self) -> None:
         """Emit fallback activated event to adapters."""
         try:
@@ -677,6 +840,23 @@ class Budget:
         return max(0, self._effective_call_limit - self._calls_made)
 
     @property
+    def tool_calls_used(self) -> int:
+        """Number of tool calls made in this budget context."""
+        return self._tool_calls_made
+
+    @property
+    def tool_calls_remaining(self) -> int | None:
+        """Remaining tool call budget (based on effective limit), or None if no limit."""
+        if self._effective_tool_call_limit is None:
+            return None
+        return max(0, self._effective_tool_call_limit - self._tool_calls_made)
+
+    @property
+    def tool_spent(self) -> float:
+        """Total USD spent on tool calls in this budget context."""
+        return self._tool_spent
+
+    @property
     def full_name(self) -> str:
         """Hierarchical path name (e.g., 'workflow.research.api_calls')."""
         if self.parent is None:
@@ -747,6 +927,14 @@ class Budget:
             by_model[m]["input_tokens"] += call["input_tokens"]
             by_model[m]["output_tokens"] += call["output_tokens"]
 
+        by_tool: dict[str, dict[str, Any]] = {}
+        for tc in self._tool_calls:
+            tn = tc["tool_name"]
+            if tn not in by_tool:
+                by_tool[tn] = {"calls": 0, "cost": 0.0, "framework": tc["framework"]}
+            by_tool[tn]["calls"] += 1
+            by_tool[tn]["cost"] += tc["cost"]
+
         return {
             "total_spent": self._spent,
             "limit": self.max_usd,
@@ -759,6 +947,11 @@ class Budget:
             "total_calls": len(self._calls),
             "calls": list(self._calls),
             "by_model": by_model,
+            # Tool tracking (v0.2.8)
+            "tool_calls_used": self._tool_calls_made,
+            "tool_calls_limit": self.max_tool_calls,
+            "tool_spent": self._tool_spent,
+            "by_tool": by_tool,
         }
 
     def summary(self) -> str:
@@ -820,6 +1013,29 @@ class Budget:
 
         if model_switched and switched_at is not None:
             lines.append(f"│  Switched at: ${switched_at:.4f}")
+
+        # Tool section (v0.2.8) — shown when tools were called or limit is set
+        if self._tool_calls_made > 0 or self.max_tool_calls is not None:
+            lines.append("├" + "─" * width + "┤")
+            tool_limit_str = (
+                f" / {self.max_tool_calls} max" if self.max_tool_calls is not None else ""
+            )
+            lines.append(
+                f"│  Tool spend: ${self._tool_spent:.4f}  "
+                f"({self._tool_calls_made}{tool_limit_str} tool calls)"
+            )
+            by_tool: dict[str, dict[str, Any]] = {}
+            for tc in self._tool_calls:
+                tn = tc["tool_name"]
+                if tn not in by_tool:
+                    by_tool[tn] = {"calls": 0, "cost": 0.0, "framework": tc["framework"]}
+                by_tool[tn]["calls"] += 1
+                by_tool[tn]["cost"] += tc["cost"]
+            for tn, stats in by_tool.items():
+                lines.append(
+                    f"│    {tn}: {stats['calls']} calls  "
+                    f"${stats['cost']:.4f}  [{stats['framework']}]"
+                )
 
         lines.append("└" + "─" * width + "┘")
         return "\n".join(lines)

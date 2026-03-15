@@ -168,6 +168,22 @@ module = ["opentelemetry", "opentelemetry.*"]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
+module = ["mcp", "mcp.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["langchain_core", "langchain_core.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["crewai", "crewai.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["agents", "agents.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
 module = ["_pytest", "_pytest.*"]
 follow_imports = "skip"
 ignore_errors = true

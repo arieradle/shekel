@@ -1,6 +1,45 @@
 from __future__ import annotations
 
 
+class ToolBudgetExceededError(Exception):
+    """Raised when tool invocations exceed the configured budget limit.
+
+    Raised *before* the tool executes — the tool never runs when the budget
+    is already exhausted.
+    """
+
+    def __init__(
+        self,
+        tool_name: str,
+        calls_used: int,
+        calls_limit: int | None,
+        usd_spent: float,
+        usd_limit: float | None,
+        framework: str = "manual",
+    ) -> None:
+        self.tool_name = tool_name
+        self.calls_used = calls_used
+        self.calls_limit = calls_limit
+        self.usd_spent = usd_spent
+        self.usd_limit = usd_limit
+        self.framework = framework
+        super().__init__(str(self))
+
+    def __str__(self) -> str:
+        limit_str = str(self.calls_limit) if self.calls_limit is not None else "none"
+        usd_str = (
+            f"  USD: ${self.usd_spent:.4f} of ${self.usd_limit:.2f}\n"
+            if self.usd_limit is not None
+            else ""
+        )
+        return (
+            f"Tool budget exceeded for '{self.tool_name}' "
+            f"({self.calls_used} / {limit_str} calls, framework={self.framework})\n"
+            f"{usd_str}"
+            f"  Tip: Increase max_tool_calls or add warn_at=0.8 for an early warning."
+        )
+
+
 class BudgetExceededError(Exception):
     """Raised when LLM API spend exceeds the configured budget limit."""
 
