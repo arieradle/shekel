@@ -1,0 +1,86 @@
+name: "shekel — LLM Budget Enforcement"
+description: "Run a Python agent script with a USD budget cap. Exits 1 if the budget is exceeded."
+author: "shekel"
+
+branding:
+  icon: "dollar-sign"
+  color: "green"
+
+inputs:
+  script:
+    description: "Path to the Python agent script to run"
+    required: true
+  budget:
+    description: "Maximum spend in USD (e.g. 5 for $5)"
+    required: false
+    default: ""
+  warn-at:
+    description: "Warn fraction 0.0–1.0 of budget (e.g. 0.8 for 80%)"
+    required: false
+    default: ""
+  max-llm-calls:
+    description: "Maximum number of LLM API calls"
+    required: false
+    default: ""
+  max-tool-calls:
+    description: "Maximum number of tool invocations"
+    required: false
+    default: ""
+  warn-only:
+    description: "If true, warn but do not exit 1 on budget exceeded"
+    required: false
+    default: "false"
+  output:
+    description: "Output format: text or json"
+    required: false
+    default: "text"
+  budget-file:
+    description: "Path to a TOML budget config file (shekel.toml)"
+    required: false
+    default: ""
+  shekel-version:
+    description: "shekel package version to install (e.g. '>=0.3.0')"
+    required: false
+    default: ">=0.3.0"
+
+outputs:
+  spent:
+    description: "Total USD spent (populated when --output json is used)"
+  status:
+    description: "Budget status: ok | warn | exceeded"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install shekel
+      shell: bash
+      run: pip install "shekel[cli]${{ inputs.shekel-version }}" --quiet
+
+    - name: Run agent with budget enforcement
+      shell: bash
+      run: |
+        ARGS="${{ inputs.script }}"
+
+        if [ -n "${{ inputs.budget }}" ]; then
+          ARGS="$ARGS --budget ${{ inputs.budget }}"
+        fi
+        if [ -n "${{ inputs.warn-at }}" ]; then
+          ARGS="$ARGS --warn-at ${{ inputs.warn-at }}"
+        fi
+        if [ -n "${{ inputs.max-llm-calls }}" ]; then
+          ARGS="$ARGS --max-llm-calls ${{ inputs.max-llm-calls }}"
+        fi
+        if [ -n "${{ inputs.max-tool-calls }}" ]; then
+          ARGS="$ARGS --max-tool-calls ${{ inputs.max-tool-calls }}"
+        fi
+        if [ "${{ inputs.warn-only }}" = "true" ]; then
+          ARGS="$ARGS --warn-only"
+        fi
+        if [ -n "${{ inputs.output }}" ]; then
+          ARGS="$ARGS --output ${{ inputs.output }}"
+        fi
+        if [ -n "${{ inputs.budget-file }}" ]; then
+          ARGS="$ARGS --budget-file ${{ inputs.budget-file }}"
+        fi
+
+        shekel run $ARGS
