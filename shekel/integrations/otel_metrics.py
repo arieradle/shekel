@@ -76,6 +76,10 @@ class _OtelMetricsAdapter(ObservabilityAdapter):
             "shekel.budget.autocaps_total",
             description="Number of child budget auto-cap events",
         )
+        self._window_resets = meter.create_counter(
+            "shekel.budget.window_resets_total",
+            description="Number of TemporalBudget rolling-window resets",
+        )
 
         # Optional token counters
         if emit_tokens:
@@ -151,7 +155,13 @@ class _OtelMetricsAdapter(ObservabilityAdapter):
                         "to_model": data["to_model"],
                     },
                 )
-        except Exception:
+        except Exception:  # noqa: BLE001 — OTel adapter must never crash user code
+            pass
+
+    def on_window_reset(self, data: dict[str, Any]) -> None:
+        try:
+            self._window_resets.add(1, {"budget_name": data.get("budget_name", "unnamed")})
+        except Exception:  # noqa: BLE001 — OTel adapter must never crash user code
             pass
 
     def on_autocap(self, data: dict[str, Any]) -> None:

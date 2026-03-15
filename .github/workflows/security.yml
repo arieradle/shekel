@@ -1,0 +1,105 @@
+name: Security
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  schedule:
+    # Weekly scan every Monday at 08:00 UTC
+    - cron: "0 8 * * 1"
+
+# Least-privilege: read-only by default; jobs that upload SARIF need write
+permissions:
+  contents: read
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # CodeQL — static analysis uploaded to GitHub Security tab
+  # ---------------------------------------------------------------------------
+  codeql:
+    name: CodeQL
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write   # required to upload SARIF results
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: python
+          # Use the security-and-quality query suite for broader coverage
+          queries: security-and-quality
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:python"
+
+  # ---------------------------------------------------------------------------
+  # Trivy — filesystem scan for known vulnerabilities in deps and code
+  # ---------------------------------------------------------------------------
+  trivy:
+    name: Trivy FS Scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write   # required to upload SARIF results
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Trivy filesystem scan
+        uses: aquasecurity/trivy-action@0.35.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          # Report HIGH and CRITICAL findings only to reduce noise
+          severity: HIGH,CRITICAL
+          format: sarif
+          output: trivy-results.sarif
+          # Scan dependencies and source code
+          scanners: vuln,secret,misconfig
+
+      - name: Upload Trivy SARIF to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: trivy-results.sarif
+          category: trivy
+
+  # ---------------------------------------------------------------------------
+  # Bandit + pip-audit — Python-specific checks run as a regular CI job
+  # ---------------------------------------------------------------------------
+  python-security:
+    name: Bandit & pip-audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          # Match the Python version used in CI
+          python-version: "3.11"
+
+      - name: Install project and security tools
+        run: |
+          pip install -e ".[all,dev]"
+          pip install bandit pip-audit
+
+      - name: Bandit — static security linting
+        run: |
+          # -ll: report medium and high severity only (skip low-severity noise)
+          # -ii: report medium and high confidence only
+          # Exclude tests and examples — focus on library source
+          bandit -r shekel/ -ll -ii --format txt
+        # Do not fail the build on Bandit findings yet — review first, then
+        # tighten by removing continue-on-error once baseline is established.
+        continue-on-error: false
+
+      - name: pip-audit — dependency vulnerability scan
+        run: |
+          # Audit the installed environment; --fix not used to avoid surprises
+          pip-audit --desc on

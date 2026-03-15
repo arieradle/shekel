@@ -10,11 +10,15 @@ class BudgetExceededError(Exception):
         limit: float,
         model: str = "unknown",
         tokens: dict[str, int] | None = None,
+        retry_after: float | None = None,
+        window_spent: float | None = None,
     ) -> None:
         self.spent = spent
         self.limit = limit
         self.model = model
         self.tokens: dict[str, int] = tokens if tokens is not None else {"input": 0, "output": 0}
+        self.retry_after: float | None = retry_after
+        self.window_spent: float | None = window_spent
         super().__init__(str(self))
 
     def __str__(self) -> str:

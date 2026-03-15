@@ -93,3 +93,14 @@ class ObservabilityAdapter:
                 - effective_limit: float - Actual capped limit applied
         """
         pass
+
+    def on_window_reset(self, reset_data: dict[str, Any]) -> None:
+        """Called when a TemporalBudget window expires on entry.
+
+        Args:
+            reset_data: Dictionary containing:
+                - budget_name: str - Name of the temporal budget
+                - window_seconds: float - Duration of the rolling window
+                - previous_spent: float - Amount spent in the previous window
+        """
+        pass

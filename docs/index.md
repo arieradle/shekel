@@ -107,6 +107,18 @@ I built shekel so you don't have to learn that lesson yourself.
     # Automatic cost tracking and budget monitoring!
     ```
 
+-   :material-clock-time-four:{ .lg .middle } **Temporal Budgets**
+
+    ---
+
+    Rolling-window spend limits — enforce `$5/hr` per user, API tier, or agent. Hard stop with `retry_after` in the error.
+
+    ```python
+    tb = budget("$5/hr", name="api-tier")
+    async with tb:
+        response = await client.chat(...)
+    ```
+
 -   :material-chart-line:{ .lg .middle } **OpenTelemetry Metrics**
 
     ---
@@ -232,37 +244,43 @@ print(f"Remaining: ${b.remaining:.4f}")
 
 ---
 
-## What's New in v0.2.7
+## What's New in v0.2.8
 
 <div class="grid cards" markdown>
 
--   :material-chart-line:{ .lg .middle } **[OpenTelemetry Metrics](integrations/otel.md)**
+-   :material-clock-time-four:{ .lg .middle } **[Temporal Budgets](usage/temporal-budgets.md)**
 
     ---
 
-    `ShekelMeter` emits 8 OTel instruments covering per-call cost, budget utilization, spend rate, fallback activations, and auto-cap events. Silent no-op when `opentelemetry-api` is absent.
+    Rolling-window spend limits with a string DSL. `TemporalBudgetBackend` Protocol for community-extensible backends (Redis, Postgres, etc.).
+
+    ```python
+    tb = budget("$5/hr", name="api-tier")
+    async with tb:
+        await call_llm()
+    ```
+
+-   :material-refresh:{ .lg .middle } **[Window Reset Events](usage/temporal-budgets.md)**
+
+    ---
+
+    New `on_window_reset` adapter event fires lazily when a `TemporalBudget` window expires at `__enter__` time. New `shekel.budget.window_resets_total` OTel counter.
+
+-   :material-alert-circle:{ .lg .middle } **[`BudgetExceededError` enrichment](usage/temporal-budgets.md)**
+
+    ---
+
+    `retry_after` (seconds until window reset) and `window_spent` now available on `BudgetExceededError` for temporal budgets.
+
+-   :material-chart-line:{ .lg .middle } **[OpenTelemetry Metrics *(v0.2.7)*](integrations/otel.md)**
+
+    ---
+
+    `ShekelMeter` emits 9 OTel instruments covering per-call cost, budget utilization, spend rate, fallback activations, auto-cap events, and window resets. Silent no-op when `opentelemetry-api` is absent.
 
     ```python
     pip install shekel[otel]
     ```
-
--   :material-exit-run:{ .lg .middle } **[Budget Exit Events](integrations/otel.md)**
-
-    ---
-
-    New `on_budget_exit` adapter event fires on every context exit with `status`, `duration_seconds`, `utilization`, and more — usable in any custom `ObservabilityAdapter`.
-
--   :material-arrow-collapse-down:{ .lg .middle } **[Auto-Cap Events](integrations/otel.md)**
-
-    ---
-
-    New `on_autocap` adapter event fires when a child budget's limit is silently reduced by the parent's remaining balance.
-
--   :material-counter:{ .lg .middle } **[Token Payload in Cost Events](changelog.md#027)**
-
-    ---
-
-    `on_cost_update` adapter events now include `input_tokens` and `output_tokens` fields, enabling per-call token accounting in custom adapters.
 
 -   :material-google:{ .lg .middle } **[Google Gemini *(v0.2.6)*](integrations/gemini.md)**
 
