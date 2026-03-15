@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.8] - 2026-03-15
+
+### Added
+- **⏱️ Temporal Budgets** (`shekel/_temporal.py`) — Rolling-window LLM spend enforcement; designed as a spec/state-separated precursor to future Redis-backed distributed budgets
+  - `TemporalBudget` — subclass of `Budget` that enforces a spend limit per rolling time window (e.g. `$5/hr`)
+  - `InMemoryBackend` — simple in-process backend (not thread-safe; documented); implements the `TemporalBudgetBackend` protocol for community extensibility
+  - `TemporalBudgetBackend` Protocol — public, `@runtime_checkable`; implement to back `TemporalBudget` with Redis, Postgres, etc.
+  - `_parse_spec()` — lenient string DSL parser: `"$5/hr"`, `"$10/30min"`, `"$1/60s"`, `"$5 per 1hr"` all work; calendar units (`day`, `week`, `month`) rejected with a clear error
+
+- **`budget()` factory function** (`shekel/__init__.py`) — replaces `Budget as budget` class alias; `@overload`-typed for IDE support
+  - `budget("$5/hr", name="api")` → `TemporalBudget`
+  - `budget(max_usd=5.0, window_seconds=3600, name="api")` → `TemporalBudget`
+  - `budget(max_usd=10.0)` → `Budget` (fully backward-compatible)
+
+- **`BudgetExceededError` enrichment** (`shekel/exceptions.py`):
+  - `retry_after: float | None` — seconds until current window resets (set by `TemporalBudget`; `None` for regular `Budget`)
+  - `window_spent: float | None` — accumulated spend in the current window when the error was raised
+
+- **`on_window_reset` adapter event** (`shekel/integrations/base.py`) — fires lazily on `TemporalBudget.__enter__` when the previous window has expired; payload: `budget_name`, `window_seconds`, `previous_spent`
+
+- **`shekel.budget.window_resets_total`** OTel counter (`shekel/integrations/otel_metrics.py`) — incremented on each `on_window_reset` event; tagged with `budget_name`
+
+- **`name=` required for `TemporalBudget`** — raises `ValueError` if omitted or empty; prevents ambiguous metric labels
+
+- **Temporal-in-temporal nesting guard** — `TemporalBudget.__enter__` walks the active budget ancestor chain (up to 5 levels) and raises `ValueError` if any ancestor is also a `TemporalBudget`; regular `Budget` nesting inside a `TemporalBudget` (and vice versa) is allowed
+
+- **Lazy window reset** — no background threads; window expiry is checked at `__enter__` time and `_record_spend` time
+
+- **42 new tests** in `tests/test_temporal_budgets.py` (TDD, Groups A–H)
+
+- **Development guidelines** updated (`CLAUDE.md`) — TDD required for all new development; 100% code coverage required before PR
+
+### Technical
+- `TemporalBudget._record_spend()` overrides `Budget._record_spend()` to call `backend.check_and_add()` before propagating cost to parent; raises `BudgetExceededError` with `retry_after` and `window_spent` if the window limit is exceeded
+- Window reset detection happens at both `__enter__` (for `on_window_reset` event) and `_record_spend` (for correct `window_spent` payload when window expires mid-context)
+- `shekel.__version__` bumped to `0.2.8`
+- `TemporalBudget` exported in `shekel.__all__`
+
 ## [0.2.7] - 2026-03-14
 
 ### Added

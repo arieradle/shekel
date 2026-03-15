@@ -5,6 +5,7 @@ Domain: temporal budgets — window-based spend tracking and enforcement.
 
 from __future__ import annotations
 
+import asyncio
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -66,6 +67,14 @@ def test_parse_rejects_garbage():
         _parse_spec("hello")
 
 
+def test_parse_rejects_unknown_unit():
+    from shekel._temporal import _parse_spec
+
+    # Non-calendar, non-recognized unit hits line 37
+    with pytest.raises(ValueError, match="Unknown time unit"):
+        _parse_spec("$5/xyz")
+
+
 def test_parse_rejects_zero_amount():
     from shekel._temporal import _parse_spec
 
@@ -109,6 +118,14 @@ def test_budget_factory_string_requires_name():
 
     with pytest.raises(ValueError):
         budget("$5/hr")
+
+
+def test_budget_factory_window_seconds_requires_name():
+    from shekel import budget
+
+    # window_seconds without name= hits __init__.py:43
+    with pytest.raises(ValueError, match="name"):
+        budget(max_usd=5.0, window_seconds=3600)
 
 
 # ---------------------------------------------------------------------------
@@ -221,6 +238,14 @@ def test_temporal_budget_requires_name():
         TemporalBudget(max_usd=5.0, window_seconds=3600)
 
 
+def test_temporal_budget_empty_name_raises():
+    from shekel._temporal import TemporalBudget
+
+    # Empty string name hits line 108 (ValueError branch)
+    with pytest.raises(ValueError, match="name"):
+        TemporalBudget(max_usd=5.0, window_seconds=3600, name="")
+
+
 def test_temporal_budget_window_resets_after_expiry():
     from shekel._temporal import InMemoryBackend, TemporalBudget
 
@@ -272,6 +297,60 @@ def test_temporal_budget_window_spent_in_error():
         with pytest.raises(BudgetExceededError) as exc_info:
             tb._record_spend(1.0, "test-model", {"input": 100, "output": 100})
         assert exc_info.value.window_spent == 4.5
+
+
+def test_record_spend_window_expired_mid_context():
+    from shekel._temporal import InMemoryBackend, TemporalBudget
+    from shekel.exceptions import BudgetExceededError
+
+    # Window expires between __enter__ and _record_spend (lines 158-159)
+    backend = InMemoryBackend()
+    tb = TemporalBudget(max_usd=5.0, window_seconds=3600, name="mid_expiry", backend=backend)
+    t0 = 1000.0
+
+    # Seed backend with state (window started at t0)
+    with patch("time.monotonic", return_value=t0):
+        backend.check_and_add("mid_expiry", 3.0, 5.0, 3600.0)
+
+    # At t0+3601 window has expired; attempt to add more than limit → raises
+    with patch("time.monotonic", return_value=t0 + 3601.0):
+        with pytest.raises(BudgetExceededError) as exc_info:
+            tb._record_spend(6.0, "test-model", {"input": 10, "output": 10})
+        # window_spent should reflect fresh window (0.0) since window expired
+        assert exc_info.value.window_spent == 0.0
+        assert exc_info.value.retry_after is None
+
+
+def test_record_spend_within_limit_calls_super():
+    from shekel._temporal import InMemoryBackend, TemporalBudget
+
+    # Spend accepted → super()._record_spend() is called (line 176)
+    backend = InMemoryBackend()
+    tb = TemporalBudget(max_usd=5.0, window_seconds=3600, name="within_limit", backend=backend)
+
+    with patch("shekel._budget.Budget._record_spend") as mock_super:
+        tb._record_spend(1.0, "test-model", {"input": 10, "output": 10})
+        mock_super.assert_called_once_with(1.0, "test-model", {"input": 10, "output": 10})
+
+
+def test_lazy_window_reset_emit_guard():
+    from shekel._temporal import InMemoryBackend, TemporalBudget
+
+    # emit_event raises → except Exception: pass guard (lines 145-146)
+    backend = InMemoryBackend()
+    tb = TemporalBudget(max_usd=5.0, window_seconds=3600, name="guard_test", backend=backend)
+    t0 = 1000.0
+
+    with patch("time.monotonic", return_value=t0):
+        backend.check_and_add("guard_test", 2.0, 5.0, 3600.0)
+
+    with patch(
+        "shekel.integrations.registry.AdapterRegistry.emit_event",
+        side_effect=RuntimeError("boom"),
+    ):
+        with patch("time.monotonic", return_value=t0 + 3601.0):
+            # Should not raise despite emit_event failing
+            tb._lazy_window_reset()
 
 
 # ---------------------------------------------------------------------------
@@ -436,6 +515,18 @@ def test_window_reset_event_payload():
         assert payload["window_seconds"] == 3600.0
 
 
+def test_async_aenter_aexit():
+    from shekel._temporal import TemporalBudget
+
+    # Covers lines 184-186 (__aenter__ / __aexit__)
+    async def _run():
+        tb = TemporalBudget(max_usd=5.0, window_seconds=3600, name="async_test")
+        async with tb:
+            pass
+
+    asyncio.run(_run())
+
+
 def test_window_reset_not_emitted_fresh_window():
     from shekel._temporal import InMemoryBackend, TemporalBudget
     from shekel.integrations import AdapterRegistry
@@ -479,3 +570,19 @@ def test_otel_window_resets_counter_incremented():
     adapter.on_window_reset({"budget_name": "test"})
 
     window_resets_counter.add.assert_called_once_with(1, {"budget_name": "test"})
+
+
+def test_otel_window_resets_emit_guard():
+    from shekel.integrations.otel_metrics import _OtelMetricsAdapter
+
+    # Counter raises → except Exception: pass guard (lines 164-165)
+    mock_meter = MagicMock()
+    failing_counter = MagicMock()
+    failing_counter.add.side_effect = RuntimeError("boom")
+    mock_meter.create_counter.return_value = failing_counter
+    mock_meter.create_up_down_counter.return_value = MagicMock()
+    mock_meter.create_histogram.return_value = MagicMock()
+
+    adapter = _OtelMetricsAdapter(mock_meter)
+    # Should not raise
+    adapter.on_window_reset({"budget_name": "test"})
