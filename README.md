@@ -131,9 +131,18 @@ with budget(max_usd=1.00, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}) as b
 ### Cap tool calls — stop the web_search loop
 
 ```python
-with budget(max_tool_calls=20, tool_prices={"web_search": 0.01}):
-    run_my_langgraph_agent()
+from shekel import tool
+
+@tool(price=0.01)               # charge $0.01 per call + count toward the cap
+def web_search(query: str) -> str: ...
+
+@tool                           # free — just count calls
+def read_file(path: str) -> str: ...
+
+with budget(max_usd=5.00, max_tool_calls=20) as b:
+    run_my_agent()
 # ToolBudgetExceededError on call 21 — before the tool runs
+print(b.summary())              # LLM spend + tool spend broken out by tool name
 ```
 
 Auto-intercepted with zero config: **LangChain, MCP, CrewAI, OpenAI Agents SDK**.
