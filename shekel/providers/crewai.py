@@ -20,10 +20,6 @@ class CrewAIAdapter:
     def install_patches(self) -> None:
         global _original_run, _original_arun
         try:
-            import crewai
-
-            if crewai is None:  # pragma: no cover
-                return  # pragma: no cover
             import crewai.tools as _crewai_tools
 
             if _original_run is not None:
@@ -62,19 +58,13 @@ class CrewAIAdapter:
             _crewai_tools.BaseTool._run = _patched_run
             _crewai_tools.BaseTool._arun = _patched_arun
         except (ImportError, AttributeError, TypeError):
-            pass
+            pass  # crewai not installed or API changed — skip silently
 
     def remove_patches(self) -> None:
         global _original_run, _original_arun
         try:
             if _original_run is None:
                 return
-            import crewai
-
-            if crewai is None:  # pragma: no cover
-                _original_run = None  # pragma: no cover
-                _original_arun = None  # pragma: no cover
-                return  # pragma: no cover
             import crewai.tools as _crewai_tools
 
             _crewai_tools.BaseTool._run = _original_run

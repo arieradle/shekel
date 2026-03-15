@@ -4,11 +4,9 @@ from __future__ import annotations
 
 import asyncio
 import functools
-from typing import Any, Callable, TypeVar
+from typing import Any, Callable
 
 from shekel._context import get_active_budget
-
-_F = TypeVar("_F", bound=Callable[..., Any])
 
 
 def _get_tool_name(fn: Any) -> str:

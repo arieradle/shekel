@@ -19,10 +19,6 @@ class MCPAdapter:
     def install_patches(self) -> None:
         global _original_call_tool
         try:
-            import mcp
-
-            if mcp is None:  # pragma: no cover
-                return  # pragma: no cover
             import mcp.client.session as _mcp_session
 
             if _original_call_tool is not None:
@@ -31,11 +27,12 @@ class MCPAdapter:
             _original_call_tool = _mcp_session.ClientSession.call_tool
 
             from shekel._context import get_active_budget
-            from shekel.exceptions import ToolBudgetExceededError  # noqa: F401
 
             orig = _original_call_tool
 
-            async def _patched_call_tool(self: Any, name: str, arguments: dict[str, Any]) -> Any:
+            async def _patched_call_tool(
+                self: Any, name: str, arguments: dict[str, Any]
+            ) -> Any:
                 active = get_active_budget()
                 if active is not None:
                     active._check_tool_limit(name, "mcp")
@@ -47,18 +44,13 @@ class MCPAdapter:
 
             _mcp_session.ClientSession.call_tool = _patched_call_tool
         except (ImportError, AttributeError, TypeError):
-            pass
+            pass  # mcp not installed or API changed — skip silently
 
     def remove_patches(self) -> None:
         global _original_call_tool
         try:
             if _original_call_tool is None:
                 return
-            import mcp
-
-            if mcp is None:  # pragma: no cover
-                _original_call_tool = None  # pragma: no cover
-                return  # pragma: no cover
             import mcp.client.session as _mcp_session
 
             _mcp_session.ClientSession.call_tool = _original_call_tool

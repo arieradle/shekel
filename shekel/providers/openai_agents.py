@@ -19,10 +19,6 @@ class OpenAIAgentsAdapter:
     def install_patches(self) -> None:
         global _original_on_invoke_tool
         try:
-            import agents
-
-            if agents is None:  # pragma: no cover
-                return  # pragma: no cover
             import agents.tool as _agents_tool
 
             if _original_on_invoke_tool is not None:
@@ -47,18 +43,13 @@ class OpenAIAgentsAdapter:
 
             _agents_tool.FunctionTool.on_invoke_tool = _patched_on_invoke_tool
         except (ImportError, AttributeError, TypeError):
-            pass
+            pass  # openai-agents not installed or API changed — skip silently
 
     def remove_patches(self) -> None:
         global _original_on_invoke_tool
         try:
             if _original_on_invoke_tool is None:
                 return
-            import agents
-
-            if agents is None:  # pragma: no cover
-                _original_on_invoke_tool = None  # pragma: no cover
-                return  # pragma: no cover
             import agents.tool as _agents_tool
 
             _agents_tool.FunctionTool.on_invoke_tool = _original_on_invoke_tool

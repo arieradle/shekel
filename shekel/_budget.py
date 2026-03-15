@@ -702,7 +702,7 @@ class Budget:
                     "usd_spent": self._tool_spent,
                 },
             )
-        except Exception:
+        except Exception:  # Adapter exceptions must not crash tool dispatch
             pass
 
     def _emit_tool_budget_exceeded_event(self, tool_name: str, framework: str) -> None:
@@ -721,7 +721,7 @@ class Budget:
                     "budget_name": self.name or "unnamed",
                 },
             )
-        except Exception:
+        except Exception:  # Adapter exceptions must not crash tool dispatch
             pass
 
     def _emit_tool_warn_event(self, tool_name: str) -> None:
@@ -738,7 +738,7 @@ class Budget:
                     "warn_at": self.warn_at,
                 },
             )
-        except Exception:
+        except Exception:  # Adapter exceptions must not crash tool dispatch
             pass
 
     def _emit_fallback_activated_event(self) -> None:

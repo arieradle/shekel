@@ -299,5 +299,5 @@ class LangfuseAdapter(ObservabilityAdapter):
                     },
                     cost=cost if cost > 0.0 else None,
                 )
-        except Exception:
+        except Exception:  # Adapter exceptions must not crash tool dispatch
             pass

@@ -1648,14 +1648,15 @@ class TestCoverageCompleteness:
     def test_async_nested_budget_tool_call_limit_autocapped(self) -> None:
         """Async budget auto-caps _effective_tool_call_limit from parent."""
 
-        async def run() -> int:
+        result: list[int] = []
+
+        async def run() -> None:
             with budget(max_tool_calls=3, name="parent"):
                 async with budget(max_tool_calls=10, name="child") as child:
-                    return child._effective_tool_call_limit or 0
-            return 0  # pragma: no cover
+                    result.append(child._effective_tool_call_limit or 0)
 
-        limit = asyncio.run(run())
-        assert limit == 3
+        asyncio.run(run())
+        assert result[0] == 3
 
     def test_emit_tool_call_event_exception_does_not_crash(self) -> None:
         """An adapter that raises in on_tool_call doesn't crash user code."""

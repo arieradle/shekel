@@ -20,10 +20,6 @@ class LangChainAdapter:
     def install_patches(self) -> None:
         global _original_invoke, _original_ainvoke
         try:
-            import langchain_core
-
-            if langchain_core is None:  # pragma: no cover
-                return  # pragma: no cover
             import langchain_core.tools as _lc_tools
 
             if _original_invoke is not None:
@@ -62,19 +58,13 @@ class LangChainAdapter:
             _lc_tools.BaseTool.invoke = _patched_invoke  # type: ignore[assignment, method-assign]
             _lc_tools.BaseTool.ainvoke = _patched_ainvoke  # type: ignore[assignment, method-assign]
         except (ImportError, AttributeError, TypeError):
-            pass
+            pass  # langchain_core not installed or API changed — skip silently
 
     def remove_patches(self) -> None:
         global _original_invoke, _original_ainvoke
         try:
             if _original_invoke is None:
                 return
-            import langchain_core
-
-            if langchain_core is None:  # pragma: no cover
-                _original_invoke = None  # pragma: no cover
-                _original_ainvoke = None  # pragma: no cover
-                return  # pragma: no cover
             import langchain_core.tools as _lc_tools
 
             _lc_tools.BaseTool.invoke = _original_invoke  # type: ignore[method-assign]
