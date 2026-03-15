@@ -834,6 +834,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../usage/temporal-budgets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Temporal Budgets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../usage/tool-budgets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tool Budgets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../usage/accumulating-budgets/" class="md-nav__link">
         
   
@@ -1439,6 +1495,45 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#028" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.2.8]
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.2.8]">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tool-budgets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🔧 Tool Budgets
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#temporal-budgets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ⏱️ Temporal Budgets
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#027" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1937,6 +2032,45 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#028" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.2.8]
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.2.8]">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tool-budgets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🔧 Tool Budgets
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#temporal-budgets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ⏱️ Temporal Budgets
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#027" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2269,6 +2403,29 @@
 
 <h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
 <p>All notable changes to this project are documented here. For detailed information, see <a href="https://github.com/arieradle/shekel/blob/main/CHANGELOG.md">CHANGELOG.md</a> on GitHub.</p>
+<h2 id="028">[0.2.8]<a class="headerlink" href="#028" title="Permanent link">&para;</a></h2>
+<h3 id="tool-budgets">🔧 Tool Budgets<a class="headerlink" href="#tool-budgets" title="Permanent link">&para;</a></h3>
+<p>Cap agent tool call count and cost — stop runaway tool loops before they bankrupt you.</p>
+<ul>
+<li><code>max_tool_calls</code> — hard cap on total dispatches, checked <em>before</em> each tool runs</li>
+<li><code>tool_prices</code> — per-tool USD cost; unknown tools count at <code>$0</code> toward the cap</li>
+<li><code>@tool</code> / <code>tool()</code> decorator — one line for any sync/async function or callable</li>
+<li><code>ToolBudgetExceededError</code> — <code>tool_name</code>, <code>calls_used</code>, <code>calls_limit</code>, <code>usd_spent</code>, <code>framework</code></li>
+<li>Auto-interception: LangChain <code>BaseTool</code>, MCP <code>ClientSession.call_tool</code>, CrewAI <code>BaseTool</code>, OpenAI Agents SDK <code>FunctionTool</code> — zero config</li>
+<li><code>summary()</code> extended with tool spend breakdown by tool name and framework</li>
+<li>Four new OTel instruments: <code>shekel.tool.calls_total</code>, <code>shekel.tool.cost_usd_total</code>, <code>shekel.tool.budget_exceeded_total</code>, <code>shekel.tool.calls_remaining</code></li>
+<li>111 new unit tests (TDD)</li>
+</ul>
+<h3 id="temporal-budgets">⏱️ Temporal Budgets<a class="headerlink" href="#temporal-budgets" title="Permanent link">&para;</a></h3>
+<p>Rolling-window LLM spend limits — enforce <code>$5/hr</code> per API tier, user, or agent.</p>
+<ul>
+<li><code>budget("$5/hr", name="api-tier")</code> — string DSL</li>
+<li><code>TemporalBudgetBackend</code> Protocol — bring your own Redis/Postgres backend</li>
+<li><code>BudgetExceededError</code> enriched with <code>retry_after</code> and <code>window_spent</code></li>
+<li><code>on_window_reset</code> adapter event + <code>shekel.budget.window_resets_total</code> OTel counter</li>
+</ul>
+<p><a href="https://github.com/arieradle/shekel/blob/main/CHANGELOG.md#028">Full CHANGELOG →</a></p>
+<hr />
 <h2 id="027">[0.2.7]<a class="headerlink" href="#027" title="Permanent link">&para;</a></h2>
 <h3 id="opentelemetry-metrics-integration">📡 OpenTelemetry Metrics Integration<a class="headerlink" href="#opentelemetry-metrics-integration" title="Permanent link">&para;</a></h3>
 <p>Shekel now exposes LLM cost and budget lifecycle data via OpenTelemetry — filling the gap the OTel GenAI semantic conventions leave around cost and budget metrics.</p>
