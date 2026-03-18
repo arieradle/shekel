@@ -8,7 +8,7 @@ Each phase is independently deliverable and releasable. Later phases depend on P
 
 ---
 
-## Phase 0 — ShekelRuntime Foundation (v0.3)
+## Phase 0 — ShekelRuntime Foundation (v0.3.1.1)
 
 **Delivers:** Detection infrastructure and explicit API surface. Prerequisite for all later phases.
 
@@ -532,7 +532,7 @@ Every phase must pass the full existing test suite unchanged. No existing API is
 
 | Phase | Version | Layer | Independent? |
 |---|---|---|---|
-| Phase 0 | v0.3 | ShekelRuntime + foundation API | Yes (prerequisite) |
+| Phase 0 | v0.3.1 | ShekelRuntime + foundation API | Yes (prerequisite) |
 | Phase 1 | v0.4 | LangGraph — node-level | Depends on Phase 0 |
 | Phase 2 | v0.5 | CrewAI — agent + task level | Depends on Phase 0 |
 | Phase 3 | v0.6 | Loop detection | Depends on Phase 0 |

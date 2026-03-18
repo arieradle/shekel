@@ -221,7 +221,7 @@ Shekel does not implement recovery logic. Recovery is the framework's domain —
 
 | Phase | Deliverable |
 |---|---|
-| v0.3 | `ShekelRuntime` — explicit detection + adapter wiring class. Two-tier implicit/explicit API. |
+| v0.3.1 | `ShekelRuntime` — explicit detection + adapter wiring class. Two-tier implicit/explicit API. |
 | v0.4 | LangGraph Level 2 — `add_node()` patch, `NodeBudgetExceededError`, `.node()` explicit API |
 | v0.5 | CrewAI Level 3 — `BaseEventListener`, `AgentBudgetExceededError`, `TaskBudgetExceededError`, `.agent()` / `.task()` API |
 | v0.6 | Loop detection — rate-of-change circuit breaker (velocity-based, not just threshold) |

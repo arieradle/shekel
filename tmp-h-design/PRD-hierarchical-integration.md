@@ -55,7 +55,7 @@ The market response — Langfuse, LangSmith, Helicone, Portkey — is **observab
 
 ## 5. User Stories
 
-### Phase 1 Foundation — ShekelRuntime (v0.3)
+### Phase 1 Foundation — ShekelRuntime (v0.3.1)
 
 **US-01:** As a developer, when I open a `budget()` context, shekel automatically detects which frameworks I have installed and instruments them — I don't need to configure anything.
 
@@ -146,7 +146,7 @@ budget.summary(group_by="tags")  # cost by feature
 
 ## 6. Functional Requirements
 
-### FR-01: ShekelRuntime (v0.3)
+### FR-01: ShekelRuntime (v0.3.1)
 - Probe for installed frameworks once at `budget.__enter__()`
 - Detection is silent — no logs, no warnings if a framework is not installed
 - `Budget` gains `.node(name, max_usd)`, `.agent(name, max_usd)`, `.task(name, max_usd)` methods
@@ -231,5 +231,5 @@ All new exceptions inherit `BudgetExceededError`. Existing `except BudgetExceede
 - LangGraph users can set per-node caps with one line of code
 - CrewAI users can isolate rogue agent spend without stopping the crew
 - `budget.tree()` shows per-level spend attribution out of the box
-- Zero breaking changes — all v0.2.x tests pass on v0.3+
+- Zero breaking changes — all v0.2.x tests pass on v0.3.1+
 - Competitor gap: AgentBudget (30 stars) has no hierarchy or per-task enforcement — shekel ships both
