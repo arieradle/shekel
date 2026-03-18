@@ -1,14 +1,14 @@
-# Requires: pip install shekel[openai]
+# Requires: pip install shekel[openai] langgraph typing_extensions
 """
-LangGraph demo: budget enforcement with shekel.
+LangGraph demo: per-node circuit breaking with shekel.
 
-Shekel works with LangGraph out of the box — just wrap with budget().
-All LLM calls inside graph nodes are automatically tracked.
+Shekel patches StateGraph.add_node() transparently — every node gets a
+pre-execution budget gate with no graph changes needed.
 
 Shows three patterns:
-1. Basic budget enforcement
-2. Fallback model when budget threshold is reached
-3. Nested budgets for multi-node graphs
+1. Per-node USD caps — NodeBudgetExceededError before the node runs
+2. Global + per-node caps together — tree() shows spend breakdown
+3. Distributed enforcement with RedisBackend (optional)
 """
 
 import os
@@ -30,53 +30,93 @@ def main() -> None:
         return
 
     from shekel import BudgetExceededError, budget
+    from shekel.providers.langgraph import NodeBudgetExceededError  # type: ignore[import]
 
     client = openai.OpenAI(api_key=api_key)
 
     class State(TypedDict):
-        question: str
-        answer: str
+        query: str
+        data: str
+        summary: str
 
-    def call_llm(state: State) -> State:
-        response = client.chat.completions.create(
+    def fetch_data(state: State) -> State:
+        resp = client.chat.completions.create(
             model="gpt-4o-mini",
-            messages=[{"role": "user", "content": state["question"]}],
-            max_tokens=50,
+            messages=[{"role": "user", "content": f"Find facts about: {state['query']}"}],
+            max_tokens=100,
         )
-        return {"question": state["question"], "answer": response.choices[0].message.content}
+        return {**state, "data": resp.choices[0].message.content or ""}
+
+    def summarize(state: State) -> State:
+        resp = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": f"Summarize: {state['data']}"}],
+            max_tokens=60,
+        )
+        return {**state, "summary": resp.choices[0].message.content or ""}
 
     graph = StateGraph(State)
-    graph.add_node("llm", call_llm)
-    graph.set_entry_point("llm")
-    graph.add_edge("llm", END)
+    graph.add_node("fetch_data", fetch_data)
+    graph.add_node("summarize", summarize)
+    graph.set_entry_point("fetch_data")
+    graph.add_edge("fetch_data", "summarize")
+    graph.add_edge("summarize", END)
     app = graph.compile()
 
     # ------------------------------------------------------------------
-    # 1. Basic budget enforcement
+    # 1. Per-node USD caps with global budget
     # ------------------------------------------------------------------
-    print("=== Basic budget enforcement ===")
+    print("=== Per-node caps ===")
     try:
-        with budget(max_usd=0.10, name="demo", warn_at=0.8) as b:
-            result = app.invoke({"question": "What is 2+2?", "answer": ""})
-            print(f"Answer: {result['answer']}")
-            print(f"Spent: ${b.spent:.4f} / ${b.limit:.2f}")
-    except BudgetExceededError as e:
+        with budget(max_usd=5.00, name="pipeline") as b:
+            b.node("fetch_data", max_usd=0.50)
+            b.node("summarize", max_usd=1.00)
+
+            result = app.invoke({"query": "climate change", "data": "", "summary": ""})
+            print(f"Summary: {result['summary']}")
+    except (BudgetExceededError, NodeBudgetExceededError) as e:
         print(f"Budget exceeded: {e}")
 
+    print(b.tree())
+    # pipeline: $X.XX / $5.00
+    #   [node] fetch_data: $X.XX / $0.50  (X%)
+    #   [node] summarize:  $X.XX / $1.00  (X%)
+
     # ------------------------------------------------------------------
-    # 2. Fallback model when threshold is reached
+    # 2. Per-node cap exceeded — NodeBudgetExceededError
     # ------------------------------------------------------------------
-    print("\n=== Fallback model ===")
-    with budget(
-        max_usd=0.001,
-        name="fallback-demo",
-        fallback={"at_pct": 0.5, "model": "gpt-4o-mini"},
-    ) as b:
-        result = app.invoke({"question": "What is the capital of France?", "answer": ""})
-        print(f"Answer: {result['answer']}")
-    if b.model_switched:
-        print(f"Switched to fallback at ${b.switched_at_usd:.6f}")
-    print(f"Total: ${b.spent:.4f}")
+    print("\n=== Node cap exceeded ===")
+    try:
+        with budget(max_usd=5.00, name="tight") as b:
+            b.node("fetch_data", max_usd=0.0001)  # intentionally tiny cap
+            app.invoke({"query": "AI trends", "data": "", "summary": ""})
+    except NodeBudgetExceededError as e:
+        print(f"Node '{e.node_name}' exceeded: ${e.spent:.6f} > ${e.limit:.6f}")
+    except BudgetExceededError as e:
+        print(f"Global budget exceeded: {e}")
+
+    # ------------------------------------------------------------------
+    # 3. Distributed enforcement (Redis — optional)
+    # ------------------------------------------------------------------
+    redis_url = os.environ.get("REDIS_URL")
+    if redis_url:
+        print("\n=== Distributed budget (Redis) ===")
+        try:
+            from shekel.backends.redis import RedisBackend
+
+            backend = RedisBackend()
+            with budget("$5/hr + 100 calls/hr", name="distributed-pipeline", backend=backend) as b:
+                b.node("fetch_data", max_usd=0.50)
+                b.node("summarize", max_usd=1.00)
+                result = app.invoke({"query": "quantum computing", "data": "", "summary": ""})
+                print(f"Summary: {result['summary']}")
+            print(b.tree())
+        except ImportError:
+            print("redis package not installed — pip install shekel[redis]")
+        except Exception as e:
+            print(f"Redis error: {e}")
+    else:
+        print("\n(Set REDIS_URL to demo distributed enforcement)")
 
 
 if __name__ == "__main__":

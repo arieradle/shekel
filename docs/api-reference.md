@@ -321,6 +321,128 @@ b.task("write_report", max_usd=0.50).task("fact_check", max_usd=0.30)
 
 **Raises:** `ValueError` if `max_usd <= 0`
 
+#### `chain(name, max_usd)`
+
+Register an explicit USD cap for a named LangChain chain. Returns `self` for chaining.
+
+Enforced by `LangChainRunnerAdapter` — `ChainBudgetExceededError` is raised before the chain body executes when the cap is reached. Spend is attributed to `ComponentBudget._spent` and visible in `budget.tree()`.
+
+```python
+with budget(max_usd=10.00) as b:
+    b.chain("retriever", max_usd=0.20).chain("summarizer", max_usd=1.00)
+    chain.invoke({"query": "..."})
+```
+
+**Parameters:**
+- `name` — chain name (must match the `run_name` or object name passed to `add_node`/invoked directly)
+- `max_usd` — USD cap; must be positive
+
+**Raises:** `ValueError` if `max_usd <= 0`
+
+---
+
+## `TemporalBudget` (rolling-window budgets)
+
+Created via the `budget()` factory when a spec string or `window_seconds` is provided.
+
+### Temporal factory forms
+
+```python
+# Spec string (per-cap windows)
+with budget("$5/hr", name="api") as b: ...
+with budget("$5/hr + 100 calls/hr", name="api") as b: ...
+
+# Kwargs (single shared window)
+with budget(max_usd=5.0, window_seconds=3600, name="api") as b: ...
+with budget(max_usd=5.0, max_llm_calls=100, window_seconds=3600, name="api") as b: ...
+```
+
+`name=` is required for `TemporalBudget`.
+
+### Supported counters in multi-cap specs
+
+| Token | Counter | Example |
+|---|---|---|
+| `$N` or `N usd` | `usd` | `$5/hr` |
+| `N calls` | `llm_calls` | `100 calls/hr` |
+| `N tools` | `tool_calls` | `20 tools/hr` |
+| `N tokens` | `tokens` | `50000 tokens/hr` |
+
+### Using a custom backend
+
+```python
+from shekel.backends.redis import RedisBackend
+
+backend = RedisBackend(url="redis://localhost:6379/0")
+
+with budget("$5/hr", name="api", backend=backend) as b:
+    run_agent()
+```
+
+---
+
+## `RedisBackend`
+
+Synchronous Redis-backed rolling-window budget backend for distributed enforcement.
+
+### Constructor
+
+```python
+RedisBackend(
+    url: str | None = None,          # defaults to REDIS_URL env var
+    tls: bool = False,
+    on_unavailable: str = "closed",  # "closed" | "open"
+    circuit_breaker_threshold: int = 3,
+    circuit_breaker_cooldown: float = 10.0,
+)
+```
+
+| Parameter | Default | Description |
+|---|---|---|
+| `url` | `REDIS_URL` env | Redis connection URL |
+| `tls` | `False` | Force TLS (`ssl=True`) |
+| `on_unavailable` | `"closed"` | `"closed"` raises `BudgetExceededError`; `"open"` allows through |
+| `circuit_breaker_threshold` | `3` | Consecutive errors before circuit opens |
+| `circuit_breaker_cooldown` | `10.0` | Seconds before retrying after circuit opens |
+
+### Example
+
+```python
+from shekel import budget
+from shekel.backends.redis import RedisBackend
+
+backend = RedisBackend()  # reads REDIS_URL from env
+
+with budget("$5/hr + 100 calls/hr", name="api-tier", backend=backend) as b:
+    run_agent()
+```
+
+### Methods
+
+- `check_and_add(budget_name, amounts, limits, windows)` — atomically check + increment counters
+- `get_state(budget_name)` — return `{counter: spent}` for all counters
+- `reset(budget_name)` — delete the Redis hash for `budget_name`
+- `close()` — close the Redis connection
+
+**Raises:** `BudgetConfigMismatchError` if `budget_name` is already registered with different limits or windows.
+
+---
+
+## `AsyncRedisBackend`
+
+Async version of `RedisBackend`. All public methods are coroutines. Suitable for FastAPI, async LangGraph, and other async contexts.
+
+```python
+from shekel.backends.redis import AsyncRedisBackend
+
+backend = AsyncRedisBackend()
+
+async with budget("$5/hr", name="api", backend=backend) as b:
+    await run_async_agent()
+```
+
+Constructor and parameters are identical to `RedisBackend`.
+
 ---
 
 ## `@with_budget`
@@ -483,6 +605,51 @@ Raised when an always-on agent session exceeds its rolling-window budget. Subcla
 | `spent` | `float` | Total USD spent when the cap was hit. |
 | `limit` | `float` | The configured session budget. |
 | `window` | `float \| None` | Rolling window duration in seconds, or `None`. |
+
+---
+
+## `ChainBudgetExceededError`
+
+Raised when a LangChain chain exceeds its registered USD cap. Subclass of `BudgetExceededError`.
+
+### Attributes
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `chain_name` | `str` | Name of the chain that exceeded its budget. |
+| `spent` | `float` | Total USD spent when the cap was hit. |
+| `limit` | `float` | The configured `max_usd` for this chain. |
+
+```python
+from shekel import budget, ChainBudgetExceededError, BudgetExceededError
+
+try:
+    with budget(max_usd=10.00) as b:
+        b.chain("retriever", max_usd=0.20)
+        chain.invoke({"query": "..."})
+except ChainBudgetExceededError as e:
+    print(f"Chain '{e.chain_name}' exceeded ${e.limit:.2f}")
+```
+
+---
+
+## `BudgetConfigMismatchError`
+
+Raised by `RedisBackend` / `AsyncRedisBackend` when a budget name is already registered with different limits or windows. Subclass of `BudgetExceededError`.
+
+```python
+from shekel.exceptions import BudgetConfigMismatchError
+
+try:
+    with budget("$5/hr", name="api", backend=backend):
+        run_agent()
+except BudgetConfigMismatchError:
+    # Budget "api" was previously registered with different caps.
+    # Call backend.reset("api") to clear existing state.
+    backend.reset("api")
+```
+
+**To resolve:** call `backend.reset(budget_name)` to delete the existing Redis state, then retry.
 
 ---
 
