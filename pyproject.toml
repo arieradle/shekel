@@ -79,7 +79,8 @@ litellm = ["litellm>=1.0.0"]
 gemini = ["google-genai>=1.0.0"]
 huggingface = ["huggingface-hub>=0.20.0"]
 otel = ["opentelemetry-api>=1.0.0"]
-all = ["openai>=1.0.0", "anthropic>=0.7.0", "langfuse>=2.0.0", "litellm>=1.0.0", "google-genai>=1.0.0", "huggingface-hub>=0.20.0", "opentelemetry-api>=1.0.0"]
+redis = ["redis>=4.0.0"]
+all = ["openai>=1.0.0", "anthropic>=0.7.0", "langfuse>=2.0.0", "litellm>=1.0.0", "google-genai>=1.0.0", "huggingface-hub>=0.20.0", "opentelemetry-api>=1.0.0", "redis>=4.0.0"]
 all-models = ["openai>=1.0.0", "anthropic>=0.7.0", "langfuse>=2.0.0", "tokencost>=0.1.0"]
 cli = ["click>=8.0.0"]
 dev = [
@@ -99,6 +100,9 @@ dev = [
     "huggingface-hub>=0.20.0",
     "opentelemetry-api>=1.0.0",
     "opentelemetry-sdk>=1.0.0",
+    "redis>=4.0.0",
+    "fakeredis>=2.0.0",
+    "testcontainers[redis]>=4.0.0",
 ]
 
 [project.scripts]
@@ -182,6 +186,14 @@ ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = ["langchain_core", "langchain_core.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["redis", "redis.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["fakeredis", "fakeredis.*"]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
