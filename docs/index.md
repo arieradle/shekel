@@ -266,11 +266,11 @@ print(f"Remaining: ${b.remaining:.4f}")
 
 <div class="grid cards" markdown>
 
--   :material-graph:{ .lg .middle } **Hierarchical Budget Caps**
+-   :material-graph:{ .lg .middle } **Hierarchical Budget Caps (foundation)**
 
     ---
 
-    Register explicit USD caps per LangGraph node, CrewAI agent, or task. The foundation for per-component circuit breaking — framework adapters wire in automatically (v0.3.2+).
+    Register explicit USD caps per LangGraph node, CrewAI agent, or task. Caps appear in `tree()` now; enforcement wires in automatically when framework adapters land (v0.3.2+).
 
     ```python
     with budget(max_usd=10.00) as b:
@@ -278,7 +278,7 @@ print(f"Remaining: ${b.remaining:.4f}")
         b.agent("researcher", max_usd=2.00)
         b.task("write_report", max_usd=1.00)
         run_workflow()
-    print(b.tree())
+    print(b.tree())  # shows caps; enforcement from v0.3.2
     ```
 
 -   :material-alert-decagram:{ .lg .middle } **Level-Specific Exceptions**
