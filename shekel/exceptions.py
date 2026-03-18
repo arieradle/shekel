@@ -108,7 +108,8 @@ class NodeBudgetExceededError(BudgetExceededError):
             f"Node budget exceeded for '{self.node_name}' "
             f"(${self.spent:.4f} / ${self.limit:.2f})\n"
             f"  Tip: Increase b.node('{self.node_name}', max_usd=...) "
-            f"or remove the explicit cap to use the parent budget only."
+            f"or remove the explicit cap to use the parent budget only.\n"
+            f"  Run b.tree() for full spend breakdown."
         )
 
 
@@ -124,7 +125,8 @@ class AgentBudgetExceededError(BudgetExceededError):
             f"Agent budget exceeded for '{self.agent_name}' "
             f"(${self.spent:.4f} / ${self.limit:.2f})\n"
             f"  Tip: Increase b.agent('{self.agent_name}', max_usd=...) "
-            f"or remove the explicit cap to use the parent budget only."
+            f"or remove the explicit cap to use the parent budget only.\n"
+            f"  Run b.tree() for full spend breakdown."
         )
 
 
@@ -143,7 +145,8 @@ class TaskBudgetExceededError(BudgetExceededError):
             f"Task budget exceeded for '{self.task_name}' "
             f"(${self.spent:.4f} / ${self.limit:.2f})\n"
             f"  Tip: Increase b.task('{self.task_name}', max_usd=...) "
-            f"or remove the explicit cap to use the parent budget only."
+            f"or remove the explicit cap to use the parent budget only.\n"
+            f"  Run b.tree() for full spend breakdown."
         )
 
 
@@ -163,7 +166,8 @@ class ChainBudgetExceededError(BudgetExceededError):
             f"Chain budget exceeded for '{self.chain_name}' "
             f"(${self.spent:.4f} / ${self.limit:.2f})\n"
             f"  Tip: Increase b.chain('{self.chain_name}', max_usd=...) "
-            f"or remove the explicit cap to use the parent budget only."
+            f"or remove the explicit cap to use the parent budget only.\n"
+            f"  Run b.tree() for full spend breakdown."
         )
 
 
