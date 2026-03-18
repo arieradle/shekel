@@ -219,12 +219,16 @@ class TestRollingWindowReset:
         t0 = 1000.0
 
         with patch("time.monotonic", return_value=t0):
-            allowed, _ = backend.check_and_add("reuse", {"usd": 0.001}, {"usd": 0.001}, {"usd": 3600.0})
+            allowed, _ = backend.check_and_add(
+                "reuse", {"usd": 0.001}, {"usd": 0.001}, {"usd": 3600.0}
+            )
             assert allowed is True
 
         # New window — same amount should be accepted again
         with patch("time.monotonic", return_value=t0 + 3601.0):
-            allowed2, _ = backend.check_and_add("reuse", {"usd": 0.001}, {"usd": 0.001}, {"usd": 3600.0})
+            allowed2, _ = backend.check_and_add(
+                "reuse", {"usd": 0.001}, {"usd": 0.001}, {"usd": 3600.0}
+            )
             assert allowed2 is True
             state = backend.get_state("reuse")
             assert state["usd"] == pytest.approx(0.001)
@@ -449,7 +453,9 @@ class TestAsyncTemporalBudget:
             )
             t0 = 1000.0
             with patch("time.monotonic", return_value=t0):
-                backend.check_and_add("async_retry", {"usd": 0.0009}, {"usd": 0.001}, {"usd": 3600.0})
+                backend.check_and_add(
+                    "async_retry", {"usd": 0.0009}, {"usd": 0.001}, {"usd": 3600.0}
+                )
 
             with patch("time.monotonic", return_value=t0 + 100.0):
                 async with tb:
@@ -574,13 +580,19 @@ class TestMultiTenantBackend:
         t0 = 1000.0
 
         with patch("time.monotonic", return_value=t0):
-            shared_backend.check_and_add("user:alice", {"usd": 0.0008}, {"usd": 0.001}, {"usd": 3600.0})
-            shared_backend.check_and_add("user:bob", {"usd": 0.0005}, {"usd": 0.001}, {"usd": 3600.0})
+            shared_backend.check_and_add(
+                "user:alice", {"usd": 0.0008}, {"usd": 0.001}, {"usd": 3600.0}
+            )
+            shared_backend.check_and_add(
+                "user:bob", {"usd": 0.0005}, {"usd": 0.001}, {"usd": 3600.0}
+            )
 
         # Alice's window expires; bob's is still active
         with patch("time.monotonic", return_value=t0 + 3601.0):
             # Alice's window reset: check_and_add should start fresh for alice
-            result, _ = shared_backend.check_and_add("user:alice", {"usd": 0.0008}, {"usd": 0.001}, {"usd": 3600.0})
+            result, _ = shared_backend.check_and_add(
+                "user:alice", {"usd": 0.0008}, {"usd": 0.001}, {"usd": 3600.0}
+            )
             assert result is True  # accepted in fresh window
 
         # Bob's window should still have his original spend
