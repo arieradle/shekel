@@ -13,6 +13,8 @@
 [![GitHub Stars](https://img.shields.io/github/stars/arieradle/shekel?style=social)](https://github.com/arieradle/shekel/stargazers)
 [![Docs](https://img.shields.io/badge/docs-arieradle.github.io%2Fshekel-blue)](https://arieradle.github.io/shekel/latest/)
 
+</div>
+
 ```python
 with budget(max_usd=5.00):
     run_my_agent()       # hard stop at $5. no SDK changes. no config. just works.
