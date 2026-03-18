@@ -23,10 +23,7 @@ from __future__ import annotations
 
 import functools
 import inspect
-from typing import TYPE_CHECKING, Any
-
-if TYPE_CHECKING:
-    from shekel._budget import Budget
+from typing import Any
 
 _original_add_node: Any = None
 _patch_refcount: int = 0
@@ -35,7 +32,7 @@ _patch_refcount: int = 0
 class LangGraphAdapter:
     """Patches ``StateGraph.add_node()`` for node-level budget enforcement."""
 
-    def install_patches(self, budget: Budget) -> None:  # noqa: ARG002
+    def install_patches(self, budget: Any) -> None:  # noqa: ARG002
         """Patch ``StateGraph.add_node``.  Raises ``ImportError`` when langgraph
         is not installed so that ``ShekelRuntime.probe()`` silently skips it.
         """
@@ -65,11 +62,11 @@ class LangGraphAdapter:
 
         StateGraph.add_node = _patched_add_node  # type: ignore[method-assign]
 
-    def remove_patches(self, budget: Budget) -> None:  # noqa: ARG002
+    def remove_patches(self, budget: Any) -> None:  # noqa: ARG002
         """Restore ``StateGraph.add_node``.  Only restores when the last
         active budget closes (reference count reaches zero).
         """
-        global _original_add_node, _patch_refcount
+        global _patch_refcount
 
         if _patch_refcount <= 0:
             return
@@ -85,7 +82,6 @@ class LangGraphAdapter:
             StateGraph.add_node = _original_add_node  # type: ignore[method-assign]
         except ImportError:  # pragma: no cover — defensive cleanup
             pass
-        _original_add_node = None
 
 
 # ---------------------------------------------------------------------------
@@ -141,7 +137,7 @@ def _make_async_gate(fn: Any, node_name: str) -> Any:
 # ---------------------------------------------------------------------------
 
 
-def _gate(node_name: str, active: Budget) -> None:
+def _gate(node_name: str, active: Any) -> None:
     """Pre-execution budget check.  Raises ``NodeBudgetExceededError`` if the
     explicit node cap or parent budget is already at / over its limit.
     """
@@ -161,7 +157,7 @@ def _gate(node_name: str, active: Budget) -> None:
         )
 
 
-def _attribute_spend(node_name: str, active: Budget, spend_before: float) -> None:
+def _attribute_spend(node_name: str, active: Any, spend_before: float) -> None:
     """Post-execution: add the spend delta to the node's ComponentBudget._spent."""
     cb = active._node_budgets.get(node_name)
     if cb is not None:

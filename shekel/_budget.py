@@ -5,13 +5,10 @@ import time
 import warnings
 from contextvars import Token
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Callable, TypedDict
+from typing import Any, Callable, TypedDict
 
 from shekel import _context, _patch
 from shekel.exceptions import BudgetExceededError, ToolBudgetExceededError
-
-if TYPE_CHECKING:
-    from shekel._runtime import ShekelRuntime
 
 
 @dataclass
@@ -206,7 +203,7 @@ class Budget:
         self._node_budgets: dict[str, ComponentBudget] = {}
         self._agent_budgets: dict[str, ComponentBudget] = {}
         self._task_budgets: dict[str, ComponentBudget] = {}
-        self._runtime: ShekelRuntime | None = None
+        self._runtime: Any = None
 
     # ------------------------------------------------------------------
     # Internal state reset

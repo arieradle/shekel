@@ -1,6 +1,6 @@
 """Tests for LangGraph node-level budget enforcement (v0.3.1).
 
-Domain: LangGraphAdapter — patching, node gate, spend attribution, async support.
+Domain: lg_mod.LangGraphAdapter — patching, node gate, spend attribution, async support.
 """
 
 from __future__ import annotations
@@ -17,7 +17,6 @@ from shekel import budget
 from shekel._budget import Budget
 from shekel._runtime import ShekelRuntime
 from shekel.exceptions import BudgetExceededError, NodeBudgetExceededError
-from shekel.providers.langgraph import LangGraphAdapter, _make_gate
 
 try:
     from langgraph.graph import END, StateGraph
@@ -41,7 +40,7 @@ pytestmark = pytest.mark.skipif(not LANGGRAPH_AVAILABLE, reason="langgraph not i
 
 @pytest.fixture(autouse=True)
 def restore_adapter_state():
-    """Restore LangGraphAdapter patch state and ShekelRuntime registry after each test."""
+    """Restore lg_mod.LangGraphAdapter patch state and ShekelRuntime registry after each test."""
     original_refcount = lg_mod._patch_refcount
     original_add_node = lg_mod._original_add_node
     original_registry = ShekelRuntime._adapter_registry[:]
@@ -72,18 +71,18 @@ def _make_simple_graph(node_name: str, node_fn: Any) -> Any:
 
 
 # ---------------------------------------------------------------------------
-# Group 1: LangGraphAdapter registered in ShekelRuntime
+# Group 1: lg_mod.LangGraphAdapter registered in ShekelRuntime
 # ---------------------------------------------------------------------------
 
 
 def test_langgraph_adapter_in_runtime_registry() -> None:
-    """LangGraphAdapter is registered in ShekelRuntime at import time."""
-    assert LangGraphAdapter in ShekelRuntime._adapter_registry
+    """lg_mod.LangGraphAdapter is registered in ShekelRuntime at import time."""
+    assert lg_mod.LangGraphAdapter in ShekelRuntime._adapter_registry
 
 
 def test_langgraph_adapter_is_registered_exactly_once() -> None:
-    """LangGraphAdapter appears exactly once in the registry."""
-    count = sum(1 for a in ShekelRuntime._adapter_registry if a is LangGraphAdapter)
+    """lg_mod.LangGraphAdapter appears exactly once in the registry."""
+    count = sum(1 for a in ShekelRuntime._adapter_registry if a is lg_mod.LangGraphAdapter)
     assert count == 1
 
 
@@ -95,7 +94,7 @@ def test_langgraph_adapter_is_registered_exactly_once() -> None:
 def test_install_patches_replaces_add_node() -> None:
     """install_patches() replaces StateGraph.add_node with the gated version."""
     original = StateGraph.add_node
-    adapter = LangGraphAdapter()
+    adapter = lg_mod.LangGraphAdapter()
     b = Budget(max_usd=5.00)
     adapter.install_patches(b)
     assert StateGraph.add_node is not original
@@ -109,7 +108,7 @@ def test_install_patches_raises_import_error_when_langgraph_absent(
     monkeypatch.setitem(sys.modules, "langgraph", None)
     monkeypatch.setitem(sys.modules, "langgraph.graph", None)
     monkeypatch.setitem(sys.modules, "langgraph.graph.state", None)
-    adapter = LangGraphAdapter()
+    adapter = lg_mod.LangGraphAdapter()
     with pytest.raises(ImportError):
         adapter.install_patches(Budget(max_usd=5.00))
 
@@ -117,7 +116,7 @@ def test_install_patches_raises_import_error_when_langgraph_absent(
 def test_remove_patches_restores_add_node() -> None:
     """remove_patches() restores StateGraph.add_node to the original."""
     original = StateGraph.add_node
-    adapter = LangGraphAdapter()
+    adapter = lg_mod.LangGraphAdapter()
     b = Budget(max_usd=5.00)
     adapter.install_patches(b)
     adapter.remove_patches(b)
@@ -129,8 +128,8 @@ def test_reference_counting_patch_applied_once_for_nested_budgets() -> None:
     original = StateGraph.add_node
     b1 = Budget(max_usd=5.00)
     b2 = Budget(max_usd=3.00)
-    a1 = LangGraphAdapter()
-    a2 = LangGraphAdapter()
+    a1 = lg_mod.LangGraphAdapter()
+    a2 = lg_mod.LangGraphAdapter()
 
     a1.install_patches(b1)
     patched = StateGraph.add_node
@@ -152,7 +151,7 @@ def test_reference_counting_patch_applied_once_for_nested_budgets() -> None:
 
 def test_remove_patches_is_safe_at_zero_refcount() -> None:
     """remove_patches() is a no-op when refcount is already 0."""
-    adapter = LangGraphAdapter()
+    adapter = lg_mod.LangGraphAdapter()
     lg_mod._patch_refcount = 0
     adapter.remove_patches(Budget(max_usd=5.00))  # must not raise
     assert lg_mod._patch_refcount == 0
@@ -160,7 +159,7 @@ def test_remove_patches_is_safe_at_zero_refcount() -> None:
 
 def test_remove_patches_is_safe_when_original_is_none() -> None:
     """remove_patches() is a no-op when _original_add_node is None (refcount 1→0)."""
-    adapter = LangGraphAdapter()
+    adapter = lg_mod.LangGraphAdapter()
     lg_mod._patch_refcount = 1
     lg_mod._original_add_node = None  # simulate missing original
     adapter.remove_patches(Budget(max_usd=5.00))  # must not raise
@@ -178,7 +177,7 @@ def test_add_node_callable_action_gets_wrapped() -> None:
         compiled_sub = sub.compile()
 
         # compiled_sub is callable — should be wrapped, not passed through
-        wrapped = _make_gate(compiled_sub, "sub")
+        wrapped = lg_mod._make_gate(compiled_sub, "sub")
         assert callable(wrapped)
         assert wrapped.__wrapped__ is compiled_sub or hasattr(wrapped, "__wrapped__")
 
@@ -186,11 +185,13 @@ def test_add_node_callable_action_gets_wrapped() -> None:
 def test_add_node_restored_on_budget_exit_even_on_exception() -> None:
     """StateGraph.add_node is restored even when an exception propagates."""
     original = StateGraph.add_node
-    with pytest.raises(ValueError):
+    try:
         with budget(max_usd=5.00):
             patched = StateGraph.add_node
             assert patched is not original
             raise ValueError("simulated error")
+    except ValueError:
+        pass
     assert StateGraph.add_node is original
 
 
@@ -240,7 +241,7 @@ def test_functools_wraps_preserves_original_name() -> None:
     def target(state: _State) -> dict:
         return {"value": 0}
 
-    wrapped = _make_gate(target, "target")
+    wrapped = lg_mod._make_gate(target, "target")
     assert wrapped.__name__ == "target"
 
 
@@ -250,7 +251,7 @@ def test_sync_node_wrapped_as_sync() -> None:
     def sync_node(state: _State) -> dict:
         return {"value": 0}
 
-    wrapped = _make_gate(sync_node, "sync_node")
+    wrapped = lg_mod._make_gate(sync_node, "sync_node")
     assert not inspect.iscoroutinefunction(wrapped)
 
 
@@ -260,7 +261,7 @@ def test_async_node_wrapped_as_async() -> None:
     async def async_node(state: _State) -> dict:
         return {"value": 0}
 
-    wrapped = _make_gate(async_node, "async_node")
+    wrapped = lg_mod._make_gate(async_node, "async_node")
     assert inspect.iscoroutinefunction(wrapped)
 
 
@@ -673,7 +674,6 @@ def test_looping_node_circuit_breaks_on_parent_budget() -> None:
     mock_resp.model = "gpt-4o-mini"
 
     from typing_extensions import TypedDict
-
 
     class _LoopState(TypedDict):
         count: int

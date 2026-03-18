@@ -159,15 +159,15 @@ class TemporalBudgetBackend(Protocol):
             If allowed is False, exceeded_counter names the first counter that
             would have exceeded (checked in deterministic order).
         """
-        ...
+        pass
 
     def get_state(self, budget_name: str) -> dict[str, float]:
         """Return current-window spend for each counter."""
-        ...
+        pass
 
     def reset(self, budget_name: str) -> None:
         """Reset all counters for the given budget name."""
-        ...
+        pass
 
 
 class InMemoryBackend:
@@ -273,8 +273,17 @@ class TemporalBudget(Budget):
         max_llm_calls: int | None = kwargs.pop("max_llm_calls", None)
         max_tool_calls: int | None = kwargs.pop("max_tool_calls", None)
 
+        # Resolve effective max_usd from caps if not explicitly provided,
+        # so parent Budget.max_usd is set correctly without post-init override.
+        effective_max_usd = max_usd
+        if effective_max_usd is None and caps is not None:
+            for counter, limit, _ in caps:
+                if counter == "usd" and limit is not None:
+                    effective_max_usd = limit
+                    break
+
         # Pass max_usd to parent for .spent / .remaining / .limit property tracking.
-        super().__init__(max_usd=max_usd, name=name, **kwargs)
+        super().__init__(max_usd=effective_max_usd, name=name, **kwargs)
         self._backend: TemporalBudgetBackend = backend or InMemoryBackend()
 
         if caps is not None:
@@ -282,12 +291,7 @@ class TemporalBudget(Budget):
             self._caps: dict[str, tuple[float | None, float]] = {
                 counter: (limit, window_s) for counter, limit, window_s in caps
             }
-            # Ensure parent Budget has max_usd set (drives .limit, autocap, etc.).
-            if max_usd is None and "usd" in self._caps:
-                usd_limit, _ = self._caps["usd"]
-                if usd_limit is not None:
-                    self.max_usd = usd_limit
-                    self._effective_limit = usd_limit
+            # Note: effective_max_usd already passed to super().__init__() above
         else:
             # Build caps from kwargs.
             if window_seconds is None:

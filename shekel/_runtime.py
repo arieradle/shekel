@@ -7,10 +7,7 @@ phases register into it via ShekelRuntime.register().
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
-
-if TYPE_CHECKING:
-    from shekel._budget import Budget
+from typing import Any
 
 
 class ShekelRuntime:
@@ -30,7 +27,7 @@ class ShekelRuntime:
 
     _adapter_registry: list[type[Any]] = []
 
-    def __init__(self, budget: Budget) -> None:
+    def __init__(self, budget: Any) -> None:
         self._budget = budget
         self._active_adapters: list[Any] = []
 
@@ -77,6 +74,11 @@ class ShekelRuntime:
 # Built-in framework adapters — registered once at import time
 # ---------------------------------------------------------------------------
 
-from shekel.providers.langgraph import LangGraphAdapter  # noqa: E402
 
-ShekelRuntime.register(LangGraphAdapter)
+def _register_builtin_adapters() -> None:
+    from shekel.providers.langgraph import LangGraphAdapter  # noqa: PLC0415
+
+    ShekelRuntime.register(LangGraphAdapter)
+
+
+_register_builtin_adapters()

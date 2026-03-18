@@ -315,7 +315,7 @@ class RedisBackend:
                 try:
                     result[counter] = float(val_bytes)
                 except (ValueError, TypeError):
-                    pass
+                    pass  # corrupt/non-numeric value — skip
         return result
 
     def reset(self, budget_name: str) -> None:
@@ -462,7 +462,7 @@ class AsyncRedisBackend:
                 try:
                     result[counter] = float(val_bytes)
                 except (ValueError, TypeError):
-                    pass
+                    pass  # corrupt/non-numeric value — skip
         return result
 
     async def reset(self, budget_name: str) -> None:
