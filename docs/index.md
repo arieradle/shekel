@@ -288,6 +288,23 @@ print(f"Remaining: ${b.remaining:.4f}")
     # [node] summarize: $0.72 / $1.00 (72.0%)
     ```
 
+-   :material-robot:{ .lg .middle } **CrewAI Agent/Task Circuit Breaking**
+
+    ---
+
+    Per-agent and per-task USD caps enforced automatically. `AgentBudgetExceededError` / `TaskBudgetExceededError` raised before the agent executes. Zero crew changes required.
+
+    ```python
+    with budget(max_usd=5.00) as b:
+        b.agent(researcher.role, max_usd=2.00)
+        b.task(research_task.name, max_usd=1.50)
+        crew.kickoff(inputs={"topic": "AI"})
+
+    print(b.tree())
+    # [agent] Senior Researcher: $1.92 / $2.00 (96.0%)
+    # [task]  research:          $1.92 / $1.50 (128.0%)
+    ```
+
 -   :material-alert-decagram:{ .lg .middle } **Level-Specific Exceptions**
 
     ---
@@ -295,8 +312,10 @@ print(f"Remaining: ${b.remaining:.4f}")
     `NodeBudgetExceededError`, `AgentBudgetExceededError`, `TaskBudgetExceededError`, `SessionBudgetExceededError` — all subclass `BudgetExceededError` so existing `except` blocks catch everything.
 
     ```python
-    except NodeBudgetExceededError as e:
-        print(f"Node '{e.node_name}' over budget")
+    except TaskBudgetExceededError as e:
+        print(f"Task '{e.task_name}' over budget")
+    except AgentBudgetExceededError as e:
+        print(f"Agent '{e.agent_name}' over budget")
     except BudgetExceededError:
         # catches all budget errors
         ...

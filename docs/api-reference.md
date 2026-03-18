@@ -289,34 +289,36 @@ with budget(max_usd=10.00) as b:
 
 #### `agent(name, max_usd)`
 
-Register an explicit USD cap for a named agent (CrewAI / OpenClaw). Returns `self` for chaining.
+Register an explicit USD cap for a named CrewAI agent. Returns `self` for chaining.
 
-> **Note:** Cap registration and `budget.tree()` display are live. Per-agent enforcement (raising `AgentBudgetExceededError`) requires a CrewAI / OpenClaw adapter in a future release.
+Enforced by `CrewAIExecutionAdapter` — `AgentBudgetExceededError` is raised **before** `Agent.execute_task` runs when the cap is exhausted. Use `agent.role` as the key to eliminate string mismatch risk. Spend is attributed to `ComponentBudget._spent` and visible in `budget.tree()`.
 
 ```python
-b = budget(max_usd=10.00)
-b.agent("researcher", max_usd=2.00).agent("writer", max_usd=1.50)
+with budget(max_usd=10.00) as b:
+    b.agent(researcher.role, max_usd=2.00).agent(writer.role, max_usd=1.50)
+    crew.kickoff(inputs={"topic": "AI"})
 ```
 
 **Parameters:**
-- `name` — agent name
+- `name` — agent name (use `agent.role` directly)
 - `max_usd` — USD cap; must be positive
 
 **Raises:** `ValueError` if `max_usd <= 0`
 
 #### `task(name, max_usd)`
 
-Register an explicit USD cap for a named task (CrewAI). Returns `self` for chaining.
+Register an explicit USD cap for a named CrewAI task. Returns `self` for chaining.
 
-> **Note:** Cap registration and `budget.tree()` display are live. Per-task enforcement (raising `TaskBudgetExceededError`) requires a CrewAI adapter in a future release.
+Enforced by `CrewAIExecutionAdapter` — `TaskBudgetExceededError` is raised **before** `Agent.execute_task` runs when the cap is exhausted. Use `task.name` as the key directly. Gate order: task cap is checked before agent cap (most specific first). Spend is attributed independently to both the task and the executing agent.
 
 ```python
-b = budget(max_usd=10.00)
-b.task("write_report", max_usd=0.50).task("fact_check", max_usd=0.30)
+with budget(max_usd=10.00) as b:
+    b.task(research_task.name, max_usd=1.50).task(write_task.name, max_usd=0.80)
+    crew.kickoff(inputs={"topic": "AI"})
 ```
 
 **Parameters:**
-- `name` — task name
+- `name` — task name (use `task.name` directly)
 - `max_usd` — USD cap; must be positive
 
 **Raises:** `ValueError` if `max_usd <= 0`

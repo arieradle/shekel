@@ -1,6 +1,6 @@
 # CrewAI Integration
 
-Shekel integrates seamlessly with [CrewAI](https://github.com/joaomdmoura/crewAI) to track and enforce budgets on multi-agent workflows.
+Shekel integrates with [CrewAI](https://github.com/joaomdmoura/crewAI) to enforce per-agent, per-task, and global spend limits on multi-agent workflows — with zero changes to your crew definition.
 
 ## Installation
 
@@ -8,154 +8,131 @@ Shekel integrates seamlessly with [CrewAI](https://github.com/joaomdmoura/crewAI
 pip install shekel[openai] crewai
 ```
 
-## Basic Integration
+## Zero-config global cap
 
-Wrap your Crew execution with a budget context:
+Wrap any crew execution with `budget()` — shekel auto-detects CrewAI and enforces the cap:
 
 ```python
 from crewai import Agent, Task, Crew
-from shekel import budget
-
-# Define your agent
-researcher = Agent(
-    role='Researcher',
-    goal='Research and provide accurate information',
-    backstory='Expert researcher with attention to detail',
-    verbose=True
-)
-
-# Define task
-task = Task(
-    description='Research the history of artificial intelligence',
-    agent=researcher,
-    expected_output='A comprehensive overview of AI history'
-)
-
-# Create crew
-crew = Crew(
-    agents=[researcher],
-    tasks=[task],
-    verbose=True
-)
-
-# Execute with budget
-with budget(max_usd=1.00) as b:
-    result = crew.kickoff()
-    print(f"Crew execution cost: ${b.spent:.4f}")
-```
-
-## Multi-Agent Crews
-
-Track costs across multiple agents:
-
-```python
-from crewai import Agent, Task, Crew, Process
-from shekel import budget
-
-# Define agents
-researcher = Agent(
-    role='Researcher',
-    goal='Gather comprehensive information',
-    backstory='Experienced researcher',
-)
-
-writer = Agent(
-    role='Writer',
-    goal='Create engaging content',
-    backstory='Professional content writer',
-)
-
-editor = Agent(
-    role='Editor',
-    goal='Ensure quality and accuracy',
-    backstory='Meticulous editor',
-)
-
-# Define tasks
-research_task = Task(
-    description='Research AI developments in 2024',
-    agent=researcher,
-    expected_output='Research findings'
-)
-
-write_task = Task(
-    description='Write an article based on research',
-    agent=writer,
-    expected_output='Draft article',
-)
-
-edit_task = Task(
-    description='Edit and finalize the article',
-    agent=editor,
-    expected_output='Final article'
-)
-
-# Create crew
-crew = Crew(
-    agents=[researcher, writer, editor],
-    tasks=[research_task, write_task, edit_task],
-    process=Process.sequential,
-    verbose=True
-)
-
-# All agents tracked under one budget
-with budget(max_usd=5.00) as b:
-    result = crew.kickoff()
-    print(f"Total crew cost: ${b.spent:.4f}")
-    print(b.summary())
-```
-
-## Budget Protection for Crews
-
-Prevent runaway costs from agent loops:
-
-```python
 from shekel import budget, BudgetExceededError
 
+researcher = Agent(role="Senior Researcher", goal="Find key facts", backstory="...", llm="gpt-4o-mini")
+writer = Agent(role="Content Writer", goal="Write a summary", backstory="...", llm="gpt-4o-mini")
+
+research_task = Task(name="research", description="Research: {topic}", expected_output="3 facts", agent=researcher)
+write_task = Task(name="write", description="Write a paragraph summary", expected_output="1 paragraph", agent=writer)
+
+crew = Crew(agents=[researcher, writer], tasks=[research_task, write_task])
+
 try:
-    with budget(max_usd=2.00, warn_at=0.8) as b:
-        result = crew.kickoff()
-        print(f"Success! Cost: ${b.spent:.4f}")
+    with budget(max_usd=5.00) as b:
+        crew.kickoff(inputs={"topic": "climate change"})
+    print(f"Done. Spent: ${b.spent:.4f}")
 except BudgetExceededError as e:
-    print(f"Crew stopped due to budget: ${e.spent:.4f}")
+    print(f"Budget exceeded: {e}")
 ```
 
-## Fallback Models
+Shekel patches `Agent.execute_task` transparently at `budget().__enter__()` and restores it at `__exit__()`. No crew or agent changes are needed.
 
-Use cheaper models when budget is reached:
+## Per-agent caps
+
+Register caps keyed by `agent.role` — using the attribute directly eliminates string mismatch risk:
 
 ```python
-with budget(max_usd=1.00, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}) as b:
-    result = crew.kickoff()
+from shekel.exceptions import AgentBudgetExceededError
 
-    if b.model_switched:
-        print(f"Switched to cheaper model at ${b.switched_at_usd:.4f}")
+try:
+    with budget(max_usd=5.00, name="agents") as b:
+        b.agent(researcher.role, max_usd=2.00)
+        b.agent(writer.role, max_usd=1.00)
+        crew.kickoff(inputs={"topic": "quantum computing"})
+    print(f"Done. Spent: ${b.spent:.4f}")
+except AgentBudgetExceededError as e:
+    print(f"Agent '{e.agent_name}' exceeded cap: ${e.spent:.4f} / ${e.limit:.2f}")
+except BudgetExceededError as e:
+    print(f"Global budget exceeded: {e}")
+
+print(b.tree())
+# agents: $2.84 / $5.00  (direct: $0.00)
+#   [agent] Senior Researcher: $1.92 / $2.00  (96.0%)
+#   [agent] Content Writer:    $0.92 / $1.00  (92.0%)
 ```
 
-## Per-Crew Budgets
+`AgentBudgetExceededError` is raised **before** the agent executes — the agent body never runs when the cap is already exhausted. It subclasses `BudgetExceededError`, so existing `except BudgetExceededError` blocks catch it automatically.
 
-Different budgets for different crew types:
+## Per-agent + per-task caps
+
+Combine agent and task caps. Use `task.name` as the key directly:
 
 ```python
-CREW_BUDGETS = {
-    "research": 0.50,
-    "writing": 1.00,
-    "analysis": 2.00,
-}
+from shekel.exceptions import AgentBudgetExceededError, TaskBudgetExceededError
 
-def run_crew(crew_type: str, crew: Crew):
-    budget_limit = CREW_BUDGETS.get(crew_type, 1.00)
-    
-    with budget(max_usd=budget_limit) as b:
-        result = crew.kickoff()
-        return result, b.spent
-
-result, cost = run_crew("research", research_crew)
-print(f"{crew_type} crew cost: ${cost:.4f}")
+try:
+    with budget(max_usd=5.00, name="full") as b:
+        b.agent(researcher.role, max_usd=2.00)
+        b.agent(writer.role, max_usd=1.00)
+        b.task(research_task.name, max_usd=1.50)
+        b.task(write_task.name, max_usd=0.80)
+        crew.kickoff(inputs={"topic": "renewable energy"})
+    print(f"Done. Spent: ${b.spent:.4f}")
+except TaskBudgetExceededError as e:
+    print(f"Task '{e.task_name}' exceeded cap: ${e.spent:.4f} / ${e.limit:.2f}")
+except AgentBudgetExceededError as e:
+    print(f"Agent '{e.agent_name}' exceeded cap")
+except BudgetExceededError as e:
+    print(f"Global budget exceeded: {e}")
 ```
+
+Gate order (most specific first): **task cap → agent cap → global budget**. Spend delta from each execution is attributed independently to both the agent and the task — they represent different aggregation views of the same spend.
+
+## Spend breakdown with `b.tree()`
+
+```python
+print(b.tree())
+# full: $3.42 / $5.00  (direct: $0.00)
+#   [agent] Senior Researcher: $2.10 / $2.00  (105.0%)
+#   [agent] Content Writer:    $1.32 / $1.00  (132.0%)
+#   [task]  research:          $2.10 / $1.50  (140.0%)
+#   [task]  write:             $1.32 / $0.80  (165.0%)
+```
+
+`b.tree()` shows live spend for every registered component alongside its cap and utilization percentage.
+
+## Nested budgets
+
+Per-agent and per-task caps are inherited through the parent chain:
+
+```python
+with budget(max_usd=10.00, name="outer") as outer:
+    with budget(max_usd=5.00, name="inner") as inner:
+        inner.agent(researcher.role, max_usd=2.00)
+        crew.kickoff(inputs={"topic": "AI"})
+    # inner spend rolls up to outer automatically
+```
+
+## Warnings for unnamed tasks
+
+If a `Task` has no `name` attribute and task caps are registered, shekel emits a `UserWarning`:
+
+```
+shekel: task has no name (description: 'Research the topic...') — set task.name to apply caps.
+```
+
+Always set `task.name` when using `b.task()` caps to avoid silent misses.
+
+## Exception hierarchy
+
+| Exception | Raised when | Fields |
+|---|---|---|
+| `AgentBudgetExceededError` | Agent cap exhausted | `agent_name`, `spent`, `limit` |
+| `TaskBudgetExceededError` | Task cap exhausted | `task_name`, `spent`, `limit` |
+| `BudgetExceededError` | Global budget exhausted | `spent`, `limit`, `model` |
+
+All three subclass `BudgetExceededError`, so a single `except BudgetExceededError` catches them all.
 
 ## Next Steps
 
-- [OpenAI Integration](openai.md)
-- [LangGraph Integration](langgraph.md)
+- [LangGraph Integration](langgraph.md) — per-node circuit breaking
+- [LangChain Integration](langchain.md) — per-chain circuit breaking
 - [Budget Enforcement](../usage/budget-enforcement.md)
+- [API Reference](../api-reference.md)

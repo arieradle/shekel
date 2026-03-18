@@ -199,6 +199,33 @@ with budget(max_usd=5.00, name="pipeline") as b:
 
 Shekel patches `Runnable._call_with_config` and `RunnableSequence.invoke` — zero changes to your chains. `b.chain()` is chainable and composable with `b.node()`, `b.agent()`, and `b.task()`.
 
+### CrewAI — per-agent and per-task circuit breaking
+
+```python
+from shekel.exceptions import AgentBudgetExceededError, TaskBudgetExceededError
+
+try:
+    with budget(max_usd=5.00, name="crew") as b:
+        b.agent(researcher.role, max_usd=2.00)  # use agent.role directly
+        b.agent(writer.role,     max_usd=1.00)
+        b.task(research_task.name, max_usd=1.50)  # use task.name directly
+        b.task(write_task.name,    max_usd=0.80)
+        crew.kickoff(inputs={"topic": "AI"})    # AgentBudgetExceededError or TaskBudgetExceededError if cap hit
+except TaskBudgetExceededError as e:
+    print(f"Task '{e.task_name}' over budget")
+except AgentBudgetExceededError as e:
+    print(f"Agent '{e.agent_name}' over budget")
+
+print(b.tree())
+# crew: $2.84 / $5.00
+#   [agent] Senior Researcher: $1.92 / $2.00  (96.0%)
+#   [agent] Content Writer:    $0.92 / $1.00  (92.0%)
+#   [task]  research:          $1.92 / $1.50  (128.0%)
+#   [task]  write:             $0.92 / $0.80  (115.0%)
+```
+
+Shekel patches `Agent.execute_task` transparently — zero crew or agent changes. Gate order: task cap → agent cap → global budget (most specific first).
+
 ### Distributed budgets — enforce across multiple processes
 
 ```python
@@ -340,8 +367,8 @@ budget("$5/hr + 100 calls/hr", name="api-tier")  # multi-cap rolling-window
 ```python
 b.node("fetch_data", max_usd=0.50)   # LangGraph node cap
 b.chain("retriever", max_usd=0.20)   # LangChain chain cap
-b.agent("researcher", max_usd=1.00)  # agent cap (enforcement in future release)
-b.task("summarize", max_usd=0.50)    # task cap (enforcement in future release)
+b.agent("researcher", max_usd=1.00)  # CrewAI agent cap — AgentBudgetExceededError
+b.task("summarize", max_usd=0.50)    # CrewAI task cap — TaskBudgetExceededError
 ```
 
 **Exceptions:**
@@ -350,6 +377,8 @@ b.task("summarize", max_usd=0.50)    # task cap (enforcement in future release)
 |---|---|
 | `BudgetExceededError` | `spent`, `limit`, `model`, `retry_after` |
 | `NodeBudgetExceededError` | `node_name`, `spent`, `limit` |
+| `AgentBudgetExceededError` | `agent_name`, `spent`, `limit` |
+| `TaskBudgetExceededError` | `task_name`, `spent`, `limit` |
 | `ChainBudgetExceededError` | `chain_name`, `spent`, `limit` |
 | `ToolBudgetExceededError` | `tool_name`, `calls_used`, `calls_limit`, `framework` |
 | `BudgetConfigMismatchError` | raised by Redis backend on config conflict |
