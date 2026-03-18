@@ -305,7 +305,9 @@ class RedisBackend:
         key = f"shekel:tb:{budget_name}"
         try:
             raw = self._ensure_client().hgetall(key)
-        except Exception:  # noqa: BLE001 — get_state is best-effort; Redis unavailable → empty state
+        except (
+            Exception
+        ):  # noqa: BLE001 — get_state is best-effort; Redis unavailable → empty state
             return {}
         result: dict[str, float] = {}
         for field_bytes, val_bytes in raw.items():
@@ -452,7 +454,9 @@ class AsyncRedisBackend:
         try:
             client = await self._ensure_client()
             raw = await client.hgetall(key)
-        except Exception:  # noqa: BLE001 — get_state is best-effort; Redis unavailable → empty state
+        except (
+            Exception
+        ):  # noqa: BLE001 — get_state is best-effort; Redis unavailable → empty state
             return {}
         result: dict[str, float] = {}
         for field_bytes, val_bytes in raw.items():
