@@ -77,3 +77,81 @@ class BudgetExceededError(Exception):
             f"  Tip: Increase max_usd, add warn_at=0.8 for an early warning, "
             f"or add fallback='gpt-4o-mini' to switch to a cheaper model instead of raising."
         )
+
+
+class NodeBudgetExceededError(BudgetExceededError):
+    """Raised when a LangGraph node exceeds its budget cap.
+
+    Raised *before* the node body executes when an explicit cap is set,
+    or during execution when the parent budget is exhausted.
+    """
+
+    def __init__(self, node_name: str, spent: float, limit: float) -> None:
+        self.node_name = node_name
+        super().__init__(spent=spent, limit=limit, model=f"node:{node_name}")
+
+    def __str__(self) -> str:
+        return (
+            f"Node budget exceeded for '{self.node_name}' "
+            f"(${self.spent:.4f} / ${self.limit:.2f})\n"
+            f"  Tip: Increase b.node('{self.node_name}', max_usd=...) "
+            f"or remove the explicit cap to use the parent budget only."
+        )
+
+
+class AgentBudgetExceededError(BudgetExceededError):
+    """Raised when an agent exceeds its budget cap (CrewAI, OpenClaw)."""
+
+    def __init__(self, agent_name: str, spent: float, limit: float) -> None:
+        self.agent_name = agent_name
+        super().__init__(spent=spent, limit=limit, model=f"agent:{agent_name}")
+
+    def __str__(self) -> str:
+        return (
+            f"Agent budget exceeded for '{self.agent_name}' "
+            f"(${self.spent:.4f} / ${self.limit:.2f})\n"
+            f"  Tip: Increase b.agent('{self.agent_name}', max_usd=...) "
+            f"or remove the explicit cap to use the parent budget only."
+        )
+
+
+class TaskBudgetExceededError(BudgetExceededError):
+    """Raised when a task exceeds its budget cap (CrewAI).
+
+    Raised *before* the task executes when an explicit cap is set.
+    """
+
+    def __init__(self, task_name: str, spent: float, limit: float) -> None:
+        self.task_name = task_name
+        super().__init__(spent=spent, limit=limit, model=f"task:{task_name}")
+
+    def __str__(self) -> str:
+        return (
+            f"Task budget exceeded for '{self.task_name}' "
+            f"(${self.spent:.4f} / ${self.limit:.2f})\n"
+            f"  Tip: Increase b.task('{self.task_name}', max_usd=...) "
+            f"or remove the explicit cap to use the parent budget only."
+        )
+
+
+class SessionBudgetExceededError(BudgetExceededError):
+    """Raised when an always-on agent session exceeds its rolling-window budget (OpenClaw)."""
+
+    def __init__(
+        self,
+        agent_name: str,
+        spent: float,
+        limit: float,
+        window: float | None = None,
+    ) -> None:
+        self.agent_name = agent_name
+        self.window = window
+        super().__init__(spent=spent, limit=limit, model=f"session:{agent_name}")
+
+    def __str__(self) -> str:
+        window_str = f" over {self.window:.0f}s window" if self.window is not None else ""
+        return (
+            f"Session budget exceeded for agent '{self.agent_name}' "
+            f"(${self.spent:.4f} / ${self.limit:.2f}{window_str})\n"
+            f"  Tip: Increase the session budget or use a longer rolling window."
+        )

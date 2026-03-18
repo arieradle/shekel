@@ -5,9 +5,16 @@ from typing import Any
 from shekel._budget import Budget
 from shekel._decorator import with_budget
 from shekel._tool import tool
-from shekel.exceptions import BudgetExceededError, ToolBudgetExceededError
+from shekel.exceptions import (
+    AgentBudgetExceededError,
+    BudgetExceededError,
+    NodeBudgetExceededError,
+    SessionBudgetExceededError,
+    TaskBudgetExceededError,
+    ToolBudgetExceededError,
+)
 
-__version__ = "0.2.9"
+__version__ = "0.3.1"
 __all__ = [
     "budget",
     "Budget",
@@ -15,6 +22,10 @@ __all__ = [
     "with_budget",
     "BudgetExceededError",
     "ToolBudgetExceededError",
+    "NodeBudgetExceededError",
+    "AgentBudgetExceededError",
+    "TaskBudgetExceededError",
+    "SessionBudgetExceededError",
     "tool",
 ]
 

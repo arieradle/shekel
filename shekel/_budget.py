@@ -4,13 +4,28 @@ import math
 import time
 import warnings
 from contextvars import Token
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Callable, TypedDict
 
 from shekel import _context, _patch
 from shekel.exceptions import BudgetExceededError, ToolBudgetExceededError
 
 if TYPE_CHECKING:
-    pass
+    from shekel._runtime import ShekelRuntime
+
+
+@dataclass
+class ComponentBudget:
+    """Lightweight cap tracker for a named node, agent, or task (v0.3.1).
+
+    Stores the declared USD limit and accumulated spend for a single
+    framework component. Used by framework adapters (LangGraph, CrewAI,
+    OpenClaw) to enforce per-component circuit breaking.
+    """
+
+    name: str
+    max_usd: float
+    _spent: float = field(default=0.0, init=False)
 
 
 class CallRecord(TypedDict):
@@ -187,6 +202,12 @@ class Budget:
         self._tool_calls: list[ToolCallRecord] = []
         self._tool_warn_fired: bool = False
 
+        # Component budget support (v0.3.1)
+        self._node_budgets: dict[str, ComponentBudget] = {}
+        self._agent_budgets: dict[str, ComponentBudget] = {}
+        self._task_budgets: dict[str, ComponentBudget] = {}
+        self._runtime: ShekelRuntime | None = None
+
     # ------------------------------------------------------------------
     # Internal state reset
     # ------------------------------------------------------------------
@@ -294,6 +315,10 @@ class Budget:
             self._effective_tool_call_limit = self.max_tool_calls
 
         self._ctx_token = _context.set_active_budget(self)
+        from shekel._runtime import ShekelRuntime
+
+        self._runtime = ShekelRuntime(self)
+        self._runtime.probe()
         return self
 
     def __exit__(self, exc_type: object, exc_val: object, exc_tb: object) -> None:
@@ -345,6 +370,9 @@ class Budget:
             from shekel._context import _active_budget
 
             _active_budget.reset(self._ctx_token)
+        if self._runtime is not None:
+            self._runtime.release()
+            self._runtime = None
         _patch.remove_patches()
         # returning None (not False) — never suppress exceptions
 
@@ -428,6 +456,10 @@ class Budget:
             self._effective_tool_call_limit = self.max_tool_calls
 
         self._ctx_token = _context.set_active_budget(self)
+        from shekel._runtime import ShekelRuntime
+
+        self._runtime = ShekelRuntime(self)
+        self._runtime.probe()
         return self
 
     async def __aexit__(self, exc_type: object, exc_val: object, exc_tb: object) -> None:
@@ -478,6 +510,9 @@ class Budget:
             from shekel._context import _active_budget
 
             _active_budget.reset(self._ctx_token)
+        if self._runtime is not None:
+            self._runtime.release()
+            self._runtime = None
         _patch.remove_patches()
 
     # ------------------------------------------------------------------
@@ -910,7 +945,65 @@ class Budget:
             else:
                 lines.append(child.tree(_indent=_indent + 1))
 
+        for kind, budgets in [
+            ("node", self._node_budgets),
+            ("agent", self._agent_budgets),
+            ("task", self._task_budgets),
+        ]:
+            for comp_name, cb in budgets.items():
+                limit_str = f"${cb.max_usd:.2f}"
+                pct = f"{cb._spent / cb.max_usd * 100:.1f}%" if cb.max_usd else "n/a"
+                lines.append(
+                    f"{prefix}  [{kind}] {comp_name}: ${cb._spent:.4f} / {limit_str} ({pct})"
+                )
+
         return "\n".join(lines)
+
+    # ------------------------------------------------------------------
+    # Component budget API (v0.3.1)
+    # ------------------------------------------------------------------
+
+    def node(self, name: str, max_usd: float) -> Budget:
+        """Register an explicit USD cap for a LangGraph node.
+
+        Returns ``self`` for fluent chaining::
+
+            with budget(max_usd=5.00) as b:
+                b.node("fetch", max_usd=0.50).node("summarize", max_usd=1.00)
+                graph.invoke(...)
+        """
+        if max_usd <= 0:
+            raise ValueError(f"node max_usd must be positive, got {max_usd}")
+        self._node_budgets[name] = ComponentBudget(name=name, max_usd=max_usd)
+        return self
+
+    def agent(self, name: str, max_usd: float) -> Budget:
+        """Register an explicit USD cap for an agent (CrewAI / OpenClaw).
+
+        Returns ``self`` for fluent chaining::
+
+            with budget(max_usd=10.00) as b:
+                b.agent("researcher", max_usd=3.00).agent("writer", max_usd=2.00)
+                crew.kickoff()
+        """
+        if max_usd <= 0:
+            raise ValueError(f"agent max_usd must be positive, got {max_usd}")
+        self._agent_budgets[name] = ComponentBudget(name=name, max_usd=max_usd)
+        return self
+
+    def task(self, name: str, max_usd: float) -> Budget:
+        """Register an explicit USD cap for a task (CrewAI).
+
+        Returns ``self`` for fluent chaining::
+
+            with budget(max_usd=5.00) as b:
+                b.task("research", max_usd=1.00).task("write", max_usd=0.50)
+                crew.kickoff()
+        """
+        if max_usd <= 0:
+            raise ValueError(f"task max_usd must be positive, got {max_usd}")
+        self._task_budgets[name] = ComponentBudget(name=name, max_usd=max_usd)
+        return self
 
     # ------------------------------------------------------------------
     # Summary
