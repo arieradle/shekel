@@ -2,9 +2,9 @@
 
 All notable changes to this project are documented here. For detailed information, see [CHANGELOG.md](https://github.com/arieradle/shekel/blob/main/CHANGELOG.md) on GitHub.
 
-## [0.3.1] {#031}
+## [1.0.0] {#100}
 
-### Hierarchical Budget Enforcement — LangGraph + LangChain circuit breaking + Distributed Budgets
+### 🎉 First GA Release — Hierarchical Budget Enforcement, CrewAI circuit breaking + Distributed Budgets
 
 Per-node, per-chain, per-agent, and per-task USD caps with automatic LangGraph and LangChain instrumentation. Distributed enforcement via Redis for multi-process deployments. Zero code changes required — open a `budget()` context and run.
 
@@ -52,8 +52,8 @@ print(b.tree())
 **API** (`Budget` methods, all chainable):
 - `b.node(name, max_usd)` — explicit cap for a LangGraph node
 - `b.chain(name, max_usd)` — explicit cap for a LangChain chain
-- `b.agent(name, max_usd)` — explicit cap for a CrewAI / OpenClaw agent *(enforcement in future release)*
-- `b.task(name, max_usd)` — explicit cap for a CrewAI task *(enforcement in future release)*
+- `b.agent(name, max_usd)` — explicit cap for a CrewAI agent; raises `AgentBudgetExceededError` before execute
+- `b.task(name, max_usd)` — explicit cap for a CrewAI task; raises `TaskBudgetExceededError` before execute
 
 **Exception hierarchy** (all subclass `BudgetExceededError`):
 - `NodeBudgetExceededError` — `node_name`, `spent`, `limit`
@@ -65,7 +65,7 @@ print(b.tree())
 
 **Fixed:** Node and chain caps registered on an outer `budget()` are now correctly enforced inside inner nested budget contexts.
 
-[Full CHANGELOG →](https://github.com/arieradle/shekel/blob/main/CHANGELOG.md#031)
+[Full CHANGELOG →](https://github.com/arieradle/shekel/blob/main/CHANGELOG.md#100)
 
 ---
 

@@ -78,7 +78,7 @@ class CrewAIAdapter:
 
 
 # ---------------------------------------------------------------------------
-# CrewAI execution-level adapter — agent/task circuit breaking (v0.3.1)
+# CrewAI execution-level adapter — agent/task circuit breaking (v1.0.0)
 # ---------------------------------------------------------------------------
 
 _execution_patch_refcount: int = 0

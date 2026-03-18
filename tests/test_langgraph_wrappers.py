@@ -1,4 +1,4 @@
-"""Tests for LangGraph node-level budget enforcement (v0.3.1).
+"""Tests for LangGraph node-level budget enforcement (v1.0.0).
 
 Domain: lg_mod.LangGraphAdapter — patching, node gate, spend attribution, async support.
 """

@@ -1,4 +1,4 @@
-"""Tests for CrewAI agent/task-level budget enforcement (v0.3.1).
+"""Tests for CrewAI agent/task-level budget enforcement (v1.0.0).
 
 Domain: CrewAIExecutionAdapter — patching, agent/task gate, spend attribution,
 nested budget inheritance, silent-miss warnings.

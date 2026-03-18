@@ -13,7 +13,7 @@ from shekel.exceptions import BudgetExceededError, ToolBudgetExceededError
 
 @dataclass
 class ComponentBudget:
-    """Lightweight cap tracker for a named node, agent, or task (v0.3.1).
+    """Lightweight cap tracker for a named node, agent, or task (v1.0.0).
 
     Stores the declared USD limit and accumulated spend for a single
     framework component. Used by framework adapters (LangGraph, CrewAI,
@@ -199,7 +199,7 @@ class Budget:
         self._tool_calls: list[ToolCallRecord] = []
         self._tool_warn_fired: bool = False
 
-        # Component budget support (v0.3.1)
+        # Component budget support (v1.0.0)
         self._node_budgets: dict[str, ComponentBudget] = {}
         self._agent_budgets: dict[str, ComponentBudget] = {}
         self._task_budgets: dict[str, ComponentBudget] = {}
@@ -958,7 +958,7 @@ class Budget:
         return "\n".join(lines)
 
     # ------------------------------------------------------------------
-    # Component budget API (v0.3.1)
+    # Component budget API (v1.0.0)
     # ------------------------------------------------------------------
 
     def node(self, name: str, max_usd: float) -> Budget:

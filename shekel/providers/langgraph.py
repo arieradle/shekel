@@ -1,4 +1,4 @@
-"""LangGraph adapter for Shekel — node-level circuit breaking (v0.3.1).
+"""LangGraph adapter for Shekel — node-level circuit breaking (v1.0.0).
 
 Patches ``StateGraph.add_node()`` transparently so every node — sync and async
 — is wrapped with a pre-execution budget gate. Requires no user code changes:

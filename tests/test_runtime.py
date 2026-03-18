@@ -1,4 +1,4 @@
-"""Tests for ShekelRuntime and component budget API (v0.3.1).
+"""Tests for ShekelRuntime and component budget API (v1.0.0).
 
 Domain: runtime framework detection scaffold and per-component budget registration.
 """

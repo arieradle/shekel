@@ -1,4 +1,4 @@
-"""ShekelRuntime — framework detection and adapter wiring (v0.3.1).
+"""ShekelRuntime — framework detection and adapter wiring (v1.0.0).
 
 Probed once at budget open. Activates any installed framework adapters
 (LangGraph, CrewAI, OpenClaw, ...). The adapter list starts empty; later

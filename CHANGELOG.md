@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.3.1] - 2026-03-18
+## [1.0.0] - 2026-03-18
 
 ### Added
 
@@ -73,7 +73,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Technical
 
 - **245 new TDD tests**: 45 in `tests/test_runtime.py`, 41 in `tests/test_langchain_wrappers.py`, 36 in `tests/test_langgraph_wrappers.py`, 81 in `tests/test_distributed_budgets.py` (unit) + 419-line Docker integration suite in `tests/integrations/test_redis_docker.py`
-- `shekel/__version__` bumped to `0.3.1`
+- `shekel/__version__` bumped to `1.0.0` — first GA release
 - `Budget.chain`, `ChainBudgetExceededError`, `BudgetConfigMismatchError`, `RedisBackend`, `AsyncRedisBackend` all exported in `shekel.__all__`
 
 ## [0.2.9] - 2026-03-15
