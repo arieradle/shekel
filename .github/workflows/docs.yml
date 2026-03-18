@@ -49,3 +49,11 @@ jobs:
         run: |
           mike deploy --push --update-aliases ${{ steps.version.outputs.version }} latest
           mike set-default --push latest
+
+      - name: Remove yanked versions from docs
+        run: |
+          for v in 1.0.0 1.0.1; do
+            if mike list | grep -q "^$v"; then
+              mike delete --push "$v"
+            fi
+          done
