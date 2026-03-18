@@ -1,27 +1,32 @@
-# shekel
+<div align="center">
 
-[![PyPI version](https://img.shields.io/pypi/v/shekel)](https://pypi.org/project/shekel/)
+# 🪙 shekel
+
+**Stop your AI agent from bankrupting you.**
+
+[![PyPI version](https://img.shields.io/pypi/v/shekel?color=blue&label=PyPI)](https://pypi.org/project/shekel/)
 [![Python versions](https://img.shields.io/pypi/pyversions/shekel)](https://pypi.org/project/shekel/)
 [![CI](https://github.com/arieradle/shekel/actions/workflows/ci.yml/badge.svg)](https://github.com/arieradle/shekel/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/arieradle/shekel/branch/main/graph/badge.svg)](https://codecov.io/gh/arieradle/shekel)
-[![Downloads](https://img.shields.io/pypi/dm/shekel)](https://pypi.org/project/shekel/)
-[![License](https://img.shields.io/pypi/l/shekel)](https://pypi.org/project/shekel/)
-
-**Stop your AI agent from bankrupting you. One line.**
+[![Downloads](https://img.shields.io/pypi/dm/shekel?color=green)](https://pypi.org/project/shekel/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://pypi.org/project/shekel/)
+[![GitHub Stars](https://img.shields.io/github/stars/arieradle/shekel?style=social)](https://github.com/arieradle/shekel/stargazers)
+[![Docs](https://img.shields.io/badge/docs-arieradle.github.io%2Fshekel-blue)](https://arieradle.github.io/shekel/latest/)
 
 ```python
 with budget(max_usd=5.00):
-    run_my_agent()
+    run_my_agent()       # hard stop at $5. no SDK changes. no config. just works.
 ```
 
 ```bash
-# Or enforce from outside — zero code changes
-shekel run agent.py --budget 5
+shekel run agent.py --budget 5   # or enforce without touching code at all
 ```
+
+</div>
 
 ---
 
-I woke up to a $47 AWS bill from a LangGraph agent that spent the night retrying a failed tool call. OpenAI was happy to keep charging. I built shekel so you don't have to learn that lesson yourself.
+I woke up to a **$47 AWS bill** from a LangGraph agent that spent the night retrying a failed tool call. OpenAI was happy to keep charging. I built shekel so you don't have to learn that lesson yourself.
 
 ---
 
@@ -36,73 +41,31 @@ pip install shekel[cli]          # shekel run — enforce budgets without touchi
 
 ---
 
-## The one-liner that changes everything
+## Works with everything
 
-```python
-from shekel import budget
+If it calls OpenAI or Anthropic under the hood, shekel sees it — **zero integration code needed.**
 
-with budget(max_usd=5.00):
-    run_my_agent()               # hard stop at $5. no config. no API keys. just works.
-```
-
-That's it. No wrapping your OpenAI client. No decorators. No SDK replacement. shekel monkey-patches the provider SDK on context entry and restores it on exit. Your existing code runs unchanged.
-
-Works with **OpenAI, Anthropic, Google Gemini, HuggingFace, LiteLLM, LangChain, LangGraph, CrewAI, MCP, OpenAI Agents SDK, AutoGen, LlamaIndex** — if it calls OpenAI or Anthropic under the hood, shekel sees it.
-
----
-
-## Enforce from the CLI — zero code changes
-
-Don't want to touch the code at all? Don't.
-
-```bash
-pip install shekel[cli]
-
-shekel run agent.py --budget 5
-# exit 0 = success  |  exit 1 = budget exceeded  ← CI-friendly
-```
-
-Drop it into any pipeline:
-
-```bash
-# Shell script / cron / Docker
-AGENT_BUDGET_USD=5 shekel run agent.py
-
-# GitHub Actions
-- uses: ./.github/actions/enforce
-  with:
-    script: agent.py
-    budget: "5"
-
-# Docker — operator sets budget at runtime, no rebuild needed
-ENTRYPOINT ["shekel", "run", "agent.py"]
-# docker run -e AGENT_BUDGET_USD=5 my-agent-image
-```
-
-Flags that matter:
-
-```bash
---budget 5          # hard stop in USD
---warn-at 0.8       # log warning at 80%, hard stop at 100%
---max-llm-calls 20  # cap by call count instead of spend
---max-tool-calls 50 # cap agent tool calls
---warn-only         # log but never exit 1  (soft guardrail)
---dry-run           # track costs, no enforcement
---output json       # machine-readable spend summary for log pipelines
---budget-file shekel.toml  # load limits from config file
-```
+| Provider | Framework | |
+|---|---|---|
+| OpenAI · Anthropic · Gemini | LangChain · LangGraph | Auto-patched |
+| HuggingFace · LiteLLM · Groq | CrewAI · OpenAI Agents SDK | Auto-patched |
+| MCP · AutoGen · LlamaIndex | Any custom wrapper | Auto-patched |
 
 ---
 
 ## Every pattern you'll actually use
 
-### Hard cap
+### Hard cap — the one that saves you
 
 ```python
+from shekel import budget
+
 with budget(max_usd=5.00):
     run_my_agent()
 # raises BudgetExceededError the moment spend crosses $5
 ```
+
+No wrapping your OpenAI client. No decorators. No SDK replacement. shekel monkey-patches the provider on context entry and restores it on exit. Your existing code runs unchanged.
 
 ### Warn before the limit hits
 
@@ -125,10 +88,10 @@ print(f"that cost ${b.spent:.4f}")
 ```python
 with budget(max_usd=1.00, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}) as b:
     run_my_agent()
-# switches from gpt-4o → gpt-4o-mini at $0.80, hard stops at $1.00
+# switches gpt-4o → gpt-4o-mini at $0.80, hard stops at $1.00
 ```
 
-### Cap tool calls — stop the web_search loop
+### Cap tool calls — stop the infinite search loop
 
 ```python
 from shekel import tool
@@ -163,41 +126,38 @@ print(pipeline.tree())
 #   analysis:  $3.60 / $5.00
 ```
 
-Children auto-cap to the parent's remaining balance. `workflow.tree()` gives you a visual breakdown.
+Children auto-cap to the parent's remaining balance. `b.tree()` gives you a live visual breakdown.
 
 ### LangGraph — per-node circuit breaking
 
 ```python
-from shekel.backends.redis import RedisBackend
-
-backend = RedisBackend()   # reads REDIS_URL from env
-
-with budget("$5/hr + 100 calls/hr", name="api", backend=backend) as b:
-    b.node("fetch_data", max_usd=0.50)   # hard cap per LangGraph node
+with budget(max_usd=10.00, name="graph") as b:
+    b.node("fetch_data", max_usd=0.50)   # NodeBudgetExceededError before node runs
     b.node("summarize",  max_usd=1.00)
 
-    app.invoke({"query": "..."})          # NodeBudgetExceededError if node cap hit
+    app = graph.compile()
+    app.invoke({"query": "..."})
 
 print(b.tree())
-# api: $0.84 / $5.00
+# graph: $0.84 / $10.00
 #   [node] fetch_data: $0.12 / $0.50  (24%)
 #   [node] summarize:  $0.72 / $1.00  (72%)
 ```
 
-Shekel patches `StateGraph.add_node()` transparently — no graph changes needed. Every node gets a pre-execution budget gate. Caps roll up to the parent budget.
+Shekel patches `StateGraph.add_node()` transparently — no graph changes needed.
 
 ### LangChain — per-chain circuit breaking
 
 ```python
 with budget(max_usd=5.00, name="pipeline") as b:
-    b.chain("retriever",  max_usd=0.20)
+    b.chain("retriever",  max_usd=0.20)   # ChainBudgetExceededError before chain runs
     b.chain("summarizer", max_usd=1.00)
 
-    retriever_chain.invoke({"query": "..."})   # ChainBudgetExceededError if cap hit
+    retriever_chain.invoke({"query": "..."})
     summarizer_chain.invoke({"doc": "..."})
 ```
 
-Shekel patches `Runnable._call_with_config` and `RunnableSequence.invoke` — zero changes to your chains. `b.chain()` is chainable and composable with `b.node()`, `b.agent()`, and `b.task()`.
+Shekel patches `Runnable._call_with_config` and `RunnableSequence.invoke` — zero changes to your chains.
 
 ### CrewAI — per-agent and per-task circuit breaking
 
@@ -206,13 +166,13 @@ from shekel.exceptions import AgentBudgetExceededError, TaskBudgetExceededError
 
 try:
     with budget(max_usd=5.00, name="crew") as b:
-        b.agent(researcher.role, max_usd=2.00)  # use agent.role directly
-        b.agent(writer.role,     max_usd=1.00)
-        b.task(research_task.name, max_usd=1.50)  # use task.name directly
-        b.task(write_task.name,    max_usd=0.80)
-        crew.kickoff(inputs={"topic": "AI"})    # AgentBudgetExceededError or TaskBudgetExceededError if cap hit
+        b.agent(researcher.role,       max_usd=2.00)  # use agent.role directly
+        b.agent(writer.role,           max_usd=1.00)
+        b.task(research_task.name,     max_usd=1.50)  # use task.name directly
+        b.task(write_task.name,        max_usd=0.80)
+        crew.kickoff(inputs={"topic": "AI"})
 except TaskBudgetExceededError as e:
-    print(f"Task '{e.task_name}' over budget")
+    print(f"Task '{e.task_name}' over budget: ${e.spent:.4f} / ${e.limit:.2f}")
 except AgentBudgetExceededError as e:
     print(f"Agent '{e.agent_name}' over budget")
 
@@ -224,14 +184,14 @@ print(b.tree())
 #   [task]  write:             $0.92 / $0.80  (115.0%)
 ```
 
-Shekel patches `Agent.execute_task` transparently — zero crew or agent changes. Gate order: task cap → agent cap → global budget (most specific first).
+Shekel patches `Agent.execute_task` transparently. Gate order: task cap → agent cap → global (most specific first).
 
 ### Distributed budgets — enforce across multiple processes
 
 ```python
 from shekel.backends.redis import RedisBackend
 
-backend = RedisBackend()   # REDIS_URL from env; fail-closed by default
+backend = RedisBackend()   # reads REDIS_URL from env; fail-closed by default
 
 with budget("$5/hr + 100 calls/hr", name="api-tier", backend=backend) as b:
     response = client.chat.completions.create(...)
@@ -239,16 +199,14 @@ with budget("$5/hr + 100 calls/hr", name="api-tier", backend=backend) as b:
 # BudgetConfigMismatchError if the same name is reused with different limits
 ```
 
-Works with `AsyncRedisBackend` for async workflows. Circuit breaker built in: configurable error threshold + cooldown before opening. Fail-open or fail-closed.
+Works with `AsyncRedisBackend` for async workflows. Circuit breaker built in — configurable threshold + cooldown. Fail-open or fail-closed.
 
-### Rolling-window rate limits — `$5/hr`
+### Rolling-window rate limits
 
 ```python
-api_budget = budget("$5/hr", name="api-tier")
-
-async with api_budget:
+with budget("$5/hr", name="api-tier") as b:
     response = await client.chat.completions.create(...)
-# BudgetExceededError carries retry_after and window_spent
+# BudgetExceededError carries retry_after so callers know when the window resets
 ```
 
 Multi-cap: `budget("$5/hr + 100 calls/hr")` — USD and call-count windows are independent.
@@ -263,6 +221,46 @@ with session: run_step_2()   # $8.10
 with session: run_step_3()   # raises at $20
 
 print(f"total: ${session.spent:.2f}")
+```
+
+---
+
+## Enforce from the CLI — zero code changes
+
+Don't want to touch the code at all? Don't.
+
+```bash
+pip install shekel[cli]
+
+shekel run agent.py --budget 5
+# exit 0 = under budget  |  exit 1 = budget exceeded  ← CI-friendly
+```
+
+Drop it into any pipeline:
+
+```bash
+# Shell / cron / Docker
+AGENT_BUDGET_USD=5 shekel run agent.py
+
+# GitHub Actions
+- run: shekel run agent.py --budget 5
+
+# Docker — operator sets budget at runtime, no rebuild needed
+ENTRYPOINT ["shekel", "run", "agent.py"]
+# docker run -e AGENT_BUDGET_USD=5 my-agent-image
+```
+
+Key flags:
+
+```bash
+--budget 5          # hard stop in USD
+--warn-at 0.8       # log warning at 80%, hard stop at 100%
+--max-llm-calls 20  # cap by call count instead of spend
+--max-tool-calls 50 # cap agent tool calls
+--warn-only         # log but never exit 1  (soft guardrail)
+--dry-run           # track costs, no enforcement
+--output json       # machine-readable spend summary for log pipelines
+--budget-file shekel.toml  # load limits from config file
 ```
 
 ---
@@ -308,7 +306,7 @@ from shekel import with_budget
 @with_budget(max_usd=0.10)
 def summarize(text: str) -> str:
     return client.chat.completions.create(...).choices[0].message.content
-# budget enforced on every call, independently
+# budget enforced independently on every call
 ```
 
 ---
@@ -317,7 +315,7 @@ def summarize(text: str) -> str:
 
 shekel monkey-patches `openai.chat.completions.create` and `anthropic.messages.create` on `__enter__` and restores originals on `__exit__`. Spend is tracked in a `ContextVar` — concurrent agents in the same process never share state. Nested `with budget()` blocks form a tree; child spend rolls up automatically.
 
-No background threads. No external services. No API keys. Nothing leaves your machine.
+**No background threads. No external services. No API keys. Nothing leaves your machine.**
 
 ---
 
@@ -345,7 +343,7 @@ shekel estimate --model gpt-4o --input-tokens 1000 --output-tokens 500
 
 ---
 
-## API
+## API quick reference
 
 ```python
 budget(
@@ -362,42 +360,26 @@ budget(
 budget("$5/hr + 100 calls/hr", name="api-tier")  # multi-cap rolling-window
 ```
 
-**Component caps** (all chainable):
+**Component caps** — all chainable, all raise before the component executes:
 
 ```python
-b.node("fetch_data", max_usd=0.50)   # LangGraph node cap
-b.chain("retriever", max_usd=0.20)   # LangChain chain cap
-b.agent("researcher", max_usd=1.00)  # CrewAI agent cap — AgentBudgetExceededError
-b.task("summarize", max_usd=0.50)    # CrewAI task cap — TaskBudgetExceededError
+b.node("fetch_data", max_usd=0.50)   # LangGraph node  → NodeBudgetExceededError
+b.chain("retriever", max_usd=0.20)   # LangChain chain → ChainBudgetExceededError
+b.agent("researcher", max_usd=1.00)  # CrewAI agent    → AgentBudgetExceededError
+b.task("summarize", max_usd=0.50)    # CrewAI task     → TaskBudgetExceededError
 ```
 
-**Exceptions:**
+**Exceptions** — all subclass `BudgetExceededError`, so one `except` catches everything:
 
-| Exception | Fields |
-|---|---|
-| `BudgetExceededError` | `spent`, `limit`, `model`, `retry_after` |
-| `NodeBudgetExceededError` | `node_name`, `spent`, `limit` |
-| `AgentBudgetExceededError` | `agent_name`, `spent`, `limit` |
-| `TaskBudgetExceededError` | `task_name`, `spent`, `limit` |
-| `ChainBudgetExceededError` | `chain_name`, `spent`, `limit` |
-| `ToolBudgetExceededError` | `tool_name`, `calls_used`, `calls_limit`, `framework` |
-| `BudgetConfigMismatchError` | raised by Redis backend on config conflict |
-
----
-
-## Documentation
-
-**[arieradle.github.io/shekel](https://arieradle.github.io/shekel/latest/)**
-
-- [Quick Start](https://arieradle.github.io/shekel/latest/quickstart/)
-- [Installation](https://arieradle.github.io/shekel/latest/installation/)
-- [CLI Reference](https://arieradle.github.io/shekel/latest/cli/) — `shekel run` full options
-- [Docker & Containers](https://arieradle.github.io/shekel/latest/docker/) — entrypoint patterns
-- [Architecture](https://arieradle.github.io/shekel/latest/architecture/) — how shekel works under the hood
-- [Nested Budgets](https://arieradle.github.io/shekel/latest/usage/nested-budgets/)
-- [Tool Budgets](https://arieradle.github.io/shekel/latest/usage/tool-budgets/)
-- [Temporal Budgets](https://arieradle.github.io/shekel/latest/usage/temporal-budgets/)
-- [API Reference](https://arieradle.github.io/shekel/latest/api-reference/)
+| Exception | Raised when | Key fields |
+|---|---|---|
+| `BudgetExceededError` | Global cap hit | `spent`, `limit`, `model`, `retry_after` |
+| `NodeBudgetExceededError` | LangGraph node cap hit | `node_name`, `spent`, `limit` |
+| `AgentBudgetExceededError` | CrewAI agent cap hit | `agent_name`, `spent`, `limit` |
+| `TaskBudgetExceededError` | CrewAI task cap hit | `task_name`, `spent`, `limit` |
+| `ChainBudgetExceededError` | LangChain chain cap hit | `chain_name`, `spent`, `limit` |
+| `ToolBudgetExceededError` | Tool call cap hit | `tool_name`, `calls_used`, `calls_limit` |
+| `BudgetConfigMismatchError` | Redis name reused with different limits | — |
 
 ---
 
@@ -407,9 +389,25 @@ Every PR and push to `main` runs CodeQL, Trivy, Bandit, and pip-audit. See the [
 
 ---
 
+## Documentation
+
+**[arieradle.github.io/shekel](https://arieradle.github.io/shekel/latest/)**
+
+- [Quick Start](https://arieradle.github.io/shekel/latest/quickstart/)
+- [CLI Reference](https://arieradle.github.io/shekel/latest/cli/)
+- [Docker & Containers](https://arieradle.github.io/shekel/latest/docker/)
+- [Nested Budgets](https://arieradle.github.io/shekel/latest/usage/nested-budgets/)
+- [Tool Budgets](https://arieradle.github.io/shekel/latest/usage/tool-budgets/)
+- [Temporal Budgets](https://arieradle.github.io/shekel/latest/usage/temporal-budgets/)
+- [LangGraph Integration](https://arieradle.github.io/shekel/latest/integrations/langgraph/)
+- [CrewAI Integration](https://arieradle.github.io/shekel/latest/integrations/crewai/)
+- [API Reference](https://arieradle.github.io/shekel/latest/api-reference/)
+
+---
+
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). PRs welcome.
+See [CONTRIBUTING.md](CONTRIBUTING.md). PRs welcome — especially new framework adapters.
 
 ## License
 
