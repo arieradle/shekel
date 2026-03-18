@@ -1,6 +1,15 @@
 from __future__ import annotations
 
 
+class BudgetConfigMismatchError(Exception):
+    """Raised when a distributed budget backend detects a config mismatch.
+
+    Occurs when a budget name is already registered in the backend with
+    different limits or window settings than the current configuration.
+    Call reset() on the backend to clear the existing state.
+    """
+
+
 class ToolBudgetExceededError(Exception):
     """Raised when tool invocations exceed the configured budget limit.
 
@@ -51,6 +60,7 @@ class BudgetExceededError(Exception):
         tokens: dict[str, int] | None = None,
         retry_after: float | None = None,
         window_spent: float | None = None,
+        exceeded_counter: str | None = None,
     ) -> None:
         self.spent = spent
         self.limit = limit
@@ -58,6 +68,7 @@ class BudgetExceededError(Exception):
         self.tokens: dict[str, int] = tokens if tokens is not None else {"input": 0, "output": 0}
         self.retry_after: float | None = retry_after
         self.window_spent: float | None = window_spent
+        self.exceeded_counter: str | None = exceeded_counter
         super().__init__(str(self))
 
     def __str__(self) -> str:
@@ -71,9 +82,11 @@ class BudgetExceededError(Exception):
             )
         else:
             last_call = f"  Last call: {self.model}\n"
+        counter_note = f"  Counter: {self.exceeded_counter}\n" if self.exceeded_counter else ""
         return (
             f"Budget of ${self.limit:.2f} exceeded (${self.spent:.4f} spent)\n"
             f"{last_call}"
+            f"{counter_note}"
             f"  Tip: Increase max_usd, add warn_at=0.8 for an early warning, "
             f"or add fallback='gpt-4o-mini' to switch to a cheaper model instead of raising."
         )
