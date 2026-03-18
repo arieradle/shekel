@@ -78,8 +78,9 @@ def main() -> None:
     # 3. Nested budgets — per-stage isolation
     # ------------------------------------------------------------------
     print("\n=== Nested per-stage budgets ===")
+    workflow = budget(max_usd=10.00, name="workflow")
     try:
-        with budget(max_usd=10.00, name="workflow") as workflow:
+        with workflow:
             with budget(max_usd=2.00, name="research"):
                 facts = retriever_chain.invoke({"topic": "quantum computing"})
 

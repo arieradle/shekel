@@ -38,7 +38,7 @@ def main() -> None:
     # ------------------------------------------------------------------
     print("=== Distributed enforcement ===")
     try:
-        backend = RedisBackend(redis_url=redis_url)
+        backend = RedisBackend(url=redis_url)
         with budget(max_usd=5.00, name="shared-pool", backend=backend) as b:
             resp = client.chat.completions.create(
                 model="gpt-4o-mini",
@@ -59,7 +59,7 @@ def main() -> None:
     # ------------------------------------------------------------------
     print("\n=== Multi-cap: $5/hr + 100 calls/hr ===")
     try:
-        backend = RedisBackend(redis_url=redis_url)
+        backend = RedisBackend(url=redis_url)
         with budget("$5/hr + 100 calls/hr", name="api-tier", backend=backend) as b:
             for i in range(3):
                 resp = client.chat.completions.create(
@@ -99,7 +99,7 @@ def main() -> None:
         graph.add_edge("answer", END)
         app = graph.compile()
 
-        backend = RedisBackend(redis_url=redis_url)
+        backend = RedisBackend(url=redis_url)
         with budget("$5/hr", name="graph-pool", backend=backend) as b:
             b.node("answer", max_usd=0.10)
             result = app.invoke({"query": "Name a planet.", "answer": ""})

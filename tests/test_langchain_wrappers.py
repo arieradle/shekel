@@ -168,10 +168,14 @@ def test_remove_patches_is_safe_at_zero_refcount() -> None:
 def test_patches_restored_on_budget_exit_even_on_exception() -> None:
     """Runnable methods are restored even when an exception propagates."""
     original_cwc = Runnable._call_with_config
-    with pytest.raises(ValueError):
+    raised = False
+    try:
         with budget(max_usd=5.00):
             assert Runnable._call_with_config is not original_cwc
             raise ValueError("simulated error")
+    except ValueError:
+        raised = True
+    assert raised
     assert Runnable._call_with_config is original_cwc
 
 
