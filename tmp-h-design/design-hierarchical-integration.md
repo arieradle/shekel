@@ -222,12 +222,12 @@ Shekel does not implement recovery logic. Recovery is the framework's domain —
 | Phase | Deliverable |
 |---|---|
 | v0.3.1 | `ShekelRuntime` — explicit detection + adapter wiring class. Two-tier implicit/explicit API. |
-| v0.4 | LangGraph Level 2 — `add_node()` patch, `NodeBudgetExceededError`, `.node()` explicit API |
-| v0.5 | CrewAI Level 3 — `BaseEventListener`, `AgentBudgetExceededError`, `TaskBudgetExceededError`, `.agent()` / `.task()` API |
-| v0.6 | Loop detection — rate-of-change circuit breaker (velocity-based, not just threshold) |
-| v0.7 | Tiered thresholds — N enforcement tiers (warn / fallback / disable tools / hard stop) |
-| v0.8 | OpenClaw Level 4 — `openclaw-sdk` adapter, `SessionBudgetExceededError`, `TemporalBudget` per agent |
-| v1.0 | Showback mode, budget tags, system-wide `ulimit`-style defaults |
+| v0.3.2 | LangGraph Level 2 — `add_node()` patch, `NodeBudgetExceededError`, `.node()` explicit API |
+| v0.3.3 | CrewAI Level 3 — `BaseEventListener`, `AgentBudgetExceededError`, `TaskBudgetExceededError`, `.agent()` / `.task()` API |
+| v0.3.4 | Loop detection — rate-of-change circuit breaker (velocity-based, not just threshold) |
+| v0.3.5 | Tiered thresholds — N enforcement tiers (warn / fallback / disable tools / hard stop) |
+| v0.3.6 | OpenClaw Level 4 — `openclaw-sdk` adapter, `SessionBudgetExceededError`, `TemporalBudget` per agent |
+| v0.3.7 | Showback mode, budget tags, system-wide `ulimit`-style defaults |
 | Post-1.0 | Cross-process budget spans, sampling mode, priority-aware preemption |
 
 ---

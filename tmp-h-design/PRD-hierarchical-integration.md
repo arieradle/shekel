@@ -63,7 +63,7 @@ The market response — Langfuse, LangSmith, Helicone, Portkey — is **observab
 
 **US-03:** As a developer, `budget.tree()` shows me a spend breakdown by detected level (session → agent → node → call) so I can see which component is driving cost.
 
-### Phase 2 — LangGraph Layer (v0.4)
+### Phase 2 — LangGraph Layer (v0.3.2)
 
 **US-04:** As a LangGraph developer, when a node exceeds its cap, I get a `NodeBudgetExceededError` — not a generic `BudgetExceededError` — so I know exactly which node tripped and can handle it specifically.
 
@@ -78,7 +78,7 @@ with budget(max_usd=5.00) as b:
 
 **US-07:** As a LangGraph developer, a looping node that fires hundreds of times is circuit-broken before it exhausts the parent budget — no single call is expensive, but the loop is caught.
 
-### Phase 3 — CrewAI Layer (v0.5)
+### Phase 3 — CrewAI Layer (v0.3.3)
 
 **US-08:** As a CrewAI developer, individual agent caps prevent one agent from consuming the entire crew budget:
 ```python
@@ -92,7 +92,7 @@ with budget(max_usd=10.00) as b:
 
 **US-10:** As a CrewAI developer, I get `AgentBudgetExceededError` or `TaskBudgetExceededError` — not a generic error — so my error handling can make intelligent decisions (retry with cheaper model, skip task, abort crew).
 
-### Phase 4 — Loop Detection (v0.6)
+### Phase 4 — Loop Detection (v0.3.4)
 
 **US-11:** As a developer, if my agent's spend rate spikes to 3× its rolling baseline within a short window, shekel circuit-breaks before the absolute limit is hit — catching runaway loops early.
 
@@ -102,7 +102,7 @@ with budget(max_usd=10.00, loop_detection_multiplier=3.0, loop_detection_window=
     graph.invoke(...)
 ```
 
-### Phase 5 — Tiered Thresholds (v0.7)
+### Phase 5 — Tiered Thresholds (v0.3.5)
 
 **US-13:** As a developer, I can configure N enforcement tiers instead of just warn + hard stop:
 ```python
@@ -115,7 +115,7 @@ with budget(max_usd=5.00, tiers=[
     graph.invoke(...)
 ```
 
-### Phase 6 — OpenClaw Layer (v0.8)
+### Phase 6 — OpenClaw Layer (v0.3.6)
 
 **US-14:** As an OpenClaw developer, I can enforce a rolling-window budget per agent session:
 ```python
@@ -126,7 +126,7 @@ with budget("$5/day") as b:
 
 **US-15:** As an OpenClaw developer, when an agent session budget is exhausted it is suspended — not killed. Other agents on the same Gateway continue running.
 
-### Phase 7 — DX Layer (v1.0)
+### Phase 7 — DX Layer (v0.3.7)
 
 **US-16:** As a developer adopting shekel, I can start in showback mode — full tracking and attribution, zero enforcement — then flip to chargeback when I'm confident:
 ```python
@@ -153,7 +153,7 @@ budget.summary(group_by="tags")  # cost by feature
 - Child budgets created by these methods roll up to the parent
 - `budget.tree()` renders the full hierarchy
 
-### FR-02: LangGraph adapter (v0.4)
+### FR-02: LangGraph adapter (v0.3.2)
 - Patch `StateGraph.add_node()` when `langgraph` is detected
 - Every registered node function is wrapped with a pre-execution budget gate
 - Gate checks: explicit node cap (if set) → parent budget remaining → record attribution
@@ -161,7 +161,7 @@ budget.summary(group_by="tags")  # cost by feature
 - Async node functions wrapped with async budget gate
 - Patch is reference-counted: applied on first budget open, restored when last budget closes
 
-### FR-03: CrewAI adapter (v0.5)
+### FR-03: CrewAI adapter (v0.3.3)
 - Register `ShekelEventListener(BaseEventListener)` on `crewai_event_bus` at budget open
 - Deregister at budget close
 - Subscribe to: `TaskStartedEvent`, `AgentExecutionStartedEvent`, `LLMCallCompletedEvent`, `TaskFailedEvent`
@@ -170,26 +170,26 @@ budget.summary(group_by="tags")  # cost by feature
 - `AgentBudgetExceededError` fields: `agent_name`, `spent`, `limit`
 - `TaskBudgetExceededError` fields: `task_name`, `spent`, `limit`
 
-### FR-04: Loop detection (v0.6)
+### FR-04: Loop detection (v0.3.4)
 - Track spend rate as rolling average over configurable window (default: 60s)
 - Circuit-break if instantaneous rate exceeds `loop_detection_multiplier × baseline` (default: 3×)
 - Configurable via `budget(loop_detection_multiplier=3.0, loop_detection_window=60)`
 - Default: disabled (opt-in)
 
-### FR-05: Tiered thresholds (v0.7)
+### FR-05: Tiered thresholds (v0.3.5)
 - `tiers` parameter accepts list of `(fraction, action)` tuples
 - Actions: `"warn"`, `"fallback:<model>"`, `"disable_tools"`, `"stop"`
 - Applied at all active levels (parent and children)
 - Backward compatible: existing `warn_at` + `fallback` still work
 
-### FR-06: OpenClaw adapter (v0.8)
+### FR-06: OpenClaw adapter (v0.3.6)
 - Detect `openclaw` package at budget open
 - Hook into `openclaw-sdk` agent lifecycle events
 - Use `TemporalBudget` as the default budget type for OpenClaw contexts
 - Session circuit-break suspends agent, does not kill Gateway
 - `SessionBudgetExceededError` fields: `agent_name`, `spent`, `limit`, `window`
 
-### FR-07: DX layer (v1.0)
+### FR-07: DX layer (v0.3.7)
 - `mode="showback"` — track everything, raise nothing
 - `mode="chargeback"` — default, existing behavior
 - `tags` parameter on `@tool` decorator

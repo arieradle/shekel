@@ -80,7 +80,7 @@ def task(self, name: str, max_usd: float) -> Budget:
 
 ---
 
-## Phase 1 — LangGraph Layer (v0.4)
+## Phase 1 — LangGraph Layer (v0.3.2)
 
 **Delivers:** Node-level circuit breaking for LangGraph. First framework integration. Highest-priority unmet need.
 
@@ -384,7 +384,7 @@ def test_budget_gate_overhead_under_1ms():
 
 ---
 
-## Phase 2 — CrewAI Layer (v0.5)
+## Phase 2 — CrewAI Layer (v0.3.3)
 
 **Delivers:** Agent-level and task-level circuit breaking for CrewAI.
 
@@ -416,7 +416,7 @@ def test_budget_gate_overhead_under_1ms():
 
 ---
 
-## Phase 3 — Loop Detection (v0.6)
+## Phase 3 — Loop Detection (v0.3.4)
 
 **Delivers:** Velocity-based circuit breaking. Catches runaway loops before absolute limit is hit.
 
@@ -440,7 +440,7 @@ Default: disabled (`loop_detection_multiplier=None`). Opt-in only.
 
 ---
 
-## Phase 4 — Tiered Thresholds (v0.7)
+## Phase 4 — Tiered Thresholds (v0.3.5)
 
 **Delivers:** N-tier enforcement (warn / fallback / disable tools / stop) instead of binary warn + hard stop.
 
@@ -458,7 +458,7 @@ Default: disabled (`loop_detection_multiplier=None`). Opt-in only.
 
 ---
 
-## Phase 5 — OpenClaw Layer (v0.8)
+## Phase 5 — OpenClaw Layer (v0.3.6)
 
 **Delivers:** Session-level circuit breaking for OpenClaw always-on agents.
 
@@ -480,7 +480,7 @@ Does `openclaw-sdk` expose Python lifecycle hooks for agent start/stop/suspend? 
 
 ---
 
-## Phase 6 — DX Layer (v1.0)
+## Phase 6 — DX Layer (v0.3.7)
 
 **Delivers:** Adoption-friendly features — showback mode, budget tags, system-wide policy.
 
@@ -533,11 +533,11 @@ Every phase must pass the full existing test suite unchanged. No existing API is
 | Phase | Version | Layer | Independent? |
 |---|---|---|---|
 | Phase 0 | v0.3.1 | ShekelRuntime + foundation API | Yes (prerequisite) |
-| Phase 1 | v0.4 | LangGraph — node-level | Depends on Phase 0 |
-| Phase 2 | v0.5 | CrewAI — agent + task level | Depends on Phase 0 |
-| Phase 3 | v0.6 | Loop detection | Depends on Phase 0 |
-| Phase 4 | v0.7 | Tiered thresholds | Depends on Phase 0 |
-| Phase 5 | v0.8 | OpenClaw — session level | Depends on Phase 0 |
-| Phase 6 | v1.0 | DX layer | Depends on Phase 0 |
+| Phase 1 | v0.3.2 | LangGraph — node-level | Depends on Phase 0 |
+| Phase 2 | v0.3.3 | CrewAI — agent + task level | Depends on Phase 0 |
+| Phase 3 | v0.3.4 | Loop detection | Depends on Phase 0 |
+| Phase 4 | v0.3.5 | Tiered thresholds | Depends on Phase 0 |
+| Phase 5 | v0.3.6 | OpenClaw — session level | Depends on Phase 0 |
+| Phase 6 | v0.3.7 | DX layer | Depends on Phase 0 |
 
 Phases 1–6 are independent of each other and can be developed in parallel after Phase 0.
