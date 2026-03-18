@@ -1543,15 +1543,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#100" class="md-nav__link">
+  <a href="#102" class="md-nav__link">
     <span class="md-ellipsis">
       
-        [1.0.0]
+        [1.0.2]
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="[1.0.0]">
+    <nav class="md-nav" aria-label="[1.0.2]">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -2393,15 +2393,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#100" class="md-nav__link">
+  <a href="#102" class="md-nav__link">
     <span class="md-ellipsis">
       
-        [1.0.0]
+        [1.0.2]
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="[1.0.0]">
+    <nav class="md-nav" aria-label="[1.0.2]">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -2820,7 +2820,7 @@
 
 <h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
 <p>All notable changes to this project are documented here. For detailed information, see <a href="https://github.com/arieradle/shekel/blob/main/CHANGELOG.md">CHANGELOG.md</a> on GitHub.</p>
-<h2 id="100">[1.0.0]<a class="headerlink" href="#100" title="Permanent link">&para;</a></h2>
+<h2 id="102">[1.0.2]<a class="headerlink" href="#102" title="Permanent link">&para;</a></h2>
 <h3 id="first-ga-release-hierarchical-budget-enforcement-crewai-circuit-breaking-distributed-budgets">🎉 First GA Release — Hierarchical Budget Enforcement, CrewAI circuit breaking + Distributed Budgets<a class="headerlink" href="#first-ga-release-hierarchical-budget-enforcement-crewai-circuit-breaking-distributed-budgets" title="Permanent link">&para;</a></h3>
 <p>Per-node, per-chain, per-agent, and per-task USD caps with automatic LangGraph and LangChain instrumentation. Distributed enforcement via Redis for multi-process deployments. Zero code changes required — open a <code>budget()</code> context and run.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">shekel.backends.redis</span><span class="w"> </span><span class="kn">import</span> <span class="n">RedisBackend</span>
@@ -2871,7 +2871,7 @@
 - <code>SessionBudgetExceededError</code> — <code>agent_name</code>, <code>spent</code>, <code>limit</code>, <code>window</code>
 - <code>BudgetConfigMismatchError</code> — raised by Redis backend on config conflict</p>
 <p><strong>Fixed:</strong> Node and chain caps registered on an outer <code>budget()</code> are now correctly enforced inside inner nested budget contexts.</p>
-<p><a href="https://github.com/arieradle/shekel/blob/main/CHANGELOG.md#100">Full CHANGELOG →</a></p>
+<p><a href="https://github.com/arieradle/shekel/blob/main/CHANGELOG.md#102">Full CHANGELOG →</a></p>
 <hr />
 <h2 id="029">[0.2.9]<a class="headerlink" href="#029" title="Permanent link">&para;</a></h2>
 <h3 id="cli-budget-enforcement-shekel-run">🖥️ CLI Budget Enforcement — <code>shekel run</code><a class="headerlink" href="#cli-budget-enforcement-shekel-run" title="Permanent link">&para;</a></h3>
