@@ -25,8 +25,14 @@ from shekel.exceptions import (
 
 @pytest.fixture(autouse=True)
 def clean_runtime_registry():
-    """Save and restore ShekelRuntime._adapter_registry between tests."""
+    """Save, clear, and restore ShekelRuntime._adapter_registry between tests.
+
+    Clearing at the start keeps these unit tests isolated from framework
+    adapters (e.g. LangGraphAdapter) registered at import time.  Tests that
+    need a specific adapter register it themselves.
+    """
     original = ShekelRuntime._adapter_registry[:]
+    ShekelRuntime._adapter_registry = []
     yield
     ShekelRuntime._adapter_registry = original
 

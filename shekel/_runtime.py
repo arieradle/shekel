@@ -71,3 +71,12 @@ class ShekelRuntime:
             ShekelRuntime.register(LangGraphAdapter)
         """
         cls._adapter_registry.append(adapter_cls)
+
+
+# ---------------------------------------------------------------------------
+# Built-in framework adapters — registered once at import time
+# ---------------------------------------------------------------------------
+
+from shekel.providers.langgraph import LangGraphAdapter  # noqa: E402
+
+ShekelRuntime.register(LangGraphAdapter)
