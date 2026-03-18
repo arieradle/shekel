@@ -665,6 +665,90 @@ def test_mock_llm_spend_tracked_with_node_cap() -> None:
     assert b._node_budgets["llm_node"]._spent == pytest.approx(b.spent)
 
 
+# ---------------------------------------------------------------------------
+# Group 9: Nested budget cap inheritance (parent-chain lookup)
+# ---------------------------------------------------------------------------
+
+
+def test_node_cap_on_outer_budget_enforced_in_nested_inner_budget() -> None:
+    """Cap registered on outer budget raises NodeBudgetExceededError inside inner context."""
+    executed: list[bool] = []
+
+    def fetch(state: _State) -> dict:
+        executed.append(True)
+        return {"value": 0}
+
+    with budget(max_usd=5.00, name="outer") as outer:
+        outer.node("fetch", max_usd=0.10)
+        outer._node_budgets["fetch"]._spent = 0.10  # exhaust the cap
+
+        with budget(max_usd=2.00, name="inner"):
+            app = _make_simple_graph("fetch", fetch)
+            with pytest.raises(NodeBudgetExceededError):
+                app.invoke({"value": 0})
+
+    assert executed == []
+
+
+def test_node_cap_spend_attributed_to_outer_budget_when_invoked_in_inner_context() -> None:
+    """Spend delta attributed to outer budget's ComponentBudget when cap is registered there."""
+    with budget(max_usd=5.00, name="outer") as outer:
+        outer.node("fetch", max_usd=1.00)
+
+        with budget(max_usd=2.00, name="inner") as inner:
+
+            def fetch(state: _State) -> dict:
+                inner._spent += 0.15  # simulate LLM spend on inner budget
+                return {"value": 0}
+
+            app = _make_simple_graph("fetch", fetch)
+            app.invoke({"value": 0})
+
+    assert outer._node_budgets["fetch"]._spent == pytest.approx(0.15)
+
+
+def test_node_cap_found_on_grandparent_budget() -> None:
+    """Cap registered on grandparent is found when graph runs two levels deep."""
+    executed: list[bool] = []
+
+    def fetch(state: _State) -> dict:
+        executed.append(True)
+        return {"value": 0}
+
+    with budget(max_usd=10.00, name="root") as root:
+        root.node("fetch", max_usd=0.10)
+        root._node_budgets["fetch"]._spent = 0.10
+
+        with budget(max_usd=5.00, name="mid"):
+            with budget(max_usd=2.00, name="inner"):
+                app = _make_simple_graph("fetch", fetch)
+                with pytest.raises(NodeBudgetExceededError):
+                    app.invoke({"value": 0})
+
+    assert executed == []
+
+
+def test_inner_budget_node_cap_takes_precedence_over_outer() -> None:
+    """Cap registered on inner budget is used even if outer also has a cap for the same node."""
+
+    def fetch(state: _State) -> dict:
+        return {"value": 0}
+
+    with budget(max_usd=5.00, name="outer") as outer:
+        outer.node("fetch", max_usd=1.00)  # outer cap: $1.00 — not exceeded
+
+        with budget(max_usd=2.00, name="inner") as inner:
+            inner.node("fetch", max_usd=0.05)
+            inner._node_budgets["fetch"]._spent = 0.05  # exhaust inner cap
+
+            app = _make_simple_graph("fetch", fetch)
+            with pytest.raises(NodeBudgetExceededError) as exc_info:
+                app.invoke({"value": 0})
+
+    # Raised using the inner cap ($0.05), not the outer cap ($1.00)
+    assert exc_info.value.limit == pytest.approx(0.05)
+
+
 def test_looping_node_circuit_breaks_on_parent_budget() -> None:
     """A node in a retry loop is stopped when parent budget is exhausted."""
     mock_resp = MagicMock()

@@ -203,6 +203,7 @@ class Budget:
         self._node_budgets: dict[str, ComponentBudget] = {}
         self._agent_budgets: dict[str, ComponentBudget] = {}
         self._task_budgets: dict[str, ComponentBudget] = {}
+        self._chain_budgets: dict[str, ComponentBudget] = {}
         self._runtime: Any = None
 
     # ------------------------------------------------------------------
@@ -1000,6 +1001,20 @@ class Budget:
         if max_usd <= 0:
             raise ValueError(f"task max_usd must be positive, got {max_usd}")
         self._task_budgets[name] = ComponentBudget(name=name, max_usd=max_usd)
+        return self
+
+    def chain(self, name: str, max_usd: float) -> Budget:
+        """Register an explicit USD cap for a named LangChain chain or runnable.
+
+        Returns ``self`` for fluent chaining::
+
+            with budget(max_usd=5.00) as b:
+                b.chain("summarize", max_usd=0.50).chain("research", max_usd=1.00)
+                result = summarize_chain.invoke(inputs)
+        """
+        if max_usd <= 0:
+            raise ValueError(f"chain max_usd must be positive, got {max_usd}")
+        self._chain_budgets[name] = ComponentBudget(name=name, max_usd=max_usd)
         return self
 
     # ------------------------------------------------------------------

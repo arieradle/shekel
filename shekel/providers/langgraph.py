@@ -137,14 +137,30 @@ def _make_async_gate(fn: Any, node_name: str) -> Any:
 # ---------------------------------------------------------------------------
 
 
+def _find_node_cap(node_name: str, active: Any) -> Any:
+    """Walk the budget parent chain to find a registered node cap.
+
+    Returns the first ``ComponentBudget`` whose ``_node_budgets`` contains
+    ``node_name``, starting from ``active`` and walking toward the root.
+    Returns ``None`` if no ancestor has a cap for this node.
+    """
+    b: Any = active
+    while b is not None:
+        cb = b._node_budgets.get(node_name)
+        if cb is not None:
+            return cb
+        b = b.parent
+    return None
+
+
 def _gate(node_name: str, active: Any) -> None:
     """Pre-execution budget check.  Raises ``NodeBudgetExceededError`` if the
     explicit node cap or parent budget is already at / over its limit.
     """
     from shekel.exceptions import NodeBudgetExceededError
 
-    # 1. Explicit node cap check (highest priority)
-    cb = active._node_budgets.get(node_name)
+    # 1. Explicit node cap check — walk up to find the cap (highest priority)
+    cb = _find_node_cap(node_name, active)
     if cb is not None and cb._spent >= cb.max_usd:
         raise NodeBudgetExceededError(node_name=node_name, spent=cb._spent, limit=cb.max_usd)
 
@@ -159,7 +175,7 @@ def _gate(node_name: str, active: Any) -> None:
 
 def _attribute_spend(node_name: str, active: Any, spend_before: float) -> None:
     """Post-execution: add the spend delta to the node's ComponentBudget._spent."""
-    cb = active._node_budgets.get(node_name)
+    cb = _find_node_cap(node_name, active)
     if cb is not None:
         delta = active._spent - spend_before
         if delta > 0:

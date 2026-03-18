@@ -147,6 +147,26 @@ class TaskBudgetExceededError(BudgetExceededError):
         )
 
 
+class ChainBudgetExceededError(BudgetExceededError):
+    """Raised when a LangChain chain or runnable exceeds its budget cap.
+
+    Raised *before* the chain body executes when an explicit cap is set,
+    or during execution when the parent budget is exhausted.
+    """
+
+    def __init__(self, chain_name: str, spent: float, limit: float) -> None:
+        self.chain_name = chain_name
+        super().__init__(spent=spent, limit=limit, model=f"chain:{chain_name}")
+
+    def __str__(self) -> str:
+        return (
+            f"Chain budget exceeded for '{self.chain_name}' "
+            f"(${self.spent:.4f} / ${self.limit:.2f})\n"
+            f"  Tip: Increase b.chain('{self.chain_name}', max_usd=...) "
+            f"or remove the explicit cap to use the parent budget only."
+        )
+
+
 class SessionBudgetExceededError(BudgetExceededError):
     """Raised when an always-on agent session exceeds its rolling-window budget (OpenClaw)."""
 

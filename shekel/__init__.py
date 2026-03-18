@@ -9,6 +9,7 @@ from shekel.exceptions import (
     AgentBudgetExceededError,
     BudgetConfigMismatchError,
     BudgetExceededError,
+    ChainBudgetExceededError,
     NodeBudgetExceededError,
     SessionBudgetExceededError,
     TaskBudgetExceededError,
@@ -28,6 +29,7 @@ __all__ = [
     "AgentBudgetExceededError",
     "TaskBudgetExceededError",
     "SessionBudgetExceededError",
+    "ChainBudgetExceededError",
     "tool",
 ]
 

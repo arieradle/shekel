@@ -76,9 +76,11 @@ class ShekelRuntime:
 
 
 def _register_builtin_adapters() -> None:
+    from shekel.providers.langchain import LangChainRunnerAdapter  # noqa: PLC0415
     from shekel.providers.langgraph import LangGraphAdapter  # noqa: PLC0415
 
     ShekelRuntime.register(LangGraphAdapter)
+    ShekelRuntime.register(LangChainRunnerAdapter)
 
 
 _register_builtin_adapters()
