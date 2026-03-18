@@ -28,7 +28,7 @@ shekel run agent.py --budget 5   # or enforce without touching code at all
 
 ---
 
-I woke up to a **$47 AWS bill** from a LangGraph agent that spent the night retrying a failed tool call. OpenAI was happy to keep charging. I built shekel so you don't have to learn that lesson yourself.
+I woke up to a **$47 OpenAI bill** from a LangGraph agent that spent the night retrying a failed tool call. I built shekel so you don't have to learn that lesson yourself.
 
 ---
 
