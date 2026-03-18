@@ -133,6 +133,5 @@ All three subclass `BudgetExceededError`, so a single `except BudgetExceededErro
 ## Next Steps
 
 - [LangGraph Integration](langgraph.md) — per-node circuit breaking
-- [LangChain Integration](langchain.md) — per-chain circuit breaking
 - [Budget Enforcement](../usage/budget-enforcement.md)
 - [API Reference](../api-reference.md)

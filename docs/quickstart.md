@@ -310,7 +310,7 @@ except AgentBudgetExceededError as e:
     print(f"Agent '{e.agent_name}' exceeded cap")
 ```
 
-See [CrewAI Integration](../integrations/crewai.md) for the full reference.
+See [CrewAI Integration](integrations/crewai.md) for the full reference.
 
 ## Viewing Spend Summary
 
