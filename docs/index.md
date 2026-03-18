@@ -262,7 +262,44 @@ print(f"Remaining: ${b.remaining:.4f}")
 
 ---
 
-## What's New in v0.2.9
+## What's New in v0.3.1
+
+<div class="grid cards" markdown>
+
+-   :material-graph:{ .lg .middle } **Hierarchical Budget Caps**
+
+    ---
+
+    Register explicit USD caps per LangGraph node, CrewAI agent, or task. The foundation for per-component circuit breaking — framework adapters wire in automatically (v0.3.2+).
+
+    ```python
+    with budget(max_usd=10.00) as b:
+        b.node("fetch", max_usd=0.50)
+        b.agent("researcher", max_usd=2.00)
+        b.task("write_report", max_usd=1.00)
+        run_workflow()
+    print(b.tree())
+    ```
+
+-   :material-alert-decagram:{ .lg .middle } **Level-Specific Exceptions**
+
+    ---
+
+    `NodeBudgetExceededError`, `AgentBudgetExceededError`, `TaskBudgetExceededError`, `SessionBudgetExceededError` — all subclass `BudgetExceededError` so existing `except` blocks catch everything.
+
+    ```python
+    except NodeBudgetExceededError as e:
+        print(f"Node '{e.node_name}' over budget")
+    except BudgetExceededError:
+        # catches all budget errors
+        ...
+    ```
+
+</div>
+
+---
+
+## Previous: v0.2.9
 
 <div class="grid cards" markdown>
 

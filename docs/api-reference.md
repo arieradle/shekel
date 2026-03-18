@@ -243,11 +243,71 @@ print(w.tree())
 #   analysis: $9.30 / $10.00 (direct: $9.30)
 ```
 
+Also renders registered component budgets (nodes, agents, tasks):
+
+```python
+with budget(max_usd=10, name="workflow") as b:
+    b.node("fetch", max_usd=0.50)
+    b.agent("researcher", max_usd=2.00)
+    run_workflow()
+
+print(b.tree())
+# workflow: $1.20 / $10.00 (direct: $1.20)
+#   [node] fetch: $0.08 / $0.50 (16.0%)
+#   [agent] researcher: $1.12 / $2.00 (56.0%)
+```
+
 **Returns:** Multi-line string with indented tree structure showing:
 - Budget name and hierarchy
 - Total spend / limit
 - Direct spend (excluding children)
 - `[ACTIVE]` marker for currently active children
+- `[node]`, `[agent]`, `[task]` component budget lines with spend/limit/percentage
+
+#### `node(name, max_usd)`
+
+Register an explicit USD cap for a named LangGraph node. Returns `self` for chaining.
+
+```python
+b = budget(max_usd=10.00)
+b.node("fetch_data", max_usd=0.50).node("summarize", max_usd=1.00)
+```
+
+**Parameters:**
+- `name` — node name (must match the name used in `StateGraph.add_node()`)
+- `max_usd` — hard USD cap; must be positive
+
+**Raises:** `ValueError` if `max_usd <= 0`
+
+#### `agent(name, max_usd)`
+
+Register an explicit USD cap for a named agent (CrewAI / OpenClaw). Returns `self` for chaining.
+
+```python
+b = budget(max_usd=10.00)
+b.agent("researcher", max_usd=2.00).agent("writer", max_usd=1.50)
+```
+
+**Parameters:**
+- `name` — agent name (must match the agent's name in your framework)
+- `max_usd` — hard USD cap; must be positive
+
+**Raises:** `ValueError` if `max_usd <= 0`
+
+#### `task(name, max_usd)`
+
+Register an explicit USD cap for a named task (CrewAI). Returns `self` for chaining.
+
+```python
+b = budget(max_usd=10.00)
+b.task("write_report", max_usd=0.50).task("fact_check", max_usd=0.30)
+```
+
+**Parameters:**
+- `name` — task name (must match the task's name in your framework)
+- `max_usd` — hard USD cap; must be positive
+
+**Raises:** `ValueError` if `max_usd <= 0`
 
 ---
 
@@ -340,6 +400,77 @@ except BudgetExceededError as e:
     print(f"Model: {e.model}")
     print(f"Tokens: {e.tokens['input']} in, {e.tokens['output']} out")
 ```
+
+---
+
+## `NodeBudgetExceededError`
+
+Raised when a LangGraph node exceeds its registered USD cap. Subclass of `BudgetExceededError`.
+
+### Attributes
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `node_name` | `str` | Name of the node that exceeded its budget. |
+| `spent` | `float` | Total USD spent when the cap was hit. |
+| `limit` | `float` | The configured `max_usd` for this node. |
+
+```python
+from shekel import budget, NodeBudgetExceededError, BudgetExceededError
+
+try:
+    with budget(max_usd=10.00) as b:
+        b.node("fetch", max_usd=0.10)
+        run_fetch_node()
+except NodeBudgetExceededError as e:
+    print(f"Node '{e.node_name}' exceeded ${e.limit:.2f}")
+except BudgetExceededError:
+    # catches all budget errors including NodeBudgetExceededError
+    ...
+```
+
+---
+
+## `AgentBudgetExceededError`
+
+Raised when an agent exceeds its registered USD cap. Subclass of `BudgetExceededError`.
+
+### Attributes
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `agent_name` | `str` | Name of the agent that exceeded its budget. |
+| `spent` | `float` | Total USD spent when the cap was hit. |
+| `limit` | `float` | The configured `max_usd` for this agent. |
+
+---
+
+## `TaskBudgetExceededError`
+
+Raised when a task exceeds its registered USD cap. Subclass of `BudgetExceededError`.
+
+### Attributes
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `task_name` | `str` | Name of the task that exceeded its budget. |
+| `spent` | `float` | Total USD spent when the cap was hit. |
+| `limit` | `float` | The configured `max_usd` for this task. |
+
+---
+
+## `SessionBudgetExceededError`
+
+Raised when an always-on agent session exceeds its rolling-window budget. Subclass of `BudgetExceededError`.
+
+### Attributes
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `agent_name` | `str` | Name of the agent session that exceeded its budget. |
+| `spent` | `float` | Total USD spent when the cap was hit. |
+| `limit` | `float` | The configured session budget. |
+| `window` | `float \| None` | Rolling window duration in seconds, or `None`. |
 
 ---
 

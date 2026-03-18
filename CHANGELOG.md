@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-03-18
+
+### Added
+
+- **`ShekelRuntime`** (`shekel/_runtime.py`) — framework detection and adapter wiring scaffold; called automatically at `budget.__enter__()` / `__exit__()` (and async variants)
+  - `ShekelRuntime.register(AdapterClass)` — class-level registry for framework adapters; adapters are probed once at budget open and released at budget close
+  - `probe()` — activates all registered adapters; silently skips adapters that raise `ImportError` (framework not installed)
+  - `release()` — deactivates adapters on budget exit; suppresses cleanup exceptions to avoid masking original errors
+
+- **`ComponentBudget`** (`shekel/_budget.py`) — lightweight dataclass for per-component cap tracking (`name`, `max_usd`, `_spent`)
+
+- **`Budget.node(name, max_usd)`** — register an explicit USD cap for a LangGraph node; returns `self` for chaining
+
+- **`Budget.agent(name, max_usd)`** — register an explicit USD cap for a named agent (CrewAI / OpenClaw); returns `self` for chaining
+
+- **`Budget.task(name, max_usd)`** — register an explicit USD cap for a named task (CrewAI); returns `self` for chaining
+
+- **4 new exception subclasses** (`shekel/exceptions.py`), all inheriting from `BudgetExceededError`:
+  - `NodeBudgetExceededError(node_name, spent, limit)` — raised when a LangGraph node exceeds its cap
+  - `AgentBudgetExceededError(agent_name, spent, limit)` — raised when an agent exceeds its cap
+  - `TaskBudgetExceededError(task_name, spent, limit)` — raised when a task exceeds its cap
+  - `SessionBudgetExceededError(agent_name, spent, limit, window=None)` — raised when a rolling-window agent session exceeds its budget
+
+- **`budget.tree()` enhancement** — renders registered node/agent/task component budgets below the children block; shows `[node]`, `[agent]`, `[task]` labels with spent / limit / percentage
+
+- **45 new TDD tests** in `tests/test_runtime.py` covering exception hierarchy, `ShekelRuntime` registry/probe/release, `Budget` lifecycle integration, `.node()/.agent()/.task()` API, `ComponentBudget`, and `tree()` output
+
 ## [0.2.9] - 2026-03-15
 
 ### Added

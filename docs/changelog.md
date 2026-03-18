@@ -2,6 +2,39 @@
 
 All notable changes to this project are documented here. For detailed information, see [CHANGELOG.md](https://github.com/arieradle/shekel/blob/main/CHANGELOG.md) on GitHub.
 
+## [0.3.1] {#031}
+
+### Hierarchical Budget Foundation — `ShekelRuntime` + per-component caps
+
+The scaffold for multi-level budget enforcement: register explicit USD caps on individual LangGraph nodes, CrewAI agents, and tasks. Framework adapters (v0.3.2+) wire automatically at budget open.
+
+```python
+with budget(max_usd=10.00) as b:
+    b.node("fetch_data", max_usd=0.50)
+    b.agent("researcher", max_usd=2.00)
+    b.task("write_report", max_usd=1.00)
+    run_workflow()
+
+print(b.tree())
+# workflow: $3.20 / $10.00
+#   [node] fetch_data: $0.12 / $0.50 (24.0%)
+#   [agent] researcher: $1.85 / $2.00 (92.5%)
+#   [task] write_report: $0.73 / $1.00 (73.0%)
+```
+
+- `ShekelRuntime` — framework adapter registry; probed once at `budget.__enter__()`, released at `__exit__()`; `ShekelRuntime.register(AdapterClass)` used by v0.3.2+ phases
+- `Budget.node(name, max_usd)` · `.agent(name, max_usd)` · `.task(name, max_usd)` — fluent API; chainable; can be called before or inside the context
+- 4 new exception subclasses (all catch-able as `BudgetExceededError`):
+  - `NodeBudgetExceededError` — `node_name`, `spent`, `limit`
+  - `AgentBudgetExceededError` — `agent_name`, `spent`, `limit`
+  - `TaskBudgetExceededError` — `task_name`, `spent`, `limit`
+  - `SessionBudgetExceededError` — `agent_name`, `spent`, `limit`, `window`
+- `budget.tree()` now renders `[node]`, `[agent]`, `[task]` component budgets with spend/limit/percentage
+
+[Full CHANGELOG →](https://github.com/arieradle/shekel/blob/main/CHANGELOG.md#031)
+
+---
+
 ## [0.2.9] {#029}
 
 ### 🖥️ CLI Budget Enforcement — `shekel run`
