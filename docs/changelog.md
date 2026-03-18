@@ -4,32 +4,45 @@ All notable changes to this project are documented here. For detailed informatio
 
 ## [0.3.1] {#031}
 
-### Hierarchical Budget Foundation — `ShekelRuntime` + per-component caps
+### Hierarchical Budget Enforcement — LangGraph node-level circuit breaking
 
-The scaffold for multi-level budget enforcement: register explicit USD caps on individual LangGraph nodes, CrewAI agents, and tasks. Framework adapters (v0.3.2+) wire automatically at budget open.
+Per-node, per-agent, and per-task USD caps with automatic LangGraph instrumentation. Zero code changes required — open a `budget()` context, build your graph, run it.
 
 ```python
 with budget(max_usd=10.00) as b:
     b.node("fetch_data", max_usd=0.50)
-    b.agent("researcher", max_usd=2.00)
-    b.task("write_report", max_usd=1.00)
-    run_workflow()
+    b.node("summarize", max_usd=1.00)
+
+    graph = StateGraph(State)
+    graph.add_node("fetch_data", fetch_fn)
+    graph.add_node("summarize", summarize_fn)
+    # ... edges ...
+    app = graph.compile()
+    app.invoke({"query": "..."})
 
 print(b.tree())
-# workflow: $3.20 / $10.00
+# workflow: $0.84 / $10.00 (direct: $0.00)
 #   [node] fetch_data: $0.12 / $0.50 (24.0%)
-#   [agent] researcher: $1.85 / $2.00 (92.5%)
-#   [task] write_report: $0.73 / $1.00 (73.0%)
+#   [node] summarize: $0.72 / $1.00 (72.0%)
 ```
 
-- `ShekelRuntime` — framework adapter registry; probed once at `budget.__enter__()`, released at `__exit__()`; `ShekelRuntime.register(AdapterClass)` used by v0.3.2+ phases
-- `Budget.node(name, max_usd)` · `.agent(name, max_usd)` · `.task(name, max_usd)` — fluent API; chainable; can be called before or inside the context
-- 4 new exception subclasses (all catch-able as `BudgetExceededError`):
-  - `NodeBudgetExceededError` — `node_name`, `spent`, `limit`
-  - `AgentBudgetExceededError` — `agent_name`, `spent`, `limit`
-  - `TaskBudgetExceededError` — `task_name`, `spent`, `limit`
-  - `SessionBudgetExceededError` — `agent_name`, `spent`, `limit`, `window`
-- `budget.tree()` now renders `[node]`, `[agent]`, `[task]` component budgets with spend/limit/percentage
+**LangGraph adapter** (`shekel/providers/langgraph.py`):
+- Patches `StateGraph.add_node()` transparently — every node gets a pre-execution budget gate, no graph changes needed
+- `NodeBudgetExceededError` raised *before* the node body runs when an explicit cap or the parent budget is exhausted
+- Per-node spend attributed to `ComponentBudget._spent` → visible in `budget.tree()`
+- Full async node support
+- Auto-skipped when `langgraph` is not installed
+
+**API** (`Budget` methods, all chainable):
+- `b.node(name, max_usd)` — explicit cap for a LangGraph node
+- `b.agent(name, max_usd)` — explicit cap for a CrewAI / OpenClaw agent *(enforcement in future release)*
+- `b.task(name, max_usd)` — explicit cap for a CrewAI task *(enforcement in future release)*
+
+**Exception hierarchy** (all subclass `BudgetExceededError`):
+- `NodeBudgetExceededError` — `node_name`, `spent`, `limit`
+- `AgentBudgetExceededError` — `agent_name`, `spent`, `limit`
+- `TaskBudgetExceededError` — `task_name`, `spent`, `limit`
+- `SessionBudgetExceededError` — `agent_name`, `spent`, `limit`, `window`
 
 [Full CHANGELOG →](https://github.com/arieradle/shekel/blob/main/CHANGELOG.md#031)
 

@@ -243,18 +243,18 @@ print(w.tree())
 #   analysis: $9.30 / $10.00 (direct: $9.30)
 ```
 
-Also renders registered component budgets (nodes, agents, tasks). Spend tracking within component budgets requires a framework adapter (v0.3.2+); until then, `_spent` shows `$0.0000`.
+Also renders registered component budgets (nodes, agents, tasks). LangGraph node spend is tracked automatically; agent/task spend requires future framework adapters.
 
 ```python
 with budget(max_usd=10, name="workflow") as b:
     b.node("fetch", max_usd=0.50)
-    b.agent("researcher", max_usd=2.00)
-    run_workflow()
+    b.node("summarize", max_usd=1.00)
+    run_langgraph_workflow()
 
 print(b.tree())
-# workflow: $1.20 / $10.00 (direct: $1.20)
-#   [node] fetch: $0.0000 / $0.50 (0.0%)   ← tracking active from v0.3.2
-#   [agent] researcher: $0.0000 / $2.00 (0.0%)
+# workflow: $0.84 / $10.00 (direct: $0.00)
+#   [node] fetch: $0.12 / $0.50 (24.0%)
+#   [node] summarize: $0.72 / $1.00 (72.0%)
 ```
 
 **Returns:** Multi-line string with indented tree structure showing:
@@ -268,15 +268,21 @@ print(b.tree())
 
 Register an explicit USD cap for a named LangGraph node. Returns `self` for chaining.
 
-> **Note:** Registration is available now (v0.3.1). Enforcement — i.e., raising `NodeBudgetExceededError` when the cap is hit — requires the LangGraph adapter, available in v0.3.2.
+The cap is enforced by `LangGraphAdapter` — `NodeBudgetExceededError` is raised before the node body executes when the cap is reached. Spend is attributed to `ComponentBudget._spent` and visible in `budget.tree()`.
 
 ```python
-b = budget(max_usd=10.00)
-b.node("fetch_data", max_usd=0.50).node("summarize", max_usd=1.00)
+with budget(max_usd=10.00) as b:
+    b.node("fetch_data", max_usd=0.50).node("summarize", max_usd=1.00)
+
+    graph = StateGraph(State)
+    graph.add_node("fetch_data", fetch_fn)
+    graph.add_node("summarize", summarize_fn)
+    app = graph.compile()
+    app.invoke(state)
 ```
 
 **Parameters:**
-- `name` — node name
+- `name` — node name (must match the name passed to `StateGraph.add_node()`)
 - `max_usd` — USD cap; must be positive
 
 **Raises:** `ValueError` if `max_usd <= 0`
@@ -285,7 +291,7 @@ b.node("fetch_data", max_usd=0.50).node("summarize", max_usd=1.00)
 
 Register an explicit USD cap for a named agent (CrewAI / OpenClaw). Returns `self` for chaining.
 
-> **Note:** Registration is available now (v0.3.1). Enforcement requires a framework adapter — CrewAI in v0.3.3, OpenClaw in v0.3.6.
+> **Note:** Cap registration and `budget.tree()` display are live. Per-agent enforcement (raising `AgentBudgetExceededError`) requires a CrewAI / OpenClaw adapter in a future release.
 
 ```python
 b = budget(max_usd=10.00)
@@ -302,7 +308,7 @@ b.agent("researcher", max_usd=2.00).agent("writer", max_usd=1.50)
 
 Register an explicit USD cap for a named task (CrewAI). Returns `self` for chaining.
 
-> **Note:** Registration is available now (v0.3.1). Enforcement requires the CrewAI adapter, available in v0.3.3.
+> **Note:** Cap registration and `budget.tree()` display are live. Per-task enforcement (raising `TaskBudgetExceededError`) requires a CrewAI adapter in a future release.
 
 ```python
 b = budget(max_usd=10.00)

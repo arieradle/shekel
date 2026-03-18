@@ -266,19 +266,26 @@ print(f"Remaining: ${b.remaining:.4f}")
 
 <div class="grid cards" markdown>
 
--   :material-graph:{ .lg .middle } **Hierarchical Budget Caps (foundation)**
+-   :material-graph:{ .lg .middle } **LangGraph Node-Level Circuit Breaking**
 
     ---
 
-    Register explicit USD caps per LangGraph node, CrewAI agent, or task. Caps appear in `tree()` now; enforcement wires in automatically when framework adapters land (v0.3.2+).
+    Per-node USD caps enforced automatically. `NodeBudgetExceededError` raised before the node body runs. Zero graph changes required.
 
     ```python
     with budget(max_usd=10.00) as b:
         b.node("fetch", max_usd=0.50)
-        b.agent("researcher", max_usd=2.00)
-        b.task("write_report", max_usd=1.00)
-        run_workflow()
-    print(b.tree())  # shows caps; enforcement from v0.3.2
+        b.node("summarize", max_usd=1.00)
+
+        graph = StateGraph(State)
+        graph.add_node("fetch", fetch_fn)
+        graph.add_node("summarize", summarize_fn)
+        app = graph.compile()
+        app.invoke(state)
+
+    print(b.tree())
+    # [node] fetch: $0.12 / $0.50 (24.0%)
+    # [node] summarize: $0.72 / $1.00 (72.0%)
     ```
 
 -   :material-alert-decagram:{ .lg .middle } **Level-Specific Exceptions**

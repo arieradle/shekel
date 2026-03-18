@@ -32,7 +32,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **`budget.tree()` enhancement** — renders registered node/agent/task component budgets below the children block; shows `[node]`, `[agent]`, `[task]` labels with spent / limit / percentage
 
-- **45 new TDD tests** in `tests/test_runtime.py` covering exception hierarchy, `ShekelRuntime` registry/probe/release, `Budget` lifecycle integration, `.node()/.agent()/.task()` API, `ComponentBudget`, and `tree()` output
+- **`LangGraphAdapter`** (`shekel/providers/langgraph.py`) — transparent node-level circuit breaking for LangGraph; zero user code changes required
+  - Patches `StateGraph.add_node()` at `budget.__enter__()` so every node — sync and async — gets a pre-execution budget gate
+  - Pre-execution gate: raises `NodeBudgetExceededError` before the node body runs if the explicit node cap or parent budget is exhausted
+  - Post-execution attribution: spend delta credited to `ComponentBudget._spent` so `budget.tree()` shows per-node costs
+  - Reference-counted patch: nested budgets don't double-patch; restored when the last budget context closes
+  - Automatically skipped (silent `ImportError`) when `langgraph` is not installed
+
+- **81 new TDD tests**: 45 in `tests/test_runtime.py` (ShekelRuntime scaffold, exception hierarchy, component budget API) + 36 in `tests/test_langgraph_wrappers.py` (adapter lifecycle, node gate, spend attribution, async support)
 
 ## [0.2.9] - 2026-03-15
 
