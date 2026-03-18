@@ -155,7 +155,7 @@ def test_budget_exceeded_error_retry_after_defaults_none():
 
 
 # ---------------------------------------------------------------------------
-# Group D — InMemoryBackend
+# Group D — InMemoryBackend (new multi-cap protocol)
 # ---------------------------------------------------------------------------
 
 
@@ -163,48 +163,58 @@ def test_in_memory_backend_get_state_fresh():
     from shekel._temporal import InMemoryBackend
 
     backend = InMemoryBackend()
-    assert backend.get_state("new_key") == (0.0, None)
+    assert backend.get_state("new_key") == {}
 
 
 def test_in_memory_backend_check_and_add_within_limit():
     from shekel._temporal import InMemoryBackend
 
     backend = InMemoryBackend()
-    result = backend.check_and_add("budget1", 2.0, 5.0, 3600.0)
-    assert result is True
-    spent, window_start = backend.get_state("budget1")
-    assert spent == 2.0
-    assert window_start is not None
+    allowed, exceeded = backend.check_and_add(
+        "budget1",
+        amounts={"usd": 2.0},
+        limits={"usd": 5.0},
+        windows={"usd": 3600.0},
+    )
+    assert allowed is True
+    assert exceeded is None
+    state = backend.get_state("budget1")
+    assert state["usd"] == pytest.approx(2.0)
 
 
 def test_in_memory_backend_check_and_add_exceeds_limit():
     from shekel._temporal import InMemoryBackend
 
     backend = InMemoryBackend()
-    result = backend.check_and_add("budget1", 6.0, 5.0, 3600.0)
-    assert result is False
-    # State should remain unchanged (0.0, None) since we never accepted it
-    spent, window_start = backend.get_state("budget1")
-    assert spent == 0.0
-    assert window_start is None
+    allowed, exceeded = backend.check_and_add(
+        "budget1",
+        amounts={"usd": 6.0},
+        limits={"usd": 5.0},
+        windows={"usd": 3600.0},
+    )
+    assert allowed is False
+    assert exceeded == "usd"
+    # State should remain empty since nothing was accepted
+    assert backend.get_state("budget1") == {}
 
 
 def test_in_memory_backend_reset_clears_state():
     from shekel._temporal import InMemoryBackend
 
     backend = InMemoryBackend()
-    backend.check_and_add("budget1", 2.0, 5.0, 3600.0)
+    backend.check_and_add("budget1", {"usd": 2.0}, {"usd": 5.0}, {"usd": 3600.0})
     backend.reset("budget1")
-    assert backend.get_state("budget1") == (0.0, None)
+    assert backend.get_state("budget1") == {}
 
 
 def test_in_memory_backend_window_start_set_on_first_add():
     from shekel._temporal import InMemoryBackend
 
     backend = InMemoryBackend()
-    backend.check_and_add("budget1", 1.0, 5.0, 3600.0)
-    _, window_start = backend.get_state("budget1")
-    assert window_start is not None
+    backend.check_and_add("budget1", {"usd": 1.0}, {"usd": 5.0}, {"usd": 3600.0})
+    state = backend.get_state("budget1")
+    assert "usd" in state
+    assert state["usd"] == pytest.approx(1.0)
 
 
 def test_in_memory_backend_window_expires_resets():
@@ -214,14 +224,16 @@ def test_in_memory_backend_window_expires_resets():
     t0 = 1000.0
 
     with patch("time.monotonic", return_value=t0):
-        backend.check_and_add("budget1", 4.0, 5.0, 3600.0)
+        backend.check_and_add("budget1", {"usd": 4.0}, {"usd": 5.0}, {"usd": 3600.0})
 
     # Advance time past window
     with patch("time.monotonic", return_value=t0 + 3601.0):
-        result = backend.check_and_add("budget1", 4.0, 5.0, 3600.0)
-        assert result is True  # fresh window, 4.0 < 5.0 so should succeed
-        spent, _ = backend.get_state("budget1")
-        assert spent == 4.0  # fresh window
+        allowed, exceeded = backend.check_and_add(
+            "budget1", {"usd": 4.0}, {"usd": 5.0}, {"usd": 3600.0}
+        )
+        assert allowed is True  # fresh window, 4.0 < 5.0 so should succeed
+        state = backend.get_state("budget1")
+        assert state["usd"] == pytest.approx(4.0)  # fresh window
 
 
 # ---------------------------------------------------------------------------
@@ -255,12 +267,12 @@ def test_temporal_budget_window_resets_after_expiry():
 
     # Fill the window
     with patch("time.monotonic", return_value=t0):
-        backend.check_and_add("test", 4.5, 5.0, 3600.0)
+        backend.check_and_add("test", {"usd": 4.5}, {"usd": 5.0}, {"usd": 3600.0})
 
     # After window expires, should be able to spend again
     with patch("time.monotonic", return_value=t0 + 3601.0):
-        result = backend.check_and_add("test", 3.0, 5.0, 3600.0)
-        assert result is True
+        allowed, _ = backend.check_and_add("test", {"usd": 3.0}, {"usd": 5.0}, {"usd": 3600.0})
+        assert allowed is True
 
 
 def test_temporal_budget_retry_after_in_error():
@@ -273,7 +285,7 @@ def test_temporal_budget_retry_after_in_error():
 
     with patch("time.monotonic", return_value=t0):
         # Set up state: window started, nearly full
-        backend.check_and_add("test_retry", 4.5, 5.0, 3600.0)
+        backend.check_and_add("test_retry", {"usd": 4.5}, {"usd": 5.0}, {"usd": 3600.0})
 
     with patch("time.monotonic", return_value=t0 + 100.0):
         with pytest.raises(BudgetExceededError) as exc_info:
@@ -291,26 +303,26 @@ def test_temporal_budget_window_spent_in_error():
     t0 = 1000.0
 
     with patch("time.monotonic", return_value=t0):
-        backend.check_and_add("test_ws", 4.5, 5.0, 3600.0)
+        backend.check_and_add("test_ws", {"usd": 4.5}, {"usd": 5.0}, {"usd": 3600.0})
 
     with patch("time.monotonic", return_value=t0 + 100.0):
         with pytest.raises(BudgetExceededError) as exc_info:
             tb._record_spend(1.0, "test-model", {"input": 100, "output": 100})
-        assert exc_info.value.window_spent == 4.5
+        assert exc_info.value.window_spent == pytest.approx(4.5)
 
 
 def test_record_spend_window_expired_mid_context():
     from shekel._temporal import InMemoryBackend, TemporalBudget
     from shekel.exceptions import BudgetExceededError
 
-    # Window expires between __enter__ and _record_spend (lines 158-159)
+    # Window expires between __enter__ and _record_spend
     backend = InMemoryBackend()
     tb = TemporalBudget(max_usd=5.0, window_seconds=3600, name="mid_expiry", backend=backend)
     t0 = 1000.0
 
     # Seed backend with state (window started at t0)
     with patch("time.monotonic", return_value=t0):
-        backend.check_and_add("mid_expiry", 3.0, 5.0, 3600.0)
+        backend.check_and_add("mid_expiry", {"usd": 3.0}, {"usd": 5.0}, {"usd": 3600.0})
 
     # At t0+3601 window has expired; attempt to add more than limit → raises
     with patch("time.monotonic", return_value=t0 + 3601.0):
@@ -342,7 +354,7 @@ def test_lazy_window_reset_emit_guard():
     t0 = 1000.0
 
     with patch("time.monotonic", return_value=t0):
-        backend.check_and_add("guard_test", 2.0, 5.0, 3600.0)
+        backend.check_and_add("guard_test", {"usd": 2.0}, {"usd": 5.0}, {"usd": 3600.0})
 
     with patch(
         "shekel.integrations.registry.AdapterRegistry.emit_event",
@@ -477,7 +489,7 @@ def test_window_reset_event_emitted():
 
     t0 = 1000.0
     with patch("time.monotonic", return_value=t0):
-        backend.check_and_add("test_emit", 2.0, 5.0, 3600.0)
+        backend.check_and_add("test_emit", {"usd": 2.0}, {"usd": 5.0}, {"usd": 3600.0})
 
     with patch.object(AdapterRegistry, "emit_event") as mock_emit:
         with patch("time.monotonic", return_value=t0 + 3601.0):
@@ -498,7 +510,7 @@ def test_window_reset_event_payload():
 
     t0 = 1000.0
     with patch("time.monotonic", return_value=t0):
-        backend.check_and_add("test_payload", 2.0, 5.0, 3600.0)
+        backend.check_and_add("test_payload", {"usd": 2.0}, {"usd": 5.0}, {"usd": 3600.0})
 
     with patch.object(AdapterRegistry, "emit_event") as mock_emit:
         with patch("time.monotonic", return_value=t0 + 3601.0):

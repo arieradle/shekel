@@ -290,15 +290,17 @@ budget("$5/hr", name="api-tier")   # temporal: rolling-window rate limit
 
 ## Documentation
 
-**[arieradle.github.io/shekel](https://arieradle.github.io/shekel/)**
+**[arieradle.github.io/shekel](https://arieradle.github.io/shekel/latest/)**
 
-- [Quick Start](https://arieradle.github.io/shekel/quickstart/)
-- [CLI Reference](https://arieradle.github.io/shekel/cli/) — `shekel run` full options
-- [Docker & Containers](https://arieradle.github.io/shekel/docker/) — entrypoint patterns
-- [Nested Budgets](https://arieradle.github.io/shekel/usage/nested-budgets/)
-- [Tool Budgets](https://arieradle.github.io/shekel/usage/tool-budgets/)
-- [Temporal Budgets](https://arieradle.github.io/shekel/usage/temporal-budgets/)
-- [API Reference](https://arieradle.github.io/shekel/api-reference/)
+- [Quick Start](https://arieradle.github.io/shekel/latest/quickstart/)
+- [Installation](https://arieradle.github.io/shekel/latest/installation/)
+- [CLI Reference](https://arieradle.github.io/shekel/latest/cli/) — `shekel run` full options
+- [Docker & Containers](https://arieradle.github.io/shekel/latest/docker/) — entrypoint patterns
+- [Architecture](https://arieradle.github.io/shekel/latest/architecture/) — how shekel works under the hood
+- [Nested Budgets](https://arieradle.github.io/shekel/latest/usage/nested-budgets/)
+- [Tool Budgets](https://arieradle.github.io/shekel/latest/usage/tool-budgets/)
+- [Temporal Budgets](https://arieradle.github.io/shekel/latest/usage/temporal-budgets/)
+- [API Reference](https://arieradle.github.io/shekel/latest/api-reference/)
 
 ---
 

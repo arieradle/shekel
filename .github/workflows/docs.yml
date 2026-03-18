@@ -24,7 +24,10 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install mkdocs-material mike
+          pip install mkdocs-material mkdocs-mermaid2-plugin mike
+
+      - name: Build docs
+        run: mkdocs build --strict
 
       - name: Configure git for mike
         run: |
