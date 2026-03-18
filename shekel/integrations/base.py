@@ -148,7 +148,7 @@ class ObservabilityAdapter:
                 - budget_name: str - Name of the budget whose backend failed
                 - error: str - String description of the error
         """
-        pass
+        pass  # pragma: no cover — base stub; overridden by concrete adapters
 
     def on_tool_warn(self, warn_data: dict[str, Any]) -> None:
         """Called when tool calls reach the warn_at threshold.

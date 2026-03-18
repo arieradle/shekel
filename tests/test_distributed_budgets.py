@@ -1189,3 +1189,58 @@ def test_async_redis_backend_get_state_skips_non_numeric_value():
         assert await backend.get_state("api") == {}
 
     asyncio.run(_run())
+
+
+def test_redis_backend_ensure_script_loads_on_first_call():
+    """_ensure_script loads the Lua script when _script_sha is None."""
+    pytest.importorskip("redis")
+    from shekel.backends.redis import RedisBackend
+
+    mock_client = MagicMock()
+    mock_client.script_load.return_value = "loaded_sha"
+    backend = RedisBackend()
+    backend._client = mock_client
+    # _script_sha starts as None — force the load path
+    assert backend._script_sha is None
+    sha = backend._ensure_script()
+    assert sha == "loaded_sha"
+    assert backend._script_sha == "loaded_sha"
+    mock_client.script_load.assert_called_once()
+
+
+def test_async_redis_backend_ensure_script_loads_on_first_call():
+    """AsyncRedisBackend._ensure_script loads the Lua script when _script_sha is None."""
+    pytest.importorskip("redis")
+    from shekel.backends.redis import AsyncRedisBackend
+
+    mock_client = AsyncMock()
+    mock_client.script_load.return_value = "loaded_sha"
+    backend = AsyncRedisBackend()
+    backend._client = mock_client
+
+    async def _run() -> None:
+        assert backend._script_sha is None
+        sha = await backend._ensure_script()
+        assert sha == "loaded_sha"
+        assert backend._script_sha == "loaded_sha"
+        mock_client.script_load.assert_called_once()
+
+    asyncio.run(_run())
+
+
+def test_lazy_window_reset_skips_when_window_not_yet_expired():
+    """_lazy_window_reset returns early if the primary window has not yet expired."""
+    from unittest.mock import patch
+
+    from shekel._temporal import InMemoryBackend, TemporalBudget
+
+    backend = InMemoryBackend()
+    tb = TemporalBudget(max_usd=5.0, window_seconds=3600, name="no_expire", backend=backend)
+    t0 = 1000.0
+
+    with patch("time.monotonic", return_value=t0):
+        backend.check_and_add("no_expire", {"usd": 1.0}, {"usd": 5.0}, {"usd": 3600.0})
+
+    # Only 100 s elapsed — window has NOT expired (3600 s window)
+    with patch("time.monotonic", return_value=t0 + 100.0):
+        tb._lazy_window_reset()  # must return early without emitting

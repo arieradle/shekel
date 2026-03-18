@@ -159,15 +159,15 @@ class TemporalBudgetBackend(Protocol):
             If allowed is False, exceeded_counter names the first counter that
             would have exceeded (checked in deterministic order).
         """
-        pass
+        pass  # pragma: no cover — Protocol stub; implemented by concrete backends
 
     def get_state(self, budget_name: str) -> dict[str, float]:
         """Return current-window spend for each counter."""
-        pass
+        pass  # pragma: no cover — Protocol stub; implemented by concrete backends
 
     def reset(self, budget_name: str) -> None:
         """Reset all counters for the given budget name."""
-        pass
+        pass  # pragma: no cover — Protocol stub; implemented by concrete backends
 
 
 class InMemoryBackend:
