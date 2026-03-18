@@ -165,6 +165,82 @@ print(pipeline.tree())
 
 Children auto-cap to the parent's remaining balance. `workflow.tree()` gives you a visual breakdown.
 
+### LangGraph — per-node circuit breaking
+
+```python
+from shekel.backends.redis import RedisBackend
+
+backend = RedisBackend()   # reads REDIS_URL from env
+
+with budget("$5/hr + 100 calls/hr", name="api", backend=backend) as b:
+    b.node("fetch_data", max_usd=0.50)   # hard cap per LangGraph node
+    b.node("summarize",  max_usd=1.00)
+
+    app.invoke({"query": "..."})          # NodeBudgetExceededError if node cap hit
+
+print(b.tree())
+# api: $0.84 / $5.00
+#   [node] fetch_data: $0.12 / $0.50  (24%)
+#   [node] summarize:  $0.72 / $1.00  (72%)
+```
+
+Shekel patches `StateGraph.add_node()` transparently — no graph changes needed. Every node gets a pre-execution budget gate. Caps roll up to the parent budget.
+
+### LangChain — per-chain circuit breaking
+
+```python
+with budget(max_usd=5.00, name="pipeline") as b:
+    b.chain("retriever",  max_usd=0.20)
+    b.chain("summarizer", max_usd=1.00)
+
+    retriever_chain.invoke({"query": "..."})   # ChainBudgetExceededError if cap hit
+    summarizer_chain.invoke({"doc": "..."})
+```
+
+Shekel patches `Runnable._call_with_config` and `RunnableSequence.invoke` — zero changes to your chains. `b.chain()` is chainable and composable with `b.node()`, `b.agent()`, and `b.task()`.
+
+### CrewAI — per-agent and per-task circuit breaking
+
+```python
+from shekel.exceptions import AgentBudgetExceededError, TaskBudgetExceededError
+
+try:
+    with budget(max_usd=5.00, name="crew") as b:
+        b.agent(researcher.role, max_usd=2.00)  # use agent.role directly
+        b.agent(writer.role,     max_usd=1.00)
+        b.task(research_task.name, max_usd=1.50)  # use task.name directly
+        b.task(write_task.name,    max_usd=0.80)
+        crew.kickoff(inputs={"topic": "AI"})    # AgentBudgetExceededError or TaskBudgetExceededError if cap hit
+except TaskBudgetExceededError as e:
+    print(f"Task '{e.task_name}' over budget")
+except AgentBudgetExceededError as e:
+    print(f"Agent '{e.agent_name}' over budget")
+
+print(b.tree())
+# crew: $2.84 / $5.00
+#   [agent] Senior Researcher: $1.92 / $2.00  (96.0%)
+#   [agent] Content Writer:    $0.92 / $1.00  (92.0%)
+#   [task]  research:          $1.92 / $1.50  (128.0%)
+#   [task]  write:             $0.92 / $0.80  (115.0%)
+```
+
+Shekel patches `Agent.execute_task` transparently — zero crew or agent changes. Gate order: task cap → agent cap → global budget (most specific first).
+
+### Distributed budgets — enforce across multiple processes
+
+```python
+from shekel.backends.redis import RedisBackend
+
+backend = RedisBackend()   # REDIS_URL from env; fail-closed by default
+
+with budget("$5/hr + 100 calls/hr", name="api-tier", backend=backend) as b:
+    response = client.chat.completions.create(...)
+# Atomic Lua-script enforcement — one Redis round-trip per call
+# BudgetConfigMismatchError if the same name is reused with different limits
+```
+
+Works with `AsyncRedisBackend` for async workflows. Circuit breaker built in: configurable error threshold + cooldown before opening. Fail-open or fail-closed.
+
 ### Rolling-window rate limits — `$5/hr`
 
 ```python
@@ -174,6 +250,8 @@ async with api_budget:
     response = await client.chat.completions.create(...)
 # BudgetExceededError carries retry_after and window_spent
 ```
+
+Multi-cap: `budget("$5/hr + 100 calls/hr")` — USD and call-count windows are independent.
 
 ### Accumulate across sessions
 
@@ -278,13 +356,32 @@ budget(
     tool_prices={"web_search": 0.01},  # charge per tool
     fallback={"at_pct": 0.8, "model": "gpt-4o-mini"},  # switch instead of crash
     name="my-agent",        # required for nesting + temporal budgets
+    backend=RedisBackend(), # distributed enforcement across processes
 )
 
-budget("$5/hr", name="api-tier")   # temporal: rolling-window rate limit
+budget("$5/hr + 100 calls/hr", name="api-tier")  # multi-cap rolling-window
 ```
 
-`BudgetExceededError` → `spent`, `limit`, `model`, `retry_after` (temporal)
-`ToolBudgetExceededError` → `tool_name`, `calls_used`, `calls_limit`, `framework`
+**Component caps** (all chainable):
+
+```python
+b.node("fetch_data", max_usd=0.50)   # LangGraph node cap
+b.chain("retriever", max_usd=0.20)   # LangChain chain cap
+b.agent("researcher", max_usd=1.00)  # CrewAI agent cap — AgentBudgetExceededError
+b.task("summarize", max_usd=0.50)    # CrewAI task cap — TaskBudgetExceededError
+```
+
+**Exceptions:**
+
+| Exception | Fields |
+|---|---|
+| `BudgetExceededError` | `spent`, `limit`, `model`, `retry_after` |
+| `NodeBudgetExceededError` | `node_name`, `spent`, `limit` |
+| `AgentBudgetExceededError` | `agent_name`, `spent`, `limit` |
+| `TaskBudgetExceededError` | `task_name`, `spent`, `limit` |
+| `ChainBudgetExceededError` | `chain_name`, `spent`, `limit` |
+| `ToolBudgetExceededError` | `tool_name`, `calls_used`, `calls_limit`, `framework` |
+| `BudgetConfigMismatchError` | raised by Redis backend on config conflict |
 
 ---
 

@@ -282,17 +282,35 @@ print(f"Graph execution cost: ${b.spent:.4f}")
 
 ### CrewAI
 
+Shekel auto-detects CrewAI and enforces caps with zero crew changes. Use `b.agent()` and `b.task()` for per-component circuit breaking:
+
 ```python
 from crewai import Agent, Task, Crew
 from shekel import budget
+from shekel.exceptions import AgentBudgetExceededError, TaskBudgetExceededError
 
-# Your agents and tasks here
-crew = Crew(agents=[agent], tasks=[task])
+researcher = Agent(role="Researcher", goal="...", backstory="...", llm="gpt-4o-mini")
+writer = Agent(role="Writer", goal="...", backstory="...", llm="gpt-4o-mini")
 
-with budget(max_usd=2.00) as b:
-    result = crew.kickoff()
-print(f"Crew execution cost: ${b.spent:.4f}")
+research_task = Task(name="research", description="Research: {topic}", expected_output="...", agent=researcher)
+write_task = Task(name="write", description="Write a summary.", expected_output="...", agent=writer)
+
+crew = Crew(agents=[researcher, writer], tasks=[research_task, write_task])
+
+try:
+    with budget(max_usd=5.00) as b:
+        b.agent(researcher.role, max_usd=2.00)   # AgentBudgetExceededError if exceeded
+        b.task(research_task.name, max_usd=1.50)  # TaskBudgetExceededError if exceeded
+        crew.kickoff(inputs={"topic": "AI"})
+    print(f"Done. Spent: ${b.spent:.4f}")
+    print(b.tree())
+except TaskBudgetExceededError as e:
+    print(f"Task '{e.task_name}' exceeded cap")
+except AgentBudgetExceededError as e:
+    print(f"Agent '{e.agent_name}' exceeded cap")
 ```
+
+See [CrewAI Integration](integrations/crewai.md) for the full reference.
 
 ## Viewing Spend Summary
 

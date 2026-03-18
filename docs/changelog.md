@@ -2,6 +2,73 @@
 
 All notable changes to this project are documented here. For detailed information, see [CHANGELOG.md](https://github.com/arieradle/shekel/blob/main/CHANGELOG.md) on GitHub.
 
+## [0.3.1] {#031}
+
+### Hierarchical Budget Enforcement — LangGraph + LangChain circuit breaking + Distributed Budgets
+
+Per-node, per-chain, per-agent, and per-task USD caps with automatic LangGraph and LangChain instrumentation. Distributed enforcement via Redis for multi-process deployments. Zero code changes required — open a `budget()` context and run.
+
+```python
+from shekel.backends.redis import RedisBackend
+
+backend = RedisBackend()   # reads REDIS_URL from env
+
+with budget("$5/hr + 100 calls/hr", name="api", backend=backend) as b:
+    b.node("fetch_data", max_usd=0.50)
+    b.node("summarize", max_usd=1.00)
+    b.chain("retriever", max_usd=0.20)
+
+    app.invoke({"query": "..."})
+
+print(b.tree())
+# api: $0.84 / $5.00 (direct: $0.00)
+#   [node] fetch_data: $0.12 / $0.50 (24.0%)
+#   [node] summarize: $0.72 / $1.00 (72.0%)
+#   [chain] retriever: $0.00 / $0.20 (0.0%)
+```
+
+**LangGraph adapter** (`shekel/providers/langgraph.py`):
+- Patches `StateGraph.add_node()` transparently — every node gets a pre-execution budget gate, no graph changes needed
+- `NodeBudgetExceededError` raised *before* the node body runs when an explicit cap or the parent budget is exhausted
+- Per-node spend attributed to `ComponentBudget._spent` → visible in `budget.tree()`
+- Full async node support; auto-skipped when `langgraph` is not installed
+
+**LangChain adapter** (`shekel/providers/langchain.py`):
+- Patches `Runnable._call_with_config`, `_acall_with_config`, and `RunnableSequence.invoke`/`ainvoke`
+- `ChainBudgetExceededError` raised before chain body runs when cap or parent budget is exhausted
+- Same reference-counting and nesting semantics as `LangGraphAdapter`
+- Auto-skipped when `langchain_core` is not installed
+
+**Distributed budgets** (`shekel/backends/redis.py`):
+- `RedisBackend` / `AsyncRedisBackend` — atomic Lua-script enforcement (one round-trip)
+- Circuit breaker: configurable error threshold + cooldown before opening
+- Fail-closed (default) or fail-open on backend unavailability
+- `BudgetConfigMismatchError` when a budget name is reused with different limits/windows
+
+**Multi-cap temporal spec**:
+- `budget("$5/hr + 100 calls/hr", name="api")` — simultaneous USD + call-count caps with independent rolling windows
+- Supported counters: `usd`, `llm_calls`, `tool_calls`, `tokens`
+
+**API** (`Budget` methods, all chainable):
+- `b.node(name, max_usd)` — explicit cap for a LangGraph node
+- `b.chain(name, max_usd)` — explicit cap for a LangChain chain
+- `b.agent(name, max_usd)` — explicit cap for a CrewAI / OpenClaw agent *(enforcement in future release)*
+- `b.task(name, max_usd)` — explicit cap for a CrewAI task *(enforcement in future release)*
+
+**Exception hierarchy** (all subclass `BudgetExceededError`):
+- `NodeBudgetExceededError` — `node_name`, `spent`, `limit`
+- `ChainBudgetExceededError` — `chain_name`, `spent`, `limit`
+- `AgentBudgetExceededError` — `agent_name`, `spent`, `limit`
+- `TaskBudgetExceededError` — `task_name`, `spent`, `limit`
+- `SessionBudgetExceededError` — `agent_name`, `spent`, `limit`, `window`
+- `BudgetConfigMismatchError` — raised by Redis backend on config conflict
+
+**Fixed:** Node and chain caps registered on an outer `budget()` are now correctly enforced inside inner nested budget contexts.
+
+[Full CHANGELOG →](https://github.com/arieradle/shekel/blob/main/CHANGELOG.md#031)
+
+---
+
 ## [0.2.9] {#029}
 
 ### 🖥️ CLI Budget Enforcement — `shekel run`

@@ -7,6 +7,75 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-03-18
+
+### Added
+
+- **`ShekelRuntime`** (`shekel/_runtime.py`) — framework detection and adapter wiring scaffold; called automatically at `budget.__enter__()` / `__exit__()` (and async variants)
+  - `ShekelRuntime.register(AdapterClass)` — class-level registry for framework adapters; adapters are probed once at budget open and released at budget close
+  - `probe()` — activates all registered adapters; silently skips adapters that raise `ImportError` (framework not installed)
+  - `release()` — deactivates adapters on budget exit; suppresses cleanup exceptions to avoid masking original errors
+
+- **`ComponentBudget`** (`shekel/_budget.py`) — lightweight dataclass for per-component cap tracking (`name`, `max_usd`, `_spent`)
+
+- **`Budget.node(name, max_usd)`** — register an explicit USD cap for a LangGraph node; returns `self` for chaining
+
+- **`Budget.agent(name, max_usd)`** — register an explicit USD cap for a named agent (CrewAI / OpenClaw); returns `self` for chaining
+
+- **`Budget.task(name, max_usd)`** — register an explicit USD cap for a named task (CrewAI); returns `self` for chaining
+
+- **`Budget.chain(name, max_usd)`** — register an explicit USD cap for a named LangChain chain; returns `self` for chaining; enforced by `LangChainRunnerAdapter`
+
+- **5 new exception subclasses** (`shekel/exceptions.py`), all inheriting from `BudgetExceededError`:
+  - `NodeBudgetExceededError(node_name, spent, limit)` — raised when a LangGraph node exceeds its cap
+  - `AgentBudgetExceededError(agent_name, spent, limit)` — raised when an agent exceeds its cap
+  - `TaskBudgetExceededError(task_name, spent, limit)` — raised when a task exceeds its cap
+  - `SessionBudgetExceededError(agent_name, spent, limit, window=None)` — raised when a rolling-window agent session exceeds its budget
+  - `ChainBudgetExceededError(chain_name, spent, limit)` — raised when a LangChain chain exceeds its cap
+  - `BudgetConfigMismatchError` — raised by `RedisBackend` when a budget name is reused with different limits/windows
+
+- **`budget.tree()` enhancement** — renders registered node/agent/task/chain component budgets below the children block; shows `[node]`, `[agent]`, `[task]`, `[chain]` labels with spent / limit / percentage
+
+- **`LangGraphAdapter`** (`shekel/providers/langgraph.py`) — transparent node-level circuit breaking for LangGraph; zero user code changes required
+  - Patches `StateGraph.add_node()` at `budget.__enter__()` so every node — sync and async — gets a pre-execution budget gate
+  - Pre-execution gate: raises `NodeBudgetExceededError` before the node body runs if the explicit node cap or parent budget is exhausted
+  - Post-execution attribution: spend delta credited to `ComponentBudget._spent` so `budget.tree()` shows per-node costs
+  - Reference-counted patch: nested budgets don't double-patch; restored when the last budget context closes
+  - Automatically skipped (silent `ImportError`) when `langgraph` is not installed
+
+- **`LangChainRunnerAdapter`** (`shekel/providers/langchain.py`) — transparent chain-level circuit breaking for LangChain; zero user code changes required
+  - Patches `Runnable._call_with_config`, `_acall_with_config`, and `RunnableSequence.invoke`/`ainvoke`
+  - Pre-execution gate: raises `ChainBudgetExceededError` before the chain body runs if the explicit chain cap or parent budget is exhausted
+  - Reference-counted patch: same nesting semantics as `LangGraphAdapter`
+  - Automatically skipped when `langchain_core` is not installed
+
+- **Multi-cap temporal budget spec** — `"$5/hr + 100 calls/hr"` string DSL for simultaneous USD + call-count caps with independent rolling windows
+  - `_parse_cap_spec()` — parses compound spec strings into a list of `(counter, limit, window_s)` triples
+  - `TemporalBudget` supports `usd`, `llm_calls`, `tool_calls`, and `tokens` counters simultaneously
+  - All-or-nothing atomicity: if any counter would exceed its limit, no counters are incremented
+
+- **`RedisBackend`** (`shekel/backends/redis.py`) — synchronous Redis-backed rolling-window budget backend for distributed enforcement
+  - Atomic all-or-nothing Lua script (single round-trip per call)
+  - Lazy connection with connection pool reuse
+  - Circuit breaker: stops calling Redis after N consecutive errors (configurable threshold + cooldown)
+  - Fail-closed (default) or fail-open (`on_unavailable="open"`) on backend unavailability
+  - `BudgetConfigMismatchError` when a budget name is reused with different limits/windows
+  - `on_backend_unavailable` adapter event
+
+- **`AsyncRedisBackend`** (`shekel/backends/redis.py`) — async version of `RedisBackend` for FastAPI, async LangGraph, and other async contexts; same semantics, all public methods are coroutines
+
+- **`on_backend_unavailable` adapter event** (`shekel/integrations/base.py`) — fires before raising `BudgetExceededError` (fail-closed) or allowing through (fail-open); payload: `budget_name`, `error`
+
+### Fixed
+
+- **Nested budget node/chain cap enforcement** — node caps registered on an outer `budget()` context are now correctly enforced inside inner nested budget contexts; `_find_node_cap()` and `_find_chain_cap()` walk the parent chain to locate the cap
+
+### Technical
+
+- **245 new TDD tests**: 45 in `tests/test_runtime.py`, 41 in `tests/test_langchain_wrappers.py`, 36 in `tests/test_langgraph_wrappers.py`, 81 in `tests/test_distributed_budgets.py` (unit) + 419-line Docker integration suite in `tests/integrations/test_redis_docker.py`
+- `shekel/__version__` bumped to `0.3.1`
+- `Budget.chain`, `ChainBudgetExceededError`, `BudgetConfigMismatchError`, `RedisBackend`, `AsyncRedisBackend` all exported in `shekel.__all__`
+
 ## [0.2.9] - 2026-03-15
 
 ### Added

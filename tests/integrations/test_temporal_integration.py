@@ -74,9 +74,8 @@ class TestTemporalBudgetCostRecording:
         with tb:
             record(input_tokens=1000, output_tokens=500, model="gpt-4o-mini")
 
-        spent, window_start = backend.get_state("recording")
-        assert spent > 0
-        assert window_start is not None
+        state = backend.get_state("recording")
+        assert state.get("usd", 0.0) > 0
 
     def test_spend_accumulates_across_entries(self) -> None:
         """Window spend accumulates across multiple context entries."""
@@ -86,12 +85,12 @@ class TestTemporalBudgetCostRecording:
         with tb:
             record(input_tokens=1000, output_tokens=500, model="gpt-4o-mini")
 
-        spent_after_first, _ = backend.get_state("accum")
+        spent_after_first = backend.get_state("accum").get("usd", 0.0)
 
         with tb:
             record(input_tokens=1000, output_tokens=500, model="gpt-4o-mini")
 
-        spent_after_second, _ = backend.get_state("accum")
+        spent_after_second = backend.get_state("accum").get("usd", 0.0)
         assert spent_after_second > spent_after_first
 
     def test_budget_spent_property_matches_cost(self) -> None:
@@ -120,7 +119,7 @@ class TestTemporalBudgetCostRecording:
         # Pre-fill window so retry_after is meaningful
         t0 = 1000.0
         with patch("time.monotonic", return_value=t0):
-            backend.check_and_add("retry", 0.0009, 0.001, 3600.0)
+            backend.check_and_add("retry", {"usd": 0.0009}, {"usd": 0.001}, {"usd": 3600.0})
 
         with patch("time.monotonic", return_value=t0 + 100.0):
             with pytest.raises(BudgetExceededError) as exc_info:
@@ -137,7 +136,7 @@ class TestTemporalBudgetCostRecording:
 
         t0 = 1000.0
         with patch("time.monotonic", return_value=t0):
-            backend.check_and_add("ws_err", 0.0009, 0.001, 3600.0)
+            backend.check_and_add("ws_err", {"usd": 0.0009}, {"usd": 0.001}, {"usd": 3600.0})
 
         with patch("time.monotonic", return_value=t0 + 100.0):
             with pytest.raises(BudgetExceededError) as exc_info:
@@ -172,7 +171,7 @@ class TestRollingWindowReset:
 
         # Fill the window to the brim
         with patch("time.monotonic", return_value=t0):
-            backend.check_and_add("reset", 0.0009, 0.001, 3600.0)
+            backend.check_and_add("reset", {"usd": 0.0009}, {"usd": 0.001}, {"usd": 3600.0})
 
         # After window expires, the next entry starts fresh
         with patch("shekel._temporal.time.monotonic", return_value=t0 + 3601.0):
@@ -191,7 +190,7 @@ class TestRollingWindowReset:
         t0 = 1000.0
 
         with patch("time.monotonic", return_value=t0):
-            backend.check_and_add("evt_reset", 2.0, 5.0, 3600.0)
+            backend.check_and_add("evt_reset", {"usd": 2.0}, {"usd": 5.0}, {"usd": 3600.0})
 
         with patch("time.monotonic", return_value=t0 + 3601.0):
             with tb:
@@ -220,13 +219,19 @@ class TestRollingWindowReset:
         t0 = 1000.0
 
         with patch("time.monotonic", return_value=t0):
-            assert backend.check_and_add("reuse", 0.001, 0.001, 3600.0) is True
+            allowed, _ = backend.check_and_add(
+                "reuse", {"usd": 0.001}, {"usd": 0.001}, {"usd": 3600.0}
+            )
+            assert allowed is True
 
         # New window — same amount should be accepted again
         with patch("time.monotonic", return_value=t0 + 3601.0):
-            assert backend.check_and_add("reuse", 0.001, 0.001, 3600.0) is True
-            spent, _ = backend.get_state("reuse")
-            assert spent == pytest.approx(0.001)
+            allowed2, _ = backend.check_and_add(
+                "reuse", {"usd": 0.001}, {"usd": 0.001}, {"usd": 3600.0}
+            )
+            assert allowed2 is True
+            state = backend.get_state("reuse")
+            assert state["usd"] == pytest.approx(0.001)
 
 
 # ---------------------------------------------------------------------------
@@ -311,7 +316,7 @@ class TestAdapterEventIntegration:
         t0 = 1000.0
 
         with patch("time.monotonic", return_value=t0):
-            backend.check_and_add("multi_adapt", 2.0, 5.0, 3600.0)
+            backend.check_and_add("multi_adapt", {"usd": 2.0}, {"usd": 5.0}, {"usd": 3600.0})
 
         with patch("time.monotonic", return_value=t0 + 3601.0):
             with tb:
@@ -448,7 +453,9 @@ class TestAsyncTemporalBudget:
             )
             t0 = 1000.0
             with patch("time.monotonic", return_value=t0):
-                backend.check_and_add("async_retry", 0.0009, 0.001, 3600.0)
+                backend.check_and_add(
+                    "async_retry", {"usd": 0.0009}, {"usd": 0.001}, {"usd": 3600.0}
+                )
 
             with patch("time.monotonic", return_value=t0 + 100.0):
                 async with tb:
@@ -471,7 +478,7 @@ class TestAsyncTemporalBudget:
             )
             t0 = 1000.0
             with patch("time.monotonic", return_value=t0):
-                backend.check_and_add("async_reset", 2.0, 5.0, 3600.0)
+                backend.check_and_add("async_reset", {"usd": 2.0}, {"usd": 5.0}, {"usd": 3600.0})
 
             with patch("time.monotonic", return_value=t0 + 3601.0):
                 async with tb:
@@ -534,8 +541,8 @@ class TestMultiTenantBackend:
         with make_budget("bob"):
             record(input_tokens=500, output_tokens=250, model="gpt-4o-mini")
 
-        alice_spent, _ = shared_backend.get_state("user:alice")
-        bob_spent, _ = shared_backend.get_state("user:bob")
+        alice_spent = shared_backend.get_state("user:alice").get("usd", 0.0)
+        bob_spent = shared_backend.get_state("user:bob").get("usd", 0.0)
 
         assert alice_spent > 0
         assert bob_spent > 0
@@ -573,17 +580,24 @@ class TestMultiTenantBackend:
         t0 = 1000.0
 
         with patch("time.monotonic", return_value=t0):
-            shared_backend.check_and_add("user:alice", 0.0008, 0.001, 3600.0)
-            shared_backend.check_and_add("user:bob", 0.0005, 0.001, 3600.0)
+            shared_backend.check_and_add(
+                "user:alice", {"usd": 0.0008}, {"usd": 0.001}, {"usd": 3600.0}
+            )
+            shared_backend.check_and_add(
+                "user:bob", {"usd": 0.0005}, {"usd": 0.001}, {"usd": 3600.0}
+            )
 
         # Alice's window expires; bob's is still active
         with patch("time.monotonic", return_value=t0 + 3601.0):
             # Alice's window reset: check_and_add should start fresh for alice
-            result = shared_backend.check_and_add("user:alice", 0.0008, 0.001, 3600.0)
+            result, _ = shared_backend.check_and_add(
+                "user:alice", {"usd": 0.0008}, {"usd": 0.001}, {"usd": 3600.0}
+            )
             assert result is True  # accepted in fresh window
 
         # Bob's window should still have his original spend
-        bob_spent, bob_start = shared_backend.get_state("user:bob")
+        bob_state = shared_backend.get_window_info("user:bob")
+        bob_spent, bob_start = bob_state.get("usd", (0.0, None))
         assert bob_spent == pytest.approx(0.0005)
         assert bob_start == pytest.approx(t0)
 
@@ -680,7 +694,7 @@ class TestOtelWindowResetsIntegration:
         t0 = 1000.0
 
         with patch("time.monotonic", return_value=t0):
-            backend.check_and_add("otel_reset", 2.0, 5.0, 3600.0)
+            backend.check_and_add("otel_reset", {"usd": 2.0}, {"usd": 5.0}, {"usd": 3600.0})
 
         with patch("time.monotonic", return_value=t0 + 3601.0):
             with tb:

@@ -243,11 +243,207 @@ print(w.tree())
 #   analysis: $9.30 / $10.00 (direct: $9.30)
 ```
 
+Also renders registered component budgets (nodes, agents, tasks). LangGraph node spend is tracked automatically; agent/task spend requires future framework adapters.
+
+```python
+with budget(max_usd=10, name="workflow") as b:
+    b.node("fetch", max_usd=0.50)
+    b.node("summarize", max_usd=1.00)
+    run_langgraph_workflow()
+
+print(b.tree())
+# workflow: $0.84 / $10.00 (direct: $0.00)
+#   [node] fetch: $0.12 / $0.50 (24.0%)
+#   [node] summarize: $0.72 / $1.00 (72.0%)
+```
+
 **Returns:** Multi-line string with indented tree structure showing:
 - Budget name and hierarchy
 - Total spend / limit
 - Direct spend (excluding children)
 - `[ACTIVE]` marker for currently active children
+- `[node]`, `[agent]`, `[task]` component budget lines with spend/limit/percentage
+
+#### `node(name, max_usd)`
+
+Register an explicit USD cap for a named LangGraph node. Returns `self` for chaining.
+
+The cap is enforced by `LangGraphAdapter` — `NodeBudgetExceededError` is raised before the node body executes when the cap is reached. Spend is attributed to `ComponentBudget._spent` and visible in `budget.tree()`.
+
+```python
+with budget(max_usd=10.00) as b:
+    b.node("fetch_data", max_usd=0.50).node("summarize", max_usd=1.00)
+
+    graph = StateGraph(State)
+    graph.add_node("fetch_data", fetch_fn)
+    graph.add_node("summarize", summarize_fn)
+    app = graph.compile()
+    app.invoke(state)
+```
+
+**Parameters:**
+- `name` — node name (must match the name passed to `StateGraph.add_node()`)
+- `max_usd` — USD cap; must be positive
+
+**Raises:** `ValueError` if `max_usd <= 0`
+
+#### `agent(name, max_usd)`
+
+Register an explicit USD cap for a named CrewAI agent. Returns `self` for chaining.
+
+Enforced by `CrewAIExecutionAdapter` — `AgentBudgetExceededError` is raised **before** `Agent.execute_task` runs when the cap is exhausted. Use `agent.role` as the key to eliminate string mismatch risk. Spend is attributed to `ComponentBudget._spent` and visible in `budget.tree()`.
+
+```python
+with budget(max_usd=10.00) as b:
+    b.agent(researcher.role, max_usd=2.00).agent(writer.role, max_usd=1.50)
+    crew.kickoff(inputs={"topic": "AI"})
+```
+
+**Parameters:**
+- `name` — agent name (use `agent.role` directly)
+- `max_usd` — USD cap; must be positive
+
+**Raises:** `ValueError` if `max_usd <= 0`
+
+#### `task(name, max_usd)`
+
+Register an explicit USD cap for a named CrewAI task. Returns `self` for chaining.
+
+Enforced by `CrewAIExecutionAdapter` — `TaskBudgetExceededError` is raised **before** `Agent.execute_task` runs when the cap is exhausted. Use `task.name` as the key directly. Gate order: task cap is checked before agent cap (most specific first). Spend is attributed independently to both the task and the executing agent.
+
+```python
+with budget(max_usd=10.00) as b:
+    b.task(research_task.name, max_usd=1.50).task(write_task.name, max_usd=0.80)
+    crew.kickoff(inputs={"topic": "AI"})
+```
+
+**Parameters:**
+- `name` — task name (use `task.name` directly)
+- `max_usd` — USD cap; must be positive
+
+**Raises:** `ValueError` if `max_usd <= 0`
+
+#### `chain(name, max_usd)`
+
+Register an explicit USD cap for a named LangChain chain. Returns `self` for chaining.
+
+Enforced by `LangChainRunnerAdapter` — `ChainBudgetExceededError` is raised before the chain body executes when the cap is reached. Spend is attributed to `ComponentBudget._spent` and visible in `budget.tree()`.
+
+```python
+with budget(max_usd=10.00) as b:
+    b.chain("retriever", max_usd=0.20).chain("summarizer", max_usd=1.00)
+    chain.invoke({"query": "..."})
+```
+
+**Parameters:**
+- `name` — chain name (must match the `run_name` or object name passed to `add_node`/invoked directly)
+- `max_usd` — USD cap; must be positive
+
+**Raises:** `ValueError` if `max_usd <= 0`
+
+---
+
+## `TemporalBudget` (rolling-window budgets)
+
+Created via the `budget()` factory when a spec string or `window_seconds` is provided.
+
+### Temporal factory forms
+
+```python
+# Spec string (per-cap windows)
+with budget("$5/hr", name="api") as b: ...
+with budget("$5/hr + 100 calls/hr", name="api") as b: ...
+
+# Kwargs (single shared window)
+with budget(max_usd=5.0, window_seconds=3600, name="api") as b: ...
+with budget(max_usd=5.0, max_llm_calls=100, window_seconds=3600, name="api") as b: ...
+```
+
+`name=` is required for `TemporalBudget`.
+
+### Supported counters in multi-cap specs
+
+| Token | Counter | Example |
+|---|---|---|
+| `$N` or `N usd` | `usd` | `$5/hr` |
+| `N calls` | `llm_calls` | `100 calls/hr` |
+| `N tools` | `tool_calls` | `20 tools/hr` |
+| `N tokens` | `tokens` | `50000 tokens/hr` |
+
+### Using a custom backend
+
+```python
+from shekel.backends.redis import RedisBackend
+
+backend = RedisBackend(url="redis://localhost:6379/0")
+
+with budget("$5/hr", name="api", backend=backend) as b:
+    run_agent()
+```
+
+---
+
+## `RedisBackend`
+
+Synchronous Redis-backed rolling-window budget backend for distributed enforcement.
+
+### Constructor
+
+```python
+RedisBackend(
+    url: str | None = None,          # defaults to REDIS_URL env var
+    tls: bool = False,
+    on_unavailable: str = "closed",  # "closed" | "open"
+    circuit_breaker_threshold: int = 3,
+    circuit_breaker_cooldown: float = 10.0,
+)
+```
+
+| Parameter | Default | Description |
+|---|---|---|
+| `url` | `REDIS_URL` env | Redis connection URL |
+| `tls` | `False` | Force TLS (`ssl=True`) |
+| `on_unavailable` | `"closed"` | `"closed"` raises `BudgetExceededError`; `"open"` allows through |
+| `circuit_breaker_threshold` | `3` | Consecutive errors before circuit opens |
+| `circuit_breaker_cooldown` | `10.0` | Seconds before retrying after circuit opens |
+
+### Example
+
+```python
+from shekel import budget
+from shekel.backends.redis import RedisBackend
+
+backend = RedisBackend()  # reads REDIS_URL from env
+
+with budget("$5/hr + 100 calls/hr", name="api-tier", backend=backend) as b:
+    run_agent()
+```
+
+### Methods
+
+- `check_and_add(budget_name, amounts, limits, windows)` — atomically check + increment counters
+- `get_state(budget_name)` — return `{counter: spent}` for all counters
+- `reset(budget_name)` — delete the Redis hash for `budget_name`
+- `close()` — close the Redis connection
+
+**Raises:** `BudgetConfigMismatchError` if `budget_name` is already registered with different limits or windows.
+
+---
+
+## `AsyncRedisBackend`
+
+Async version of `RedisBackend`. All public methods are coroutines. Suitable for FastAPI, async LangGraph, and other async contexts.
+
+```python
+from shekel.backends.redis import AsyncRedisBackend
+
+backend = AsyncRedisBackend()
+
+async with budget("$5/hr", name="api", backend=backend) as b:
+    await run_async_agent()
+```
+
+Constructor and parameters are identical to `RedisBackend`.
 
 ---
 
@@ -340,6 +536,122 @@ except BudgetExceededError as e:
     print(f"Model: {e.model}")
     print(f"Tokens: {e.tokens['input']} in, {e.tokens['output']} out")
 ```
+
+---
+
+## `NodeBudgetExceededError`
+
+Raised when a LangGraph node exceeds its registered USD cap. Subclass of `BudgetExceededError`.
+
+### Attributes
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `node_name` | `str` | Name of the node that exceeded its budget. |
+| `spent` | `float` | Total USD spent when the cap was hit. |
+| `limit` | `float` | The configured `max_usd` for this node. |
+
+```python
+from shekel import budget, NodeBudgetExceededError, BudgetExceededError
+
+try:
+    with budget(max_usd=10.00) as b:
+        b.node("fetch", max_usd=0.10)
+        run_fetch_node()
+except NodeBudgetExceededError as e:
+    print(f"Node '{e.node_name}' exceeded ${e.limit:.2f}")
+except BudgetExceededError:
+    # catches all budget errors including NodeBudgetExceededError
+    ...
+```
+
+---
+
+## `AgentBudgetExceededError`
+
+Raised when an agent exceeds its registered USD cap. Subclass of `BudgetExceededError`.
+
+### Attributes
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `agent_name` | `str` | Name of the agent that exceeded its budget. |
+| `spent` | `float` | Total USD spent when the cap was hit. |
+| `limit` | `float` | The configured `max_usd` for this agent. |
+
+---
+
+## `TaskBudgetExceededError`
+
+Raised when a task exceeds its registered USD cap. Subclass of `BudgetExceededError`.
+
+### Attributes
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `task_name` | `str` | Name of the task that exceeded its budget. |
+| `spent` | `float` | Total USD spent when the cap was hit. |
+| `limit` | `float` | The configured `max_usd` for this task. |
+
+---
+
+## `SessionBudgetExceededError`
+
+Raised when an always-on agent session exceeds its rolling-window budget. Subclass of `BudgetExceededError`.
+
+### Attributes
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `agent_name` | `str` | Name of the agent session that exceeded its budget. |
+| `spent` | `float` | Total USD spent when the cap was hit. |
+| `limit` | `float` | The configured session budget. |
+| `window` | `float \| None` | Rolling window duration in seconds, or `None`. |
+
+---
+
+## `ChainBudgetExceededError`
+
+Raised when a LangChain chain exceeds its registered USD cap. Subclass of `BudgetExceededError`.
+
+### Attributes
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `chain_name` | `str` | Name of the chain that exceeded its budget. |
+| `spent` | `float` | Total USD spent when the cap was hit. |
+| `limit` | `float` | The configured `max_usd` for this chain. |
+
+```python
+from shekel import budget, ChainBudgetExceededError, BudgetExceededError
+
+try:
+    with budget(max_usd=10.00) as b:
+        b.chain("retriever", max_usd=0.20)
+        chain.invoke({"query": "..."})
+except ChainBudgetExceededError as e:
+    print(f"Chain '{e.chain_name}' exceeded ${e.limit:.2f}")
+```
+
+---
+
+## `BudgetConfigMismatchError`
+
+Raised by `RedisBackend` / `AsyncRedisBackend` when a budget name is already registered with different limits or windows. Subclass of `BudgetExceededError`.
+
+```python
+from shekel.exceptions import BudgetConfigMismatchError
+
+try:
+    with budget("$5/hr", name="api", backend=backend):
+        run_agent()
+except BudgetConfigMismatchError:
+    # Budget "api" was previously registered with different caps.
+    # Call backend.reset("api") to clear existing state.
+    backend.reset("api")
+```
+
+**To resolve:** call `backend.reset(budget_name)` to delete the existing Redis state, then retry.
 
 ---
 

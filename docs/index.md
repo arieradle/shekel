@@ -262,7 +262,70 @@ print(f"Remaining: ${b.remaining:.4f}")
 
 ---
 
-## What's New in v0.2.9
+## What's New in v0.3.1
+
+<div class="grid cards" markdown>
+
+-   :material-graph:{ .lg .middle } **LangGraph Node-Level Circuit Breaking**
+
+    ---
+
+    Per-node USD caps enforced automatically. `NodeBudgetExceededError` raised before the node body runs. Zero graph changes required.
+
+    ```python
+    with budget(max_usd=10.00) as b:
+        b.node("fetch", max_usd=0.50)
+        b.node("summarize", max_usd=1.00)
+
+        graph = StateGraph(State)
+        graph.add_node("fetch", fetch_fn)
+        graph.add_node("summarize", summarize_fn)
+        app = graph.compile()
+        app.invoke(state)
+
+    print(b.tree())
+    # [node] fetch: $0.12 / $0.50 (24.0%)
+    # [node] summarize: $0.72 / $1.00 (72.0%)
+    ```
+
+-   :material-robot:{ .lg .middle } **CrewAI Agent/Task Circuit Breaking**
+
+    ---
+
+    Per-agent and per-task USD caps enforced automatically. `AgentBudgetExceededError` / `TaskBudgetExceededError` raised before the agent executes. Zero crew changes required.
+
+    ```python
+    with budget(max_usd=5.00) as b:
+        b.agent(researcher.role, max_usd=2.00)
+        b.task(research_task.name, max_usd=1.50)
+        crew.kickoff(inputs={"topic": "AI"})
+
+    print(b.tree())
+    # [agent] Senior Researcher: $1.92 / $2.00 (96.0%)
+    # [task]  research:          $1.92 / $1.50 (128.0%)
+    ```
+
+-   :material-alert-decagram:{ .lg .middle } **Level-Specific Exceptions**
+
+    ---
+
+    `NodeBudgetExceededError`, `AgentBudgetExceededError`, `TaskBudgetExceededError`, `SessionBudgetExceededError` — all subclass `BudgetExceededError` so existing `except` blocks catch everything.
+
+    ```python
+    except TaskBudgetExceededError as e:
+        print(f"Task '{e.task_name}' over budget")
+    except AgentBudgetExceededError as e:
+        print(f"Agent '{e.agent_name}' over budget")
+    except BudgetExceededError:
+        # catches all budget errors
+        ...
+    ```
+
+</div>
+
+---
+
+## Previous: v0.2.9
 
 <div class="grid cards" markdown>
 

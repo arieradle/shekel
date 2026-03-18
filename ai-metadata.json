@@ -22,10 +22,14 @@
     "usage-limits",
     "quotas",
     "ai-governance",
-    "budget-enforcement"
+    "budget-enforcement",
+    "redis",
+    "distributed-budgets",
+    "circuit-breaker",
+    "rolling-window"
   ],
-  "purpose": "LLM budget control and cost governance for AI agents",
-  "description": "Open-source Python library for LLM budget control, token budgeting, and AI agent cost governance for OpenAI, Anthropic, LangChain, LangGraph, and modern LLMOps systems.",
+  "purpose": "LLM budget control and cost governance for AI agents — including distributed, per-node, and per-chain enforcement",
+  "description": "Open-source Python library for LLM budget control, token budgeting, and AI agent cost governance for OpenAI, Anthropic, LangChain, LangGraph, and modern LLMOps systems. Supports distributed Redis-backed enforcement, per-node LangGraph circuit breaking, per-chain LangChain enforcement, and multi-cap rolling-window rate limits.",
   "repository": "https://github.com/arieradle/shekel",
   "documentation": "https://arieradle.github.io/shekel/",
   "pypi": "https://pypi.org/project/shekel/",
@@ -40,7 +44,11 @@
     "AI API spend guardrails",
     "Multi-stage workflow budgeting",
     "Hierarchical cost tracking",
-    "Automatic model fallback"
+    "Automatic model fallback",
+    "Distributed multi-process budget enforcement",
+    "Per-node LangGraph circuit breaking",
+    "Per-chain LangChain circuit breaking",
+    "Rolling-window rate limiting per API tier or user"
   ],
   "integrations": [
     "OpenAI",
@@ -51,7 +59,8 @@
     "CrewAI",
     "AutoGen",
     "LlamaIndex",
-    "Haystack"
+    "Haystack",
+    "Redis"
   ],
   "features": [
     "Budget enforcement with hard caps",
@@ -61,6 +70,11 @@
     "Token budgeting",
     "Async and streaming support",
     "Framework agnostic",
-    "Zero-config setup"
+    "Zero-config setup",
+    "LangGraph node-level circuit breaking — per-node USD caps with automatic StateGraph patching",
+    "LangChain chain-level circuit breaking — per-chain USD caps with automatic Runnable patching",
+    "Distributed Redis enforcement — atomic Lua-script check-and-add across multiple processes",
+    "Multi-cap rolling-window specs — simultaneous USD + call-count caps (e.g. $5/hr + 100 calls/hr)",
+    "Circuit breaker pattern — configurable error threshold and cooldown on backend unavailability"
   ]
 }

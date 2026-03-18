@@ -137,6 +137,19 @@ class ObservabilityAdapter:
         """
         pass
 
+    def on_backend_unavailable(self, error_data: dict[str, Any]) -> None:
+        """Called when a distributed budget backend is unreachable or errors.
+
+        Fired before raising BudgetExceededError (fail-closed) or allowing
+        the call through (fail-open), depending on on_unavailable setting.
+
+        Args:
+            error_data: Dictionary containing:
+                - budget_name: str - Name of the budget whose backend failed
+                - error: str - String description of the error
+        """
+        pass  # pragma: no cover — base stub; overridden by concrete adapters
+
     def on_tool_warn(self, warn_data: dict[str, Any]) -> None:
         """Called when tool calls reach the warn_at threshold.
 
