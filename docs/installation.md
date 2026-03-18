@@ -120,7 +120,7 @@ import shekel
 print(shekel.__version__)
 ```
 
-You should see the version number printed (e.g., `0.2.9`).
+You should see the version number printed (e.g., `1.0.2`).
 
 ## No API Keys Required
 

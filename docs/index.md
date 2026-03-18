@@ -262,7 +262,7 @@ print(f"Remaining: ${b.remaining:.4f}")
 
 ---
 
-## What's New in v1.0.0
+## What's New in v1.0.2
 
 <div class="grid cards" markdown>
 
@@ -276,15 +276,10 @@ print(f"Remaining: ${b.remaining:.4f}")
     with budget(max_usd=10.00) as b:
         b.node("fetch", max_usd=0.50)
         b.node("summarize", max_usd=1.00)
-
-        graph = StateGraph(State)
-        graph.add_node("fetch", fetch_fn)
-        graph.add_node("summarize", summarize_fn)
-        app = graph.compile()
         app.invoke(state)
 
     print(b.tree())
-    # [node] fetch: $0.12 / $0.50 (24.0%)
+    # [node] fetch:    $0.12 / $0.50 (24.0%)
     # [node] summarize: $0.72 / $1.00 (72.0%)
     ```
 
@@ -305,11 +300,39 @@ print(f"Remaining: ${b.remaining:.4f}")
     # [task]  research:          $1.92 / $1.50 (128.0%)
     ```
 
+-   :material-link-variant:{ .lg .middle } **LangChain Per-Chain Circuit Breaking**
+
+    ---
+
+    Per-chain USD caps enforced automatically. `ChainBudgetExceededError` raised before the chain body runs. Zero changes to your chains required.
+
+    ```python
+    with budget(max_usd=5.00) as b:
+        b.chain("retriever",  max_usd=0.20)
+        b.chain("summarizer", max_usd=1.00)
+        retriever_chain.invoke({"query": "..."})
+        summarizer_chain.invoke({"doc": "..."})
+    ```
+
+-   :material-database:{ .lg .middle } **Distributed Budgets — Redis**
+
+    ---
+
+    Enforce spend limits atomically across multiple processes or containers. Atomic Lua-script enforcement, circuit breaker, fail-closed/open.
+
+    ```python
+    from shekel.backends.redis import RedisBackend
+
+    backend = RedisBackend()  # reads REDIS_URL from env
+    with budget("$5/hr + 100 calls/hr", name="api", backend=backend) as b:
+        response = client.chat.completions.create(...)
+    ```
+
 -   :material-alert-decagram:{ .lg .middle } **Level-Specific Exceptions**
 
     ---
 
-    `NodeBudgetExceededError`, `AgentBudgetExceededError`, `TaskBudgetExceededError`, `SessionBudgetExceededError` — all subclass `BudgetExceededError` so existing `except` blocks catch everything.
+    `NodeBudgetExceededError`, `AgentBudgetExceededError`, `TaskBudgetExceededError`, `ChainBudgetExceededError` — all subclass `BudgetExceededError` so existing `except` blocks catch everything.
 
     ```python
     except TaskBudgetExceededError as e:
@@ -317,8 +340,7 @@ print(f"Remaining: ${b.remaining:.4f}")
     except AgentBudgetExceededError as e:
         print(f"Agent '{e.agent_name}' over budget")
     except BudgetExceededError:
-        # catches all budget errors
-        ...
+        ...  # catches all budget errors
     ```
 
 </div>

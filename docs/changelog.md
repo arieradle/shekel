@@ -2,7 +2,7 @@
 
 All notable changes to this project are documented here. For detailed information, see [CHANGELOG.md](https://github.com/arieradle/shekel/blob/main/CHANGELOG.md) on GitHub.
 
-## [1.0.0] {#100}
+## [1.0.2] {#102}
 
 ### 🎉 First GA Release — Hierarchical Budget Enforcement, CrewAI circuit breaking + Distributed Budgets
 
@@ -65,7 +65,7 @@ print(b.tree())
 
 **Fixed:** Node and chain caps registered on an outer `budget()` are now correctly enforced inside inner nested budget contexts.
 
-[Full CHANGELOG →](https://github.com/arieradle/shekel/blob/main/CHANGELOG.md#100)
+[Full CHANGELOG →](https://github.com/arieradle/shekel/blob/main/CHANGELOG.md#102)
 
 ---
 

@@ -198,8 +198,8 @@ tb = TemporalBudget(
 
 The `TemporalBudgetBackend` is a `@runtime_checkable` `Protocol` — any object with `get_state`, `check_and_add`, and `reset` methods qualifies.
 
-!!! tip "Redis backend"
-    A Redis-backed implementation is planned for a future release, enabling distributed budget enforcement across multiple processes or containers. The backend protocol is designed to support atomic `check_and_add` operations (e.g. via Lua scripts or `WATCH/MULTI/EXEC`).
+!!! tip "Redis backend — available now"
+    `RedisBackend` and `AsyncRedisBackend` ship with shekel v1.0.0 and implement this protocol with atomic Lua-script enforcement (one round-trip), a circuit breaker, and fail-closed/open modes. See [Distributed Budgets](../usage/temporal-budgets.md) or `from shekel.backends.redis import RedisBackend`.
 
 ---
 
