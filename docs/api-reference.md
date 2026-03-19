@@ -33,6 +33,11 @@ def budget(
 | `on_fallback` | `Callable[[float, float, str], None] \| None` | `None` | Callback on fallback switch. Receives `(spent, limit, fallback_model)`. |
 | `name` | `str \| None` | `None` | Budget name for debugging and cost attribution. **Required when nesting budgets**. |
 | `max_llm_calls` | `int \| None` | `None` | Maximum number of LLM API calls. Raises `BudgetExceededError` when exceeded. Can be combined with `max_usd`. |
+| `loop_guard` | `bool` | `False` | Enable per-tool rolling-window loop detection. Raises `AgentLoopError` when the same tool is called more than `loop_guard_max_calls` times within `loop_guard_window_seconds`. |
+| `loop_guard_max_calls` | `int` | `5` | Max calls to the same tool within the window before `AgentLoopError`. Only applies when `loop_guard=True`. |
+| `loop_guard_window_seconds` | `float` | `60.0` | Rolling window duration in seconds. `0` = all-time cap (no rolling window). Only applies when `loop_guard=True`. |
+| `max_velocity` | `str \| None` | `None` | Spend velocity cap. Format: `"$<amount>/<unit>"` (e.g. `"$0.50/min"`, `"$5/hr"`). Raises `SpendVelocityExceededError` when the burn rate exceeds this threshold. |
+| `warn_velocity` | `str \| None` | `None` | Soft velocity warning threshold. Same format as `max_velocity`. Must be less than `max_velocity`. Fires `on_warn` callback when crossed; does not raise. |
 
 ### Returns
 
@@ -156,6 +161,7 @@ The budget context manager object.
 | `model_switched` | `bool` | `True` if fallback was activated. |
 | `switched_at_usd` | `float \| None` | USD spent when fallback occurred, or `None`. |
 | `fallback_spent` | `float` | USD spent on the fallback model. |
+| `loop_guard_counts` | `dict[str, int]` | Per-tool call counts recorded by the loop guard. Empty dict when `loop_guard=False`. Keys are tool names; values are total calls recorded within the current window. |
 
 ### Nested Budget Properties {#nested-budget-properties}
 
@@ -631,6 +637,63 @@ try:
         chain.invoke({"query": "..."})
 except ChainBudgetExceededError as e:
     print(f"Chain '{e.chain_name}' exceeded ${e.limit:.2f}")
+```
+
+---
+
+## `AgentLoopError`
+
+Raised when the loop guard detects that the same tool has been called more than `loop_guard_max_calls` times within `loop_guard_window_seconds`. Subclass of `BudgetExceededError`.
+
+### Attributes
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `tool_name` | `str` | Name of the tool that triggered the loop detection. |
+| `call_count` | `int` | Number of calls to this tool within the window at the time of blocking. |
+| `window_seconds` | `float` | The configured rolling window duration. `0` means all-time cap. |
+| `usd_spent` | `float` | Total USD spent when the loop was detected. |
+| `framework` | `str` | Framework that dispatched the tool: `"langchain"`, `"mcp"`, `"crewai"`, `"openai-agents"`, or `"manual"`. |
+
+```python
+from shekel import budget, AgentLoopError, BudgetExceededError
+
+try:
+    with budget(loop_guard=True, loop_guard_max_calls=5):
+        run_agent()
+except AgentLoopError as e:
+    print(f"Tool '{e.tool_name}' called {e.call_count}x in {e.window_seconds}s")
+except BudgetExceededError:
+    ...  # catches all budget errors including AgentLoopError
+```
+
+---
+
+## `SpendVelocityExceededError`
+
+Raised when the measured spend velocity (USD per minute) exceeds the `max_velocity` threshold. Subclass of `BudgetExceededError`.
+
+### Attributes
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `velocity_per_min` | `float` | Measured spend velocity in USD/min at the time of blocking. Always normalized to per-minute regardless of the spec unit. |
+| `limit_per_min` | `float` | The configured velocity limit in USD/min. |
+| `window_seconds` | `float` | Rolling window over which velocity was measured (seconds). |
+| `usd_spent` | `float` | Total USD spent when blocked. |
+| `elapsed_seconds` | `float` | Seconds elapsed since the budget context opened. |
+
+```python
+from shekel import budget, SpendVelocityExceededError, BudgetExceededError
+
+try:
+    with budget(max_velocity="$0.50/min"):
+        run_agent()
+except SpendVelocityExceededError as e:
+    print(f"Velocity: ${e.velocity_per_min:.4f}/min (limit: ${e.limit_per_min:.4f}/min)")
+    print(f"Spent:    ${e.usd_spent:.4f} over {e.elapsed_seconds:.1f}s")
+except BudgetExceededError:
+    ...  # catches all budget errors including SpendVelocityExceededError
 ```
 
 ---

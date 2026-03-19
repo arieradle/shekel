@@ -47,6 +47,7 @@ class LangChainAdapter:
                 active = get_active_budget()
                 tool_name = getattr(self, "name", self.__class__.__name__)
                 if active is not None:
+                    active._check_loop_guard(tool_name, "langchain")
                     active._check_tool_limit(tool_name, "langchain")
                     result = orig_invoke(self, input, **kwargs)
                     price = _get_price(active, tool_name)
@@ -58,6 +59,7 @@ class LangChainAdapter:
                 active = get_active_budget()
                 tool_name = getattr(self, "name", self.__class__.__name__)
                 if active is not None:
+                    active._check_loop_guard(tool_name, "langchain")
                     active._check_tool_limit(tool_name, "langchain")
                     result = await orig_ainvoke(self, input, **kwargs)
                     price = _get_price(active, tool_name)

@@ -262,6 +262,62 @@ print(f"Remaining: ${b.remaining:.4f}")
 
 ---
 
+## What's New in v1.1.0
+
+<div class="grid cards" markdown>
+
+-   :material-robot-excited:{ .lg .middle } **OpenAI Agents SDK — Per-Agent Circuit Breaking**
+
+    ---
+
+    Automatic patching of `Runner.run`, `run_sync`, and `run_streamed`. Per-agent caps with `b.agent()`. `AgentBudgetExceededError` raised before the agent executes. Zero changes to your agent definitions.
+
+    ```python
+    with budget(max_usd=5.00) as b:
+        b.agent("researcher", max_usd=2.00)
+        b.agent("writer", max_usd=1.00)
+        result = await Runner.run(researcher, "Research AI")
+
+    print(b.tree())
+    # [agent] researcher: $1.92 / $2.00 (96.0%)
+    # [agent] writer:     $0.85 / $1.00 (85.0%)
+    ```
+
+    [OpenAI Agents SDK Integration →](integrations/openai-agents.md)
+
+-   :material-refresh-auto:{ .lg .middle } **Loop Guard — Agent Loop Detection**
+
+    ---
+
+    Per-tool rolling-window counter catches stuck agents before they drain your budget. `AgentLoopError` raised before the tool executes on the Nth repeat call.
+
+    ```python
+    with budget(max_usd=5.00, loop_guard=True) as b:
+        run_my_agent()  # AgentLoopError if any tool repeats 5x in 60s
+
+    print(b.loop_guard_counts)
+    # {'web_search': 3, 'read_file': 1}
+    ```
+
+    [Loop Guard →](usage/loop-guard.md)
+
+-   :material-speedometer:{ .lg .middle } **Spend Velocity — Burn-Rate Circuit Breaker**
+
+    ---
+
+    Cap how fast you spend, not just how much. `"$0.50/min"` stops a bursty agent after the first half-dollar per minute. Normalized `velocity_per_min` in the exception.
+
+    ```python
+    with budget(max_usd=50.00, max_velocity="$1/min") as b:
+        run_my_agent()  # SpendVelocityExceededError if burn > $1/min
+    ```
+
+    [Spend Velocity →](usage/spend-velocity.md)
+
+</div>
+
+---
+
 ## What's New in v1.0.2
 
 <div class="grid cards" markdown>

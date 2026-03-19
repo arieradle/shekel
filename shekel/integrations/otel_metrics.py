@@ -138,7 +138,7 @@ class _OtelMetricsAdapter(ObservabilityAdapter):
                 self._tokens_in.add(int(data.get("input_tokens", 0) or 0), attrs)
             if self._tokens_out is not None:
                 self._tokens_out.add(int(data.get("output_tokens", 0) or 0), attrs)
-        except Exception:
+        except Exception:  # OTel instrumentation must never crash the application
             pass
 
     def on_budget_exit(self, data: dict[str, Any]) -> None:
@@ -216,5 +216,5 @@ class _OtelMetricsAdapter(ObservabilityAdapter):
                     "parent_name": data.get("parent_name", "unnamed") or "unnamed",
                 },
             )
-        except Exception:
+        except Exception:  # OTel instrumentation must never crash the application
             pass

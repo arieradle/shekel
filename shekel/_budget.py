@@ -1,14 +1,76 @@
 from __future__ import annotations
 
 import math
+import re
 import time
 import warnings
+from collections import deque
 from contextvars import Token
 from dataclasses import dataclass, field
 from typing import Any, Callable, TypedDict
 
 from shekel import _context, _patch
-from shekel.exceptions import BudgetExceededError, ToolBudgetExceededError
+from shekel.exceptions import (
+    AgentLoopError,
+    BudgetExceededError,
+    SpendVelocityExceededError,
+    ToolBudgetExceededError,
+)
+
+# ---------------------------------------------------------------------------
+# Velocity spec parser (v1.1.0)
+# ---------------------------------------------------------------------------
+
+_VELOCITY_RE = re.compile(
+    r"^\s*"
+    r"\$(?P<amount>[\d.]+)"
+    r"\s*/\s*"
+    r"(?P<count>[\d.]*)"
+    r"\s*(?P<unit>sec|min|hr|h|m|s)\b"
+    r"\s*$",
+    re.IGNORECASE,
+)
+
+_VELOCITY_UNIT_SECONDS: dict[str, float] = {
+    "sec": 1.0,
+    "s": 1.0,
+    "min": 60.0,
+    "m": 60.0,
+    "hr": 3600.0,
+    "h": 3600.0,
+}
+
+
+def _parse_velocity_spec(spec: str) -> tuple[float, float]:
+    """Parse a velocity spec string into (limit_usd, window_seconds).
+
+    Supported formats:
+        "$0.50/min"   -> (0.50, 60.0)
+        "$2/hr"       -> (2.0, 3600.0)
+        "$0.10/30s"   -> (0.10, 30.0)
+        "$1/1.5min"   -> (1.0, 90.0)
+        "$5/h"        -> (5.0, 3600.0)
+        "$0.25/sec"   -> (0.25, 1.0)
+
+    Raises:
+        ValueError: if spec cannot be parsed or values are non-positive.
+    """
+    m = _VELOCITY_RE.match(spec)
+    if not m:
+        raise ValueError(
+            f"Cannot parse velocity spec: {spec!r}. "
+            "Expected format: '$<amount>/<count><unit>' e.g. '$0.50/min', '$2/hr', '$0.10/30s'."
+        )
+    amount = float(m.group("amount"))
+    count_str = m.group("count")
+    count = float(count_str) if count_str else 1.0
+    unit = m.group("unit").lower()
+    window_seconds = count * _VELOCITY_UNIT_SECONDS[unit]
+    if amount <= 0:
+        raise ValueError(f"Velocity limit must be positive, got {amount}")
+    if window_seconds <= 0:  # pragma: no cover — count * unit_seconds is always > 0 for valid units
+        raise ValueError(f"Velocity window must be positive, got {window_seconds}")
+    return amount, window_seconds
 
 
 @dataclass
@@ -87,6 +149,11 @@ class Budget:
         max_tool_calls: int | None = None,
         tool_prices: dict[str, float] | None = None,
         warn_only: bool = False,
+        loop_guard: bool = False,
+        loop_guard_max_calls: int = 5,
+        loop_guard_window_seconds: float = 60.0,
+        max_velocity: str | None = None,
+        warn_velocity: str | None = None,
     ) -> None:
 
         if max_usd is not None and max_usd <= 0:
@@ -161,6 +228,33 @@ class Budget:
         self.on_fallback = on_fallback
         self.warn_only: bool = warn_only
 
+        # --- Loop guard support (v1.1.0) ---
+        self.loop_guard: bool = loop_guard
+        self.loop_guard_max_calls: int = loop_guard_max_calls
+        self.loop_guard_window_seconds: float = loop_guard_window_seconds
+        self._loop_guard_windows: dict[str, deque[float]] = {}
+
+        # --- Velocity state (v1.1.0) ---
+        self._velocity_limit_usd: float | None = None
+        self._velocity_window_seconds: float = 60.0
+        self._warn_velocity_limit_usd: float | None = None
+        if max_velocity is not None:
+            self._velocity_limit_usd, self._velocity_window_seconds = _parse_velocity_spec(
+                max_velocity
+            )
+        if warn_velocity is not None:
+            warn_limit, warn_window = _parse_velocity_spec(warn_velocity)
+            if max_velocity is None:
+                raise ValueError("warn_velocity requires max_velocity to be set")
+            if warn_limit >= self._velocity_limit_usd:  # type: ignore[operator]
+                raise ValueError(
+                    f"warn_velocity limit (${warn_limit:.4f}) must be less than "
+                    f"max_velocity limit (${self._velocity_limit_usd:.4f})"
+                )
+            self._warn_velocity_limit_usd = warn_limit
+        self._velocity_window: deque[tuple[float, float]] = deque()  # (timestamp, cost)
+        self._velocity_warn_fired: bool = False
+
         # --- Nested budget support (v0.2.3) ---
         self.name: str | None = name
         self.parent: Budget | None = None
@@ -228,6 +322,11 @@ class Budget:
         self._tool_spent = 0.0
         self._tool_calls = []
         self._tool_warn_fired = False
+        # Loop guard reset (v1.1.0)
+        self._loop_guard_windows = {}
+        # Velocity reset (v1.1.0)
+        self._velocity_window = deque()
+        self._velocity_warn_fired = False
 
     # ------------------------------------------------------------------
     # Sync context manager
@@ -559,6 +658,9 @@ class Budget:
             )
         )
         self._calls_made += 1
+        self._append_velocity_entry(cost)
+        self._check_velocity_warn()
+        self._check_velocity_limit()
         self._check_warn()
         self._check_limit()
         self._check_call_limit()
@@ -671,6 +773,119 @@ class Budget:
             )
 
     # ------------------------------------------------------------------
+    # Loop guard enforcement (v1.1.0)
+    # ------------------------------------------------------------------
+
+    def _check_loop_guard(self, tool_name: str, framework: str) -> None:  # noqa: ARG002
+        """Pre-dispatch loop guard: raise or warn when tool called too many times in window."""
+        if not self.loop_guard:
+            return
+
+        now = time.monotonic()
+        window = self._loop_guard_windows.setdefault(
+            tool_name, deque(maxlen=self.loop_guard_max_calls + 1)
+        )
+
+        # Evict timestamps outside the rolling window
+        if self.loop_guard_window_seconds > 0:
+            cutoff = now - self.loop_guard_window_seconds
+            while window and window[0] < cutoff:
+                window.popleft()
+
+        if len(window) >= self.loop_guard_max_calls:
+            if self.warn_only:
+                warnings.warn(
+                    f"[shekel] Loop guard triggered for tool '{tool_name}': "
+                    f"{len(window)} calls in {self.loop_guard_window_seconds}s "
+                    f"(limit={self.loop_guard_max_calls}). "
+                    f"Total spent: ${self._spent:.4f}",
+                    stacklevel=4,
+                )
+                return  # warn_only: detect but don't block
+            else:
+                raise AgentLoopError(
+                    tool_name=tool_name,
+                    repeat_count=len(window),
+                    window_seconds=self.loop_guard_window_seconds,
+                    spent=self._spent,
+                )
+
+    @property
+    def loop_guard_counts(self) -> dict[str, int]:
+        """Current call counts per tool within their active window (snapshot)."""
+        now = time.monotonic()
+        result: dict[str, int] = {}
+        for tool_name, window in self._loop_guard_windows.items():
+            if self.loop_guard_window_seconds > 0:
+                cutoff = now - self.loop_guard_window_seconds
+                result[tool_name] = sum(1 for ts in window if ts >= cutoff)
+            else:
+                result[tool_name] = len(window)
+        return result
+
+    # ------------------------------------------------------------------
+    # Spend velocity enforcement (v1.1.0)
+    # ------------------------------------------------------------------
+
+    def _prune_velocity_window(self, now: float) -> None:
+        cutoff = now - self._velocity_window_seconds
+        while self._velocity_window and self._velocity_window[0][0] < cutoff:
+            self._velocity_window.popleft()
+        # Reset warn_fired when window rolls over completely
+        if not self._velocity_window:
+            self._velocity_warn_fired = False
+
+    def _append_velocity_entry(self, cost: float) -> None:
+        now = time.monotonic()
+        self._prune_velocity_window(now)
+        self._velocity_window.append((now, cost))
+
+    @property
+    def _velocity_window_sum(self) -> float:
+        return sum(delta for _, delta in self._velocity_window)
+
+    def _check_velocity_warn(self) -> None:
+        if self._warn_velocity_limit_usd is None:
+            return
+        window_sum = self._velocity_window_sum
+        if not self._velocity_warn_fired and window_sum >= self._warn_velocity_limit_usd:
+            self._velocity_warn_fired = True
+            if self.on_warn is not None:
+                self.on_warn(window_sum, self._warn_velocity_limit_usd)
+            else:
+                warnings.warn(
+                    f"shekel: velocity warning — ${window_sum:.4f} spent in the last "
+                    f"{self._velocity_window_seconds:.0f}s "
+                    f"(warn_velocity limit: ${self._warn_velocity_limit_usd:.2f})",
+                    stacklevel=5,
+                )
+
+    def _check_velocity_limit(self) -> None:
+        if self._velocity_limit_usd is None:
+            return
+        window_sum = self._velocity_window_sum
+        if window_sum > self._velocity_limit_usd:
+            if self.warn_only:
+                if self.on_warn is not None:
+                    self.on_warn(window_sum, self._velocity_limit_usd)
+                else:
+                    warnings.warn(
+                        f"shekel: velocity limit would be exceeded — "
+                        f"${window_sum:.4f} in {self._velocity_window_seconds:.0f}s "
+                        f"(limit: ${self._velocity_limit_usd:.2f}/window). "
+                        f"warn_only=True, continuing.",
+                        stacklevel=5,
+                    )
+                return
+            raise SpendVelocityExceededError(
+                spent_in_window=window_sum,
+                limit_usd=self._velocity_limit_usd,
+                window_seconds=self._velocity_window_seconds,
+                model=self._last_model,
+                tokens=self._last_tokens,
+            )
+
+    # ------------------------------------------------------------------
     # Tool budget enforcement (v0.2.8)
     # ------------------------------------------------------------------
 
@@ -710,6 +925,10 @@ class Budget:
 
     def _record_tool_call(self, tool_name: str, cost: float, framework: str) -> None:
         """Post-dispatch: record the tool call and emit events."""
+        if self.loop_guard:
+            self._loop_guard_windows.setdefault(
+                tool_name, deque(maxlen=self.loop_guard_max_calls + 1)
+            ).append(time.monotonic())
         self._tool_calls_made += 1
         self._tool_spent += cost
         self._tool_calls.append(ToolCallRecord(tool_name=tool_name, cost=cost, framework=framework))

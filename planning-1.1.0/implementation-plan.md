@@ -867,6 +867,26 @@ gh pr create --base main \
 
 ---
 
+## Phase 4 — Security Issue Audit (after Phase 3, Agent F)
+
+**Start:** after PR is open (or in parallel with final review).
+**Who:** Agent F — security triage bot.
+
+### What Agent F does
+
+1. `gh issue list --label security --state open` — list all open security-labelled issues
+2. `gh issue list --state open` — scan all open issues for security keywords (injection, leak, secret, token, credential, overflow, RCE, XSS, SSRF, DoS, CVE)
+3. For each finding:
+   - Read the issue body and comments
+   - Determine if it is still relevant given the current codebase
+   - **If still relevant:** attempt a fix in the code, commit, and reference the issue in the commit message
+   - **If no longer relevant** (already fixed, not applicable, or out of scope): close the issue with a comment explaining why
+4. After all issues processed: run `pytest tests/ -x -q` to confirm no regressions from any fixes
+
+**Scope:** source code issues only — do not modify CI, secrets config, or infrastructure files.
+
+---
+
 ## File Change Summary
 
 | File | Phase | Agent | Change type |

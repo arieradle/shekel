@@ -120,6 +120,8 @@ nav:
     - Fallback Models: usage/fallback-models.md
     - Temporal Budgets: usage/temporal-budgets.md
     - Tool Budgets: usage/tool-budgets.md
+    - Loop Guard: usage/loop-guard.md
+    - Spend Velocity: usage/spend-velocity.md
     - Accumulating Budgets: usage/accumulating-budgets.md
     - Streaming: usage/streaming.md
     - Decorators: usage/decorators.md
@@ -127,6 +129,7 @@ nav:
     - LiteLLM: integrations/litellm.md
     - LangGraph: integrations/langgraph.md
     - CrewAI: integrations/crewai.md
+    - OpenAI Agents SDK: integrations/openai-agents.md
     - OpenAI: integrations/openai.md
     - Anthropic: integrations/anthropic.md
     - Google Gemini: integrations/gemini.md

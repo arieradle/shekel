@@ -79,10 +79,14 @@ def _register_builtin_adapters() -> None:
     from shekel.providers.crewai import CrewAIExecutionAdapter  # noqa: PLC0415
     from shekel.providers.langchain import LangChainRunnerAdapter  # noqa: PLC0415
     from shekel.providers.langgraph import LangGraphAdapter  # noqa: PLC0415
+    from shekel.providers.openai_agents_runner import (  # noqa: PLC0415
+        OpenAIAgentsRunnerAdapter,
+    )
 
     ShekelRuntime.register(LangGraphAdapter)
     ShekelRuntime.register(LangChainRunnerAdapter)
     ShekelRuntime.register(CrewAIExecutionAdapter)
+    ShekelRuntime.register(OpenAIAgentsRunnerAdapter)
 
 
 _register_builtin_adapters()

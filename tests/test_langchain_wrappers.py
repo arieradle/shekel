@@ -16,7 +16,8 @@ from shekel import budget
 from shekel._budget import Budget
 from shekel._runtime import ShekelRuntime
 from shekel.exceptions import BudgetExceededError, ChainBudgetExceededError
-from shekel.providers.langchain import LangChainRunnerAdapter
+
+LangChainRunnerAdapter = lc_mod.LangChainRunnerAdapter
 
 try:
     from langchain_core.runnables.base import Runnable, RunnableLambda, RunnableSequence
