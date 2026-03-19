@@ -84,6 +84,8 @@ are retained and counted. This gives "all-time per-tool call count" semantics.
 
 ## 3. Gate Logic: `_check_loop_guard()`
 
+`warnings` must be imported at the top of `shekel/_budget.py` (module-level), not inside the method body. It is already a stdlib module with no cost to import at module load time.
+
 ```python
 def _check_loop_guard(self, tool_name: str, framework: str) -> None:
     if not self.loop_guard:
@@ -103,8 +105,7 @@ def _check_loop_guard(self, tool_name: str, framework: str) -> None:
     # Check: if already at or above the limit, the NEXT call is the violation
     if len(window) >= self.loop_guard_max_calls:
         if self.warn_only:
-            import warnings
-            warnings.warn(
+            warnings.warn(  # warnings imported at module level in _budget.py
                 f"[shekel] Loop guard triggered for tool '{tool_name}': "
                 f"{len(window)} calls in {self.loop_guard_window_seconds}s "
                 f"(limit={self.loop_guard_max_calls}). "

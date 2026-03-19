@@ -86,15 +86,15 @@ As a developer who does not use the OpenAI Agents SDK, I want shekel to work exa
 - No `ImportError` propagates to the user's code.
 - Existing tests continue to pass without `openai-agents` installed.
 
-### US-6: warn_only suppresses the agent gate
+### US-6: warn_only does not suppress component gates
 
-As a developer in a staging environment, I want `warn_only=True` to suppress `AgentBudgetExceededError` from the agent gate so that my pipeline never hard-stops even when a cap is exceeded, while still logging the violation for observability.
+As a developer who has registered explicit per-agent caps, I want `warn_only=True` to suppress soft total-budget warnings but **not** suppress `AgentBudgetExceededError` from component gates, because per-agent caps are deliberate financial guardrails that must hold even in staging.
 
 **Acceptance criteria:**
-- When `budget(warn_only=True)` is active and an agent cap is exceeded, a `warnings.warn()` is issued with the agent name, spent, and limit.
-- `AgentBudgetExceededError` is **not** raised; the `Runner.run` call proceeds normally.
-- `ComponentBudget._spent` is still updated post-run regardless of `warn_only`.
-- Behavior is consistent with `warn_only` semantics on `BudgetExceededError` from the core budget.
+- When `budget(warn_only=True)` is active and an agent cap is exceeded, `AgentBudgetExceededError` is still raised — the gate is not suppressed.
+- `warn_only` only suppresses the soft `BudgetExceededError` emitted by the core `openai.py` provider wrapper when the total cap is hit; it has no effect on component gate behavior.
+- A developer who wants agent gates to never raise must not register `b.agent(...)` caps, or must catch `AgentBudgetExceededError` explicitly.
+- This is consistent with how LangGraph and CrewAI adapters treat `warn_only`: component gates always enforce; `warn_only` is a total-cap concern only.
 
 ---
 
