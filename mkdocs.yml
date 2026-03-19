@@ -119,6 +119,7 @@ nav:
     - Budget Enforcement: usage/budget-enforcement.md
     - Fallback Models: usage/fallback-models.md
     - Temporal Budgets: usage/temporal-budgets.md
+    - Distributed Budgets: usage/distributed-budgets.md
     - Tool Budgets: usage/tool-budgets.md
     - Loop Guard: usage/loop-guard.md
     - Spend Velocity: usage/spend-velocity.md
