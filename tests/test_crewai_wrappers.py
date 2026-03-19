@@ -18,7 +18,8 @@ from shekel import budget
 from shekel._budget import Budget
 from shekel._runtime import ShekelRuntime
 from shekel.exceptions import AgentBudgetExceededError, TaskBudgetExceededError
-from shekel.providers.crewai import CrewAIExecutionAdapter
+
+CrewAIExecutionAdapter = crewai_mod.CrewAIExecutionAdapter
 
 # ---------------------------------------------------------------------------
 # Helpers — fake crewai.agent module injection

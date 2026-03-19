@@ -30,7 +30,7 @@ class OpenAIAdapter(ProviderAdapter):
                 _patch._originals["openai_async"] = oai.AsyncCompletions.create
                 oai.Completions.create = _patch._openai_sync_wrapper  # type: ignore[method-assign]
                 oai.AsyncCompletions.create = _patch._openai_async_wrapper  # type: ignore[method-assign]
-        except ImportError:
+        except ImportError:  # openai not installed — skip gracefully
             pass
 
     def remove_patches(self) -> None:
@@ -44,7 +44,7 @@ class OpenAIAdapter(ProviderAdapter):
                 oai.Completions.create = _patch._originals.pop("openai_sync")  # type: ignore[method-assign]
             if "openai_async" in _patch._originals:
                 oai.AsyncCompletions.create = _patch._originals.pop("openai_async")  # type: ignore[method-assign]
-        except ImportError:
+        except ImportError:  # openai not installed — nothing to restore
             pass
 
     def extract_tokens(self, response: Any) -> tuple[int, int, str]:
@@ -75,7 +75,7 @@ class OpenAIAdapter(ProviderAdapter):
                     ot = chunk.usage.completion_tokens or 0
                     m = getattr(chunk, "model", None) or "unknown"
                     seen.append((it, ot, m))
-                except AttributeError:
+                except AttributeError:  # chunk.usage fields vary by model — skip malformed chunks
                     pass
             yield chunk
         return seen[-1] if seen else (0, 0, "unknown")

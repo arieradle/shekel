@@ -38,6 +38,7 @@ class CrewAIAdapter:
                 active = get_active_budget()
                 tool_name = getattr(self, "name", self.__class__.__name__)
                 if active is not None:
+                    active._check_loop_guard(tool_name, "crewai")
                     active._check_tool_limit(tool_name, "crewai")
                     result = orig_run(self, *args, **kwargs)
                     price = _get_price(active, tool_name)
@@ -49,6 +50,7 @@ class CrewAIAdapter:
                 active = get_active_budget()
                 tool_name = getattr(self, "name", self.__class__.__name__)
                 if active is not None:
+                    active._check_loop_guard(tool_name, "crewai")
                     active._check_tool_limit(tool_name, "crewai")
                     result = await orig_arun(self, *args, **kwargs)
                     price = _get_price(active, tool_name)

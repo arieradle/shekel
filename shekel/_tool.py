@@ -31,6 +31,7 @@ def _wrap_sync(
                 price = active.tool_prices[name]
             elif decorator_price is not None:
                 price = decorator_price
+            active._check_loop_guard(name, "manual")
             active._check_tool_limit(name, "manual")
             result = fn(*args, **kwargs)
             active._record_tool_call(name, price if price is not None else 0.0, "manual")
@@ -52,6 +53,7 @@ def _wrap_async(
                 price = active.tool_prices[name]
             elif decorator_price is not None:
                 price = decorator_price
+            active._check_loop_guard(name, "manual")
             active._check_tool_limit(name, "manual")
             result = await fn(*args, **kwargs)
             active._record_tool_call(name, price if price is not None else 0.0, "manual")
@@ -73,6 +75,7 @@ def _wrap_callable(obj: Any, name: str, decorator_price: float | None) -> Callab
                 price = active.tool_prices[name]
             elif decorator_price is not None:
                 price = decorator_price
+            active._check_loop_guard(name, "manual")
             active._check_tool_limit(name, "manual")
             result = original_call(*args, **kwargs)
             active._record_tool_call(name, price if price is not None else 0.0, "manual")

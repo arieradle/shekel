@@ -34,6 +34,7 @@ class OpenAIAgentsAdapter:
                 active = get_active_budget()
                 tool_name = getattr(self, "name", self.__class__.__name__)
                 if active is not None:
+                    active._check_loop_guard(tool_name, "openai-agents")
                     active._check_tool_limit(tool_name, "openai-agents")
                     result = await orig(self, ctx, input)
                     price = _get_price(active, tool_name)

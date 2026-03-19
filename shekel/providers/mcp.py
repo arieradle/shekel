@@ -33,6 +33,7 @@ class MCPAdapter:
             async def _patched_call_tool(self: Any, name: str, arguments: dict[str, Any]) -> Any:
                 active = get_active_budget()
                 if active is not None:
+                    active._check_loop_guard(name, "mcp")
                     active._check_tool_limit(name, "mcp")
                     result = await orig(self, name, arguments)
                     price = _get_price(active, name)

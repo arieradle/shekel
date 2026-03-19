@@ -2380,3 +2380,293 @@ class TestNoActiveBudgetPassThrough:
 
         wrapped = tool(MyTool(), price=0.005)
         assert wrapped(7) == 14
+
+
+# ---------------------------------------------------------------------------
+# Loop guard exercised through each provider (_check_loop_guard coverage)
+# ---------------------------------------------------------------------------
+
+
+class TestLoopGuardThroughProviders:
+    """Ensure _check_loop_guard is exercised in all provider dispatch paths."""
+
+    def test_tool_decorator_sync_loop_guard_path(self) -> None:
+        """_check_loop_guard is called in _wrap_sync via @tool."""
+        from shekel._tool import tool
+
+        @tool
+        def my_fn(x: int) -> int:
+            return x
+
+        with budget(loop_guard=True, loop_guard_max_calls=5) as b:
+            my_fn(1)
+        assert b.loop_guard_counts["my_fn"] == 1
+
+    @pytest.mark.asyncio
+    async def test_tool_decorator_async_loop_guard_path(self) -> None:
+        """_check_loop_guard is called in _wrap_async via @tool."""
+        from shekel._tool import tool
+
+        @tool
+        async def async_fn(x: int) -> int:
+            return x
+
+        with budget(loop_guard=True, loop_guard_max_calls=5) as b:
+            await async_fn(1)
+        assert b.loop_guard_counts["async_fn"] == 1
+
+    def test_tool_callable_loop_guard_path(self) -> None:
+        """_check_loop_guard is called in _wrap_callable via tool(obj)."""
+        from shekel._tool import tool
+
+        class MyCallable:
+            def __call__(self) -> str:
+                return "ok"
+
+        wrapped = tool(MyCallable())
+        with budget(loop_guard=True, loop_guard_max_calls=5) as b:
+            wrapped()
+        assert b.loop_guard_counts.get("MyCallable") == 1
+
+    def test_crewai_run_loop_guard_path(self) -> None:
+        """_check_loop_guard is called in CrewAI BaseTool._run dispatch."""
+        import sys
+        import types
+
+        fake_crewai = types.ModuleType("crewai")
+        fake_tools_mod = types.ModuleType("crewai.tools")
+
+        class BaseTool:
+            name = "crewai_tool"
+
+            def _run(self, *args: Any, **kwargs: Any) -> str:
+                return "result"
+
+            async def _arun(self, *args: Any, **kwargs: Any) -> str:
+                return "async_result"
+
+        fake_tools_mod.BaseTool = BaseTool  # type: ignore[attr-defined]
+        sys.modules["crewai"] = fake_crewai  # type: ignore[assignment]
+        sys.modules["crewai.tools"] = fake_tools_mod  # type: ignore[assignment]
+
+        try:
+            from shekel.providers.crewai import CrewAIAdapter
+
+            adapter = CrewAIAdapter()
+            adapter.install_patches()
+            try:
+                tool_instance = fake_tools_mod.BaseTool()
+                with budget(loop_guard=True, loop_guard_max_calls=5) as b:
+                    tool_instance._run()
+                assert b.loop_guard_counts.get("crewai_tool") == 1
+            finally:
+                adapter.remove_patches()
+        finally:
+            sys.modules.pop("crewai", None)
+            sys.modules.pop("crewai.tools", None)
+
+    @pytest.mark.asyncio
+    async def test_crewai_arun_loop_guard_path(self) -> None:
+        """_check_loop_guard is called in CrewAI BaseTool._arun dispatch."""
+        import sys
+        import types
+
+        fake_crewai = types.ModuleType("crewai")
+        fake_tools_mod = types.ModuleType("crewai.tools")
+
+        class BaseTool:
+            name = "async_crewai_tool"
+
+            def _run(self, *args: Any, **kwargs: Any) -> str:
+                return "result"
+
+            async def _arun(self, *args: Any, **kwargs: Any) -> str:
+                return "async_result"
+
+        fake_tools_mod.BaseTool = BaseTool  # type: ignore[attr-defined]
+        sys.modules["crewai"] = fake_crewai  # type: ignore[assignment]
+        sys.modules["crewai.tools"] = fake_tools_mod  # type: ignore[assignment]
+
+        try:
+            from shekel.providers.crewai import CrewAIAdapter
+
+            adapter = CrewAIAdapter()
+            adapter.install_patches()
+            try:
+                tool_instance = fake_tools_mod.BaseTool()
+                with budget(loop_guard=True, loop_guard_max_calls=5) as b:
+                    await tool_instance._arun()
+                assert b.loop_guard_counts.get("async_crewai_tool") == 1
+            finally:
+                adapter.remove_patches()
+        finally:
+            sys.modules.pop("crewai", None)
+            sys.modules.pop("crewai.tools", None)
+
+    def test_langchain_invoke_loop_guard_path(self) -> None:
+        """_check_loop_guard is called in LangChain invoke dispatch."""
+        import sys
+        import types
+
+        fake_lc_core = types.ModuleType("langchain_core")
+        fake_lc_runnables = types.ModuleType("langchain_core.runnables")
+        fake_lc_tools = types.ModuleType("langchain_core.tools")
+
+        class BaseTool:
+            name = "lc_tool"
+
+            def invoke(self, input: Any, **kwargs: Any) -> str:
+                return "result"
+
+            async def ainvoke(self, input: Any, **kwargs: Any) -> str:
+                return "async_result"
+
+        class RunnableSequence(BaseTool):
+            pass
+
+        fake_lc_runnables.Runnable = BaseTool  # type: ignore[attr-defined]
+        fake_lc_runnables.RunnableSequence = RunnableSequence  # type: ignore[attr-defined]
+        fake_lc_tools.BaseTool = BaseTool  # type: ignore[attr-defined]
+        sys.modules["langchain_core"] = fake_lc_core  # type: ignore[assignment]
+        sys.modules["langchain_core.runnables"] = fake_lc_runnables  # type: ignore[assignment]
+        sys.modules["langchain_core.tools"] = fake_lc_tools  # type: ignore[assignment]
+
+        try:
+            from shekel.providers.langchain import LangChainAdapter
+
+            adapter = LangChainAdapter()
+            adapter.install_patches()
+            try:
+                # Create instance from the (now-patched) module class
+                tool_instance = fake_lc_tools.BaseTool()
+                with budget(loop_guard=True, loop_guard_max_calls=5) as b:
+                    tool_instance.invoke("input")
+                assert b.loop_guard_counts.get("lc_tool") == 1
+            finally:
+                adapter.remove_patches()
+        finally:
+            sys.modules.pop("langchain_core", None)
+            sys.modules.pop("langchain_core.runnables", None)
+            sys.modules.pop("langchain_core.tools", None)
+
+    @pytest.mark.asyncio
+    async def test_langchain_ainvoke_loop_guard_path(self) -> None:
+        """_check_loop_guard is called in LangChain ainvoke dispatch."""
+        import sys
+        import types
+
+        fake_lc_core = types.ModuleType("langchain_core")
+        fake_lc_runnables = types.ModuleType("langchain_core.runnables")
+        fake_lc_tools = types.ModuleType("langchain_core.tools")
+
+        class BaseTool:
+            name = "async_lc_tool"
+
+            def invoke(self, input: Any, **kwargs: Any) -> str:
+                return "result"
+
+            async def ainvoke(self, input: Any, **kwargs: Any) -> str:
+                return "async_result"
+
+        class RunnableSequence(BaseTool):
+            pass
+
+        fake_lc_runnables.Runnable = BaseTool  # type: ignore[attr-defined]
+        fake_lc_runnables.RunnableSequence = RunnableSequence  # type: ignore[attr-defined]
+        fake_lc_tools.BaseTool = BaseTool  # type: ignore[attr-defined]
+        sys.modules["langchain_core"] = fake_lc_core  # type: ignore[assignment]
+        sys.modules["langchain_core.runnables"] = fake_lc_runnables  # type: ignore[assignment]
+        sys.modules["langchain_core.tools"] = fake_lc_tools  # type: ignore[assignment]
+
+        try:
+            from shekel.providers.langchain import LangChainAdapter
+
+            adapter = LangChainAdapter()
+            adapter.install_patches()
+            try:
+                tool_instance = fake_lc_tools.BaseTool()
+                with budget(loop_guard=True, loop_guard_max_calls=5) as b:
+                    await tool_instance.ainvoke("input")
+                assert b.loop_guard_counts.get("async_lc_tool") == 1
+            finally:
+                adapter.remove_patches()
+        finally:
+            sys.modules.pop("langchain_core", None)
+            sys.modules.pop("langchain_core.runnables", None)
+            sys.modules.pop("langchain_core.tools", None)
+
+    @pytest.mark.asyncio
+    async def test_mcp_call_tool_loop_guard_path(self) -> None:
+        """_check_loop_guard is called in MCP call_tool dispatch."""
+        import sys
+        import types
+
+        # Build full mcp.client.session module hierarchy for import resolution
+        fake_mcp = types.ModuleType("mcp")
+        fake_mcp_client = types.ModuleType("mcp.client")
+        fake_client_mod = types.ModuleType("mcp.client.session")
+        fake_mcp.client = fake_mcp_client  # type: ignore[attr-defined]
+        fake_mcp_client.session = fake_client_mod  # type: ignore[attr-defined]
+
+        class ClientSession:
+            async def call_tool(self, name: str, arguments: Any) -> str:
+                return "mcp_result"
+
+        fake_client_mod.ClientSession = ClientSession  # type: ignore[attr-defined]
+        sys.modules["mcp"] = fake_mcp  # type: ignore[assignment]
+        sys.modules["mcp.client"] = fake_mcp_client  # type: ignore[assignment]
+        sys.modules["mcp.client.session"] = fake_client_mod  # type: ignore[assignment]
+
+        import shekel.providers.mcp as mcp_mod
+
+        mcp_mod._original_call_tool = None  # reset any residual state
+        try:
+            adapter = mcp_mod.MCPAdapter()
+            adapter.install_patches()
+            try:
+                # Create instance from the (now-patched) module class
+                session = fake_client_mod.ClientSession()
+                with budget(loop_guard=True, loop_guard_max_calls=5) as b:
+                    await session.call_tool("mcp_tool", {})
+                assert b.loop_guard_counts.get("mcp_tool") == 1
+            finally:
+                adapter.remove_patches()
+        finally:
+            sys.modules.pop("mcp", None)
+            sys.modules.pop("mcp.client", None)
+            sys.modules.pop("mcp.client.session", None)
+
+    @pytest.mark.asyncio
+    async def test_openai_agents_tool_loop_guard_path(self) -> None:
+        """_check_loop_guard is called in OpenAI Agents FunctionTool dispatch."""
+        import sys
+        import types
+
+        fake_agents = types.ModuleType("agents")
+        fake_tool_mod = types.ModuleType("agents.tool")
+
+        class FunctionTool:
+            name = "agents_tool"
+
+            async def on_invoke_tool(self, ctx: Any, input: Any) -> str:
+                return "agents_result"
+
+        fake_tool_mod.FunctionTool = FunctionTool  # type: ignore[attr-defined]
+        sys.modules["agents"] = fake_agents  # type: ignore[assignment]
+        sys.modules["agents.tool"] = fake_tool_mod  # type: ignore[assignment]
+
+        try:
+            from shekel.providers.openai_agents import OpenAIAgentsAdapter
+
+            adapter = OpenAIAgentsAdapter()
+            adapter.install_patches()
+            try:
+                tool_instance = FunctionTool()
+                with budget(loop_guard=True, loop_guard_max_calls=5) as b:
+                    await tool_instance.on_invoke_tool(None, "input")
+                assert b.loop_guard_counts.get("agents_tool") == 1
+            finally:
+                adapter.remove_patches()
+        finally:
+            sys.modules.pop("agents", None)
+            sys.modules.pop("agents.tool", None)

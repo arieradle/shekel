@@ -2,6 +2,51 @@
 
 All notable changes to this project are documented here. For detailed information, see [CHANGELOG.md](https://github.com/arieradle/shekel/blob/main/CHANGELOG.md) on GitHub.
 
+## [1.1.0] {#110}
+
+### OpenAI Agents SDK Adapter, Loop Guard, and Spend Velocity
+
+Three new circuit-breaking primitives for production agent deployments.
+
+**OpenAI Agents SDK `Runner` adapter** (`shekel/providers/openai_agents.py`):
+- Patches `Runner.run`, `Runner.run_sync`, and `Runner.run_streamed` transparently on `budget().__enter__()` and restores them on `__exit__()`
+- Per-agent caps via `b.agent("name", max_usd=X)` — `AgentBudgetExceededError` raised before the agent run starts when its cap is exhausted
+- Spend attribution visible in `budget.tree()` alongside per-agent caps and utilization percentages
+- Full async (`Runner.run`) and sync (`Runner.run_sync`) support; streaming spend attributed after iteration completes
+- Auto-skipped when `openai-agents` is not installed
+
+**Loop Guard** — `budget(loop_guard=True)`:
+- Per-tool rolling-window counter; tracks call timestamps per tool name at every pre-dispatch gate
+- `AgentLoopError` raised before the tool executes when a tool is called more than `loop_guard_max_calls` times within `loop_guard_window_seconds`
+- Configurable thresholds: `loop_guard_max_calls` (default `5`), `loop_guard_window_seconds` (default `60.0`; `0` = all-time)
+- `warn_only=True` support — logs a warning instead of raising; `b.loop_guard_counts` always populated
+- Independent of `max_tool_calls` — both enforced simultaneously; first to fire wins
+- Works with all auto-intercepted frameworks: LangChain, MCP, CrewAI, OpenAI Agents SDK, `@tool`
+
+**Spend Velocity** — `budget(max_velocity="$X/unit")`:
+- Burn-rate circuit breaker checked on every LLM cost record
+- `SpendVelocityExceededError` raised when measured USD/min exceeds the configured limit
+- Spec DSL: `"$<amount>/<unit>"` — units: `sec`/`s`, `min`/`m`, `hr`/`h`/`hour`, `day`/`d`
+- `warn_velocity` soft threshold fires `on_warn` callback before the hard stop
+- Velocity-only mode supported (no `max_usd` required)
+- All velocity values normalized to USD/min in exceptions and callbacks
+- `warn_only=True` support — logs instead of raising
+
+**New exceptions** (all subclass `BudgetExceededError`, exported from `shekel.exceptions`):
+- `AgentLoopError` — `tool_name`, `call_count`, `window_seconds`, `usd_spent`, `framework`
+- `SpendVelocityExceededError` — `velocity_per_min`, `limit_per_min`, `window_seconds`, `usd_spent`, `elapsed_seconds`
+
+**New `Budget` property**:
+- `loop_guard_counts: dict[str, int]` — per-tool call counts for the current window; populated when `loop_guard=True`; empty dict otherwise
+
+**Documentation**:
+- New integration page: [OpenAI Agents SDK](integrations/openai-agents.md)
+- New usage pages: [Loop Guard](usage/loop-guard.md) · [Spend Velocity](usage/spend-velocity.md)
+
+[Full CHANGELOG →](https://github.com/arieradle/shekel/blob/main/CHANGELOG.md#110)
+
+---
+
 ## [1.0.2] {#102}
 
 ### 🎉 First GA Release — Hierarchical Budget Enforcement, CrewAI circuit breaking + Distributed Budgets

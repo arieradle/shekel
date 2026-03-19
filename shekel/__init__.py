@@ -7,16 +7,18 @@ from shekel._decorator import with_budget
 from shekel._tool import tool
 from shekel.exceptions import (
     AgentBudgetExceededError,
+    AgentLoopError,
     BudgetConfigMismatchError,
     BudgetExceededError,
     ChainBudgetExceededError,
     NodeBudgetExceededError,
     SessionBudgetExceededError,
+    SpendVelocityExceededError,
     TaskBudgetExceededError,
     ToolBudgetExceededError,
 )
 
-__version__ = "1.0.2"
+__version__ = "1.1.0"
 __all__ = [
     "budget",
     "Budget",
@@ -30,6 +32,8 @@ __all__ = [
     "TaskBudgetExceededError",
     "SessionBudgetExceededError",
     "ChainBudgetExceededError",
+    "AgentLoopError",
+    "SpendVelocityExceededError",
     "tool",
 ]
 

@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-03-19
+
+### Added
+
+- **OpenAI Agents SDK `Runner` adapter** (`shekel/providers/openai_agents_runner.py`) — transparent spend tracking and per-agent circuit breaking for the `openai-agents` package
+  - Patches `Runner.run`, `Runner.run_sync`, and `Runner.run_streamed` on `budget.__enter__()` and restores on `__exit__()`
+  - Per-agent caps via `b.agent("name", max_usd=X)` — raises `AgentBudgetExceededError` before the run starts when the cap is exhausted
+  - Spend attribution visible in `b.tree()` alongside per-agent caps and utilization percentages
+  - Reference-counted: nested budget contexts don't double-patch; automatic cleanup on last exit
+  - Auto-skipped when `openai-agents` is not installed
+
+- **Loop Guard** — `budget(loop_guard=True)` — detects infinite tool-call loops
+  - Per-tool rolling-window counter using `deque[float]` of call timestamps
+  - Raises `AgentLoopError` before the tool executes when a tool exceeds `loop_guard_max_calls` calls within `loop_guard_window_seconds`
+  - Configurable: `loop_guard_max_calls` (default `5`), `loop_guard_window_seconds` (default `60.0`)
+  - `warn_only=True` support — emits `UserWarning` instead of raising
+  - `b.loop_guard_counts` property — per-tool call counts for the current window
+  - Works with all auto-intercepted frameworks: LangChain, MCP, CrewAI, OpenAI Agents SDK, `@tool`
+
+- **Spend Velocity** — `budget(max_velocity="$X/unit")` — burn-rate circuit breaker
+  - `SpendVelocityExceededError` raised when measured USD/min exceeds the configured limit
+  - Spec DSL: `"$<amount>/<unit>"` — units: `sec`/`s`, `min`/`m`, `hr`/`h`/`hour`, `day`/`d`
+  - `warn_velocity` soft threshold fires `on_warn` callback before the hard stop
+  - Velocity-only mode (no `max_usd` required); `warn_only=True` support
+  - All velocity values normalized to USD/min in exceptions and callbacks
+
+- **New exceptions** (all subclass `BudgetExceededError`):
+  - `AgentLoopError(tool_name, repeat_count, window_seconds, spent)` — loop guard circuit breaker
+  - `SpendVelocityExceededError(spent_in_window, limit_usd, window_seconds, velocity_per_min, limit_per_min)` — velocity circuit breaker
+
+- **New `Budget` property**: `loop_guard_counts: dict[str, int]` — per-tool call counts; populated when `loop_guard=True`
+
+- **1479 tests** (249 skipped pending live API keys); 100% line coverage
+
 ## [1.0.2] - 2026-03-18
 
 ### Added

@@ -52,6 +52,7 @@ If it calls OpenAI or Anthropic under the hood, shekel sees it — **zero integr
 | OpenAI · Anthropic · Gemini | LangChain · LangGraph | Auto-patched |
 | HuggingFace · LiteLLM · Groq | CrewAI · OpenAI Agents SDK | Auto-patched |
 | MCP · AutoGen · LlamaIndex | Any custom wrapper | Auto-patched |
+| — | OpenAI Agents SDK (per-agent caps) | `b.agent("name", max_usd=X)` |
 
 ---
 
@@ -187,6 +188,19 @@ print(b.tree())
 ```
 
 Shekel patches `Agent.execute_task` transparently. Gate order: task cap → agent cap → global (most specific first).
+
+### Loop & Velocity Protection
+
+```python
+with budget(
+    max_usd=50.00,
+    loop_guard=True,           # AgentLoopError if any tool repeats 5x in 60s
+    max_velocity="$1/min",     # SpendVelocityExceededError if burn > $1/min
+) as b:
+    run_my_agent()
+
+print(b.loop_guard_counts)   # {'web_search': 3, 'read_file': 1}
+```
 
 ### Distributed budgets — enforce across multiple processes
 
@@ -377,10 +391,12 @@ b.task("summarize", max_usd=0.50)    # CrewAI task     → TaskBudgetExceededErr
 |---|---|---|
 | `BudgetExceededError` | Global cap hit | `spent`, `limit`, `model`, `retry_after` |
 | `NodeBudgetExceededError` | LangGraph node cap hit | `node_name`, `spent`, `limit` |
-| `AgentBudgetExceededError` | CrewAI agent cap hit | `agent_name`, `spent`, `limit` |
+| `AgentBudgetExceededError` | CrewAI / OAI Agents agent cap hit | `agent_name`, `spent`, `limit` |
 | `TaskBudgetExceededError` | CrewAI task cap hit | `task_name`, `spent`, `limit` |
 | `ChainBudgetExceededError` | LangChain chain cap hit | `chain_name`, `spent`, `limit` |
 | `ToolBudgetExceededError` | Tool call cap hit | `tool_name`, `calls_used`, `calls_limit` |
+| `AgentLoopError` | Tool called too many times in window | `tool_name`, `call_count`, `window_seconds` |
+| `SpendVelocityExceededError` | Burn rate exceeds `max_velocity` | `velocity_per_min`, `limit_per_min` |
 | `BudgetConfigMismatchError` | Redis name reused with different limits | — |
 
 ---
