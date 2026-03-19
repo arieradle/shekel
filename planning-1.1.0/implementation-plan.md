@@ -827,11 +827,36 @@ mkdocs build --strict
 
 Zero warnings. All new pages in nav.
 
-### Step 3.3 — Update `docs/changelog.md` and `CHANGELOG.md`
+### Step 3.3 — Final linting-fix loop (repeat until all clean)
+
+Run the full linter stack over **all changed files**. Fix any error, then re-run. Do not
+proceed to Step 3.4 until every tool exits with zero errors.
+
+```bash
+# 1. Format
+python -m black shekel/ tests/
+
+# 2. Import order
+python -m isort shekel/ tests/
+
+# 3. Lint (style + correctness)
+python -m ruff check shekel/ tests/
+
+# 4. Type check (source files only — tests excluded)
+python -m mypy shekel/_budget.py shekel/exceptions.py shekel/__init__.py \
+    shekel/_runtime.py shekel/providers/openai_agents_runner.py \
+    shekel/_tool.py shekel/providers/langchain.py shekel/providers/mcp.py \
+    shekel/providers/crewai.py shekel/providers/openai_agents.py
+```
+
+**Loop:** if any command exits non-zero, fix the reported errors, then restart from step 1.
+All four tools must pass in the same run before continuing.
+
+### Step 3.4 — Update `docs/changelog.md` and `CHANGELOG.md`
 
 Finalize the `[1.1.0]` entries with accurate test counts and any adjustments from implementation.
 
-### Step 3.4 — Push and open PR
+### Step 3.5 — Push and open PR
 
 ```bash
 git push -u origin feat/v1.1.0
