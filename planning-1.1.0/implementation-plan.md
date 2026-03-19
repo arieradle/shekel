@@ -493,14 +493,164 @@ python -m mypy shekel/_budget.py
 
 ---
 
-## Phase 2 — Integration and Polish
+## Phase 1c — Docs + Examples (parallel with Phase 1b, Agent D)
 
-**After all three agents are done.**
+**Start:** immediately after Phase 0 completes (does not touch code).
+**No file overlap** with Agents A, B, or C.
 
-### Step 2.1 — Full test suite
+**Files owned exclusively:**
+- `docs/integrations/openai-agents.md` (new)
+- `docs/usage/loop-guard.md` (new)
+- `docs/usage/spend-velocity.md` (new)
+- `docs/usage/openai_agents_demo.py` (new)
+- `docs/usage/loop_guard_demo.py` (new)
+- `docs/usage/spend_velocity_demo.py` (new)
+- `docs/index.md` — add 3 What's New cards
+- `docs/api-reference.md` — add new params + exceptions
+- `docs/changelog.md` — add [1.1.0] entry
+- `README.md` — targeted additions only (keep current tone/structure)
+
+---
+
+### D.1 — `docs/integrations/openai-agents.md` (new)
+
+Model after `docs/integrations/crewai.md` in structure. Sections:
+
+1. **Overview** — one paragraph: what the adapter does, zero-config activation
+2. **Installation** — `pip install shekel openai-agents`
+3. **Zero-config global enforcement** — single `budget()` wrapping `Runner.run`
+4. **Per-agent caps** — `b.agent("researcher", max_usd=0.30)` + `AgentBudgetExceededError`
+5. **Multi-agent pipeline** — example with 2+ agents each with their own cap
+6. **Spend attribution with `b.tree()`** — show output
+7. **Async and sync** — `Runner.run` (async) and `Runner.run_sync` (sync) examples
+8. **Streaming** — `Runner.run_streamed` example with known-limitation callout
+9. **Exception reference** — `AgentBudgetExceededError` fields table
+10. **warn_only mode** — staging/dev use case
+11. **Nested budgets** — parent ceiling behavior
+
+### D.2 — `docs/usage/loop-guard.md` (new)
+
+Sections:
+1. **The problem** — overnight loop scenario, why `max_usd` alone isn't enough
+2. **Quick start** — `budget(max_usd=5.00, loop_guard=True)`
+3. **How it works** — rolling window, per-tool tracking, pre-dispatch gate
+4. **Tuning thresholds** — `loop_guard_max_calls`, `loop_guard_window_seconds`
+5. **Reading the exception** — `AgentLoopError` fields, example traceback
+6. **warn_only mode** — observe without blocking
+7. **Combining with max_tool_calls** — independent, both enforced
+8. **Inspecting live counts** — `b.loop_guard_counts`
+9. **Edge cases** — legitimate high-frequency tools (tune thresholds), session mode, nested budgets
+10. **Framework coverage** — works with `@tool`, LangChain, MCP, CrewAI, OpenAI Agents
+
+### D.3 — `docs/usage/spend-velocity.md` (new)
+
+Sections:
+1. **The problem** — fast burn vs slow burn, why total cap isn't enough
+2. **Quick start** — `budget(max_velocity="$0.50/min")`
+3. **Spec format** — `$<amount>/<count><unit>` table with all supported units
+4. **Velocity-only guard** (no `max_usd`) — US-6 use case
+5. **Compound guardrails** — `max_usd` + `max_velocity` together
+6. **Velocity warning** — `warn_velocity` before hard stop
+7. **warn_only mode** — dev/staging observability
+8. **Reading the exception** — `SpendVelocityExceededError` fields, normalized `velocity_per_min`
+9. **Nested budgets** — child tracks call-by-call; parent receives delta on exit
+10. **What it doesn't cover** — TemporalBudget interaction, distributed velocity
+
+### D.4 — Example files
+
+**`docs/usage/openai_agents_demo.py`**
+- Complete runnable example: 2 agents (researcher + writer), each with a cap
+- Shows `b.agent()`, `Runner.run`, `b.tree()`, catches `AgentBudgetExceededError`
+- Mock OpenAI client so it runs without API key (same pattern as `langchain_demo.py`)
+
+**`docs/usage/loop_guard_demo.py`**
+- Simulates a tool that gets stuck in a loop (returns same result repeatedly)
+- Shows `loop_guard=True` detecting and stopping it
+- Demonstrates `warn_only=True` variant with logging
+- Shows `b.loop_guard_counts` after a run
+
+**`docs/usage/spend_velocity_demo.py`**
+- Simulates bursty LLM usage with `time.sleep` between calls
+- Shows velocity guard firing, velocity warning firing first
+- Shows velocity-only mode (no `max_usd`)
+- Shows compound: `max_usd=50.00, max_velocity="$1/min"`
+
+### D.5 — `docs/index.md` — What's New cards
+
+Add 3 new cards to the existing `What's New in v1.1.0` grid
+(change header from `v1.0.2` to `v1.1.0`, keep existing cards, prepend new ones):
+
+```
+Card 1: OpenAI Agents SDK — Per-Agent Circuit Breaking
+  icon: robot, link: integrations/openai-agents.md
+
+Card 2: Loop Guard — Agent Loop Detection
+  icon: shield, link: usage/loop-guard.md
+
+Card 3: Spend Velocity — Burn-Rate Circuit Breaker
+  icon: zap, link: usage/spend-velocity.md
+```
+
+### D.6 — `docs/api-reference.md`
+
+Add to Budget constructor params table:
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `loop_guard` | `bool` | `False` | Enable per-tool rolling-window loop detection |
+| `loop_guard_max_calls` | `int` | `5` | Max calls to the same tool within the window before `AgentLoopError` |
+| `loop_guard_window_seconds` | `float` | `60.0` | Rolling window duration in seconds (0 = all-time) |
+| `max_velocity` | `str \| None` | `None` | Spend velocity cap, e.g. `"$0.50/min"` |
+| `warn_velocity` | `str \| None` | `None` | Soft velocity warning threshold (must be < `max_velocity`) |
+
+Add to exceptions table: `AgentLoopError`, `SpendVelocityExceededError` with fields.
+
+Add `loop_guard_counts` property to Budget properties table.
+
+### D.7 — `docs/changelog.md`
+
+Add `## [1.1.0]` entry at the top (before `[1.0.2]`). Cover:
+- OpenAI Agents SDK `Runner` adapter with per-agent caps and spend attribution
+- `loop_guard=True` — rolling-window per-tool loop detection, `AgentLoopError`
+- `max_velocity="$X/unit"` — burn-rate circuit breaker, `SpendVelocityExceededError`
+- New exceptions: `AgentLoopError`, `SpendVelocityExceededError`
+- New `Budget` properties: `loop_guard_counts`
+
+### D.8 — `README.md` — Targeted additions only
+
+**Do not restructure or rewrite.** Make these surgical insertions:
+
+1. In the **"Works with everything"** table — add OpenAI Agents SDK row:
+   `| OpenAI Agents SDK | Runner-level | AgentBudgetExceededError |`
+
+2. In the exceptions table — add:
+   `| AgentLoopError | loop_guard | Same tool > N times in window |`
+   `| SpendVelocityExceededError | max_velocity | Burn rate exceeds limit |`
+
+3. After the CrewAI section — add a short **"Loop & Velocity Protection"** section
+   (4–6 lines max) showing `loop_guard=True` and `max_velocity=` on one budget.
+   Keep it tight — the README is already polished.
+
+### D.9 — Verify Agent D
 
 ```bash
-pytest --cov=shekel --cov-report=term-missing -v
+mkdocs build --strict   # must pass with zero warnings
+```
+
+Check all internal links resolve. Confirm new pages appear in `mkdocs.yml` nav
+(add entries if nav is explicit — check `mkdocs.yml` first).
+
+---
+
+## Phase 2 — Unit Test Suite + Linters
+
+**After Agents A, B, C complete.** Agent D can still be running.
+
+### Step 2.1 — Full unit test suite
+
+```bash
+pytest tests/ --ignore=tests/integrations --ignore=tests/performance \
+    --cov=shekel --cov-report=term-missing -v
 ```
 
 100% coverage required. Any uncovered line must be either covered or `# pragma: no cover`.
@@ -519,17 +669,12 @@ Fix all errors before proceeding.
 
 ### Step 2.3 — Spot-check cross-feature interaction
 
-Run these specific scenarios manually to verify features coexist:
-
 ```python
-# Loop guard + velocity together
-with budget(max_usd=10.00, loop_guard=True, max_velocity="$1/min") as b:
-    ...  # both should be independently enforceable
-
-# OAI SDK + loop guard + velocity
+# Loop guard + velocity + OAI SDK together
 with budget(max_usd=5.00, loop_guard=True, max_velocity="$0.50/min") as b:
     b.agent("researcher", max_usd=1.00)
     result = await Runner.run(agent, "input")
+    # both guards active; agent cap also enforced
 ```
 
 ### Step 2.4 — Bump version
@@ -537,15 +682,162 @@ with budget(max_usd=5.00, loop_guard=True, max_velocity="$0.50/min") as b:
 In `shekel/__init__.py`: `__version__ = "1.1.0"`
 In `pyproject.toml`: `version = "1.1.0"`
 
-### Step 2.5 — Update CHANGELOG.md
+---
 
-Add `## [1.1.0]` entry documenting all three features.
+## Phase 2b — Integration + Performance Tests (parallel with Phase 2 linting, Agent E)
 
-### Step 2.6 — Push and open PR
+**Start:** after Agents A, B, C complete (needs working implementation).
+**No file overlap** with Phase 2 main linting work.
+
+**Files owned exclusively:**
+- `tests/integrations/test_loop_guard_integration.py` (new)
+- `tests/integrations/test_spend_velocity_integration.py` (new)
+- `tests/integrations/test_openai_agents_integration.py` (new)
+- `tests/performance/test_loop_guard_performance.py` (new)
+- `tests/performance/test_velocity_performance.py` (new)
+
+---
+
+### E.1 — `tests/integrations/test_loop_guard_integration.py`
+
+Model after `tests/integrations/test_langgraph_integration.py`. Two test groups:
+
+**`TestLoopGuardMockIntegration`** (no API keys, always runs):
+- End-to-end: `@tool` decorated function called in a loop; `loop_guard=True` fires
+- End-to-end: mocked LangChain `BaseTool` in a chain; loop guard fires mid-chain
+- End-to-end: mocked MCP tool; loop guard fires
+- Loop guard + `max_tool_calls`: both active, loop fires first
+- `warn_only` path: 10 calls, only warnings, no exception, budget context exits cleanly
+- Session budget: loop guard state persists across `with` blocks; `b.reset()` clears
+- `loop_guard_counts` returns accurate snapshot after mixed tool calls
+
+**`TestLoopGuardLiveIntegration`** (requires `OPENAI_API_KEY`, skipped without):
+- Real OpenAI call inside `loop_guard=True` budget; normal call completes; spend tracked
+- Skip pattern: `pytest.mark.skipif(not os.getenv("OPENAI_API_KEY"), reason="no API key")`
+
+### E.2 — `tests/integrations/test_spend_velocity_integration.py`
+
+**`TestSpendVelocityMockIntegration`** (always runs):
+- End-to-end: mock LLM calls via `shekel/providers/openai.py` patch; velocity fires on burst
+- `warn_velocity` fires before hard stop in a realistic multi-call sequence
+- Velocity + `max_usd`: compound guardrails, velocity fires first on fast burn
+- Velocity + nested budget: child fires independently; parent tracks delta on exit
+- Track-only budget with velocity: `budget(max_velocity="$0.50/min")` — no `max_usd`
+- Async path: `async with budget(max_velocity=...)` — burst of async calls triggers guard
+- Window rollover: monkeypatched time; second window starts clean after first expires
+- `warn_only=True` + velocity: warning fires via `warnings.warn`, no exception, run completes
+
+**`TestSpendVelocityLiveIntegration`** (requires `OPENAI_API_KEY`):
+- Real OpenAI call with `max_velocity="$5/min"` — single call completes under limit; spend tracked
+
+### E.3 — `tests/integrations/test_openai_agents_integration.py`
+
+**`TestOpenAIAgentsRunnerMockIntegration`** (always runs):
+- End-to-end with fake `agents` module: `Runner.run` patched, spend attributed, `b.tree()` correct
+- Multi-agent pipeline: 2 agents each with cap; first agent cap exhausted; second still runs
+- Nested budget: child budget with agent cap; parent ceiling respected
+- `Runner.run_sync` path: spend attributed correctly
+- `Runner.run_streamed` path: after full iteration, spend attributed
+- Agent raises mid-run: partial spend attributed; exception re-raised
+- No `b.agent()` registered: runs freely, global spend tracked, no `ComponentBudget` created
+- Refcount: 2 nested `budget()` contexts → single patch; inner exit → still patched; outer exit → restored
+- `ShekelRuntime` probe skips gracefully when `agents` not in `sys.modules`
+
+**`TestOpenAIAgentsRunnerLiveIntegration`** (requires `OPENAI_API_KEY` + `openai-agents` installed):
+- Real `Runner.run` with a minimal agent and `budget(max_usd=0.10)` — completes or budget fires
+- Per-agent cap: `b.agent("test", max_usd=0.001)` — fires before second run of same agent
+
+### E.4 — `tests/performance/test_loop_guard_performance.py`
+
+Model after `tests/performance/test_run_overhead.py`. Key benchmarks:
+
+**`TestLoopGuardOverhead`**:
+- `loop_guard=False` baseline: call `_check_tool_limit` N times — measure overhead per call
+- `loop_guard=True` with empty window: same N calls — overhead must be < 0.5 ms per call
+- `loop_guard=True` with full window (max_calls - 1 entries): eviction + check — < 1 ms per call
+- Memory: `_loop_guard_windows` dict with 100 tool names × 5 entries each — < 1 MB total
+- Assert: loop guard adds < 10 µs overhead per tool dispatch (use `time.perf_counter`)
+
+```python
+def test_loop_guard_overhead_per_dispatch():
+    """Loop guard check adds < 10 µs per tool dispatch."""
+    N = 1000
+    with budget(max_usd=100.00, loop_guard=True, loop_guard_max_calls=N + 1) as b:
+        # pre-fill window with N-1 entries
+        for i in range(N - 1):
+            b._check_loop_guard(f"tool_{i % 10}", "manual")
+            b._record_tool_call(f"tool_{i % 10}", 0.0, "manual")
+        t0 = time.perf_counter()
+        for _ in range(100):
+            b._check_loop_guard("tool_0", "manual")
+        elapsed = (time.perf_counter() - t0) / 100
+    assert elapsed < 10e-6, f"loop guard overhead too high: {elapsed*1e6:.1f} µs"
+```
+
+### E.5 — `tests/performance/test_velocity_performance.py`
+
+**`TestVelocityOverhead`**:
+- `max_velocity=None` baseline: call `_record_spend` N times — baseline overhead
+- `max_velocity="$100/min"` active: same N calls under limit — overhead per call < 5 µs
+- Deque pruning: pre-fill window with 1000 entries, trigger pruning — < 1 ms per prune pass
+- Memory: `_velocity_window` deque with 10,000 entries — measure size via `sys.getsizeof`
+
+```python
+def test_velocity_overhead_per_record_spend():
+    """Velocity check adds < 5 µs per _record_spend call."""
+    N = 500
+    with budget(max_usd=1000.00, max_velocity="$999/min") as b:
+        t0 = time.perf_counter()
+        for _ in range(N):
+            b._record_spend(0.0001, "gpt-4o-mini", {"input": 10, "output": 5})
+        elapsed = (time.perf_counter() - t0) / N
+    assert elapsed < 5e-6, f"velocity overhead too high: {elapsed*1e6:.1f} µs"
+```
+
+### E.6 — Verify Agent E
+
+```bash
+# Integration tests (mock only — no API keys required for CI)
+pytest tests/integrations/test_loop_guard_integration.py \
+       tests/integrations/test_spend_velocity_integration.py \
+       tests/integrations/test_openai_agents_integration.py -v -k "Mock"
+
+# Performance tests
+pytest tests/performance/test_loop_guard_performance.py \
+       tests/performance/test_velocity_performance.py -v
+```
+
+---
+
+## Phase 3 — Final Integration + Release
+
+**After Phases 2 and 2b and Agent D all complete.**
+
+### Step 3.1 — Full test suite including integrations and perf
+
+```bash
+pytest --cov=shekel --cov-report=term-missing -v
+```
+
+### Step 3.2 — Docs build
+
+```bash
+mkdocs build --strict
+```
+
+Zero warnings. All new pages in nav.
+
+### Step 3.3 — Update `docs/changelog.md` and `CHANGELOG.md`
+
+Finalize the `[1.1.0]` entries with accurate test counts and any adjustments from implementation.
+
+### Step 3.4 — Push and open PR
 
 ```bash
 git push -u origin feat/v1.1.0
-gh pr create --base main --title "feat: v1.1.0 — OpenAI Agents SDK, loop guard, spend velocity"
+gh pr create --base main \
+  --title "feat: v1.1.0 — OpenAI Agents SDK adapter, loop guard, spend velocity" \
+  --body "..."
 ```
 
 ---
@@ -554,21 +846,42 @@ gh pr create --base main --title "feat: v1.1.0 — OpenAI Agents SDK, loop guard
 
 | File | Phase | Agent | Change type |
 |------|-------|-------|-------------|
-| `shekel/exceptions.py` | 0 | main | Add 2 exception classes |
+| `shekel/exceptions.py` | 0 | main | Add `AgentLoopError`, `SpendVelocityExceededError` |
 | `shekel/__init__.py` | 0 | main | Export 2 new exceptions; version bump (Phase 2) |
-| `shekel/_budget.py` | 1a | A | Loop guard params, methods, _record_tool_call, _reset_state |
-| `shekel/_tool.py` | 1a | A | Insert _check_loop_guard at 3 call sites |
-| `shekel/providers/langchain.py` | 1a | A | Insert _check_loop_guard at 2 call sites |
-| `shekel/providers/mcp.py` | 1a | A | Insert _check_loop_guard at 1 call site |
-| `shekel/providers/crewai.py` | 1a | A | Insert _check_loop_guard at 2 call sites |
-| `shekel/providers/openai_agents.py` | 1a | A | Insert _check_loop_guard at 1 call site |
+| `shekel/_budget.py` | 1a | A | Loop guard params, `_check_loop_guard`, `_record_tool_call`, `_reset_state` |
+| `shekel/_tool.py` | 1a | A | `_check_loop_guard` at 3 call sites |
+| `shekel/providers/langchain.py` | 1a | A | `_check_loop_guard` at 2 call sites |
+| `shekel/providers/mcp.py` | 1a | A | `_check_loop_guard` at 1 call site |
+| `shekel/providers/crewai.py` | 1a | A | `_check_loop_guard` at 2 call sites |
+| `shekel/providers/openai_agents.py` | 1a | A | `_check_loop_guard` at 1 call site |
 | `tests/test_loop_guard.py` | 1a | A | New — 11 test classes |
-| `shekel/providers/openai_agents_runner.py` | 1a | C | New file — full adapter |
-| `shekel/_runtime.py` | 1a | C | Register OpenAIAgentsRunnerAdapter |
+| `shekel/providers/openai_agents_runner.py` | 1a | C | New — full adapter |
+| `shekel/_runtime.py` | 1a | C | Register `OpenAIAgentsRunnerAdapter` |
 | `tests/test_openai_agents_wrappers.py` | 1a | C | New — 12 test groups |
-| `shekel/_budget.py` | 1b | B | Velocity params, methods, _record_spend, _reset_state |
+| `shekel/_budget.py` | 1b | B | Velocity params, methods, `_record_spend`, `_reset_state` |
 | `tests/test_spend_velocity.py` | 1b | B | New — 27 test scenarios |
-| `CHANGELOG.md` | 2 | main | Add [1.1.0] entry |
-| `pyproject.toml` | 2 | main | version = "1.1.0" |
+| `docs/integrations/openai-agents.md` | 1c | D | New — full integration guide |
+| `docs/usage/loop-guard.md` | 1c | D | New — loop guard usage guide |
+| `docs/usage/spend-velocity.md` | 1c | D | New — velocity usage guide |
+| `docs/usage/openai_agents_demo.py` | 1c | D | New — runnable example |
+| `docs/usage/loop_guard_demo.py` | 1c | D | New — runnable example |
+| `docs/usage/spend_velocity_demo.py` | 1c | D | New — runnable example |
+| `docs/index.md` | 1c | D | Add 3 What's New v1.1.0 cards; update header |
+| `docs/api-reference.md` | 1c | D | New params + exceptions + `loop_guard_counts` |
+| `docs/changelog.md` | 1c | D | Add `[1.1.0]` entry |
+| `README.md` | 1c | D | OpenAI Agents SDK in table; 2 new exceptions; loop+velocity section |
+| `tests/integrations/test_loop_guard_integration.py` | 2b | E | New — mock + live tests |
+| `tests/integrations/test_spend_velocity_integration.py` | 2b | E | New — mock + live tests |
+| `tests/integrations/test_openai_agents_integration.py` | 2b | E | New — mock + live tests |
+| `tests/performance/test_loop_guard_performance.py` | 2b | E | New — overhead benchmarks |
+| `tests/performance/test_velocity_performance.py` | 2b | E | New — overhead benchmarks |
+| `CHANGELOG.md` | 3 | main | Finalize `[1.1.0]` entry |
+| `pyproject.toml` | 3 | main | `version = "1.1.0"` |
 
-**Total new test scenarios:** 11 + 12 + 27 = **50 tests minimum**
+**Test count:**
+- Unit (A + B + C): 11 + 27 + 12 = **50 tests**
+- Integration mock (E): ~25 scenarios across 3 files
+- Integration live (E): ~5 scenarios (skipped without API keys)
+- Performance (E): ~8 benchmarks
+
+**Total new tests: ~88**
