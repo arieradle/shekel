@@ -76,7 +76,7 @@ _VELOCITY_RE = re.compile(
     r"\$(?P<amount>[\d.]+)"
     r"\s*/\s*"
     r"(?P<count>[\d.]*)"        # optional multiplier, e.g. "30" in "30s"
-    r"\s*(?P<unit>sec|min|hr|h|s)\b"
+    r"\s*(?P<unit>sec|min|hr|h|m|s)\b"
     r"\s*$",
     re.IGNORECASE,
 )

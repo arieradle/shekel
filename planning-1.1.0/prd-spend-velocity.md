@@ -56,6 +56,15 @@ As a FinOps engineer, I want to express velocity limits using natural time specs
 **US-5 — Velocity in warn-only mode**
 As an LLM agent developer, I want `warn_only=True` to suppress velocity errors just as it suppresses cap errors, so that I can use velocity as an observability signal during development without breaking my application flow.
 
+**US-6 — Velocity-only guard with no total cap**
+As a developer who trusts my agent's total spend but not its burst behavior, I want to set `max_velocity="$2/hr"` without any `max_usd` cap so that I get runaway-loop protection while allowing the session to run as long as needed without a ceiling. A total cap is unnecessary for my use case; burn rate is the only signal I care about.
+
+**Acceptance criteria:**
+- `budget(max_velocity="$2/hr")` with no `max_usd` opens without error.
+- `SpendVelocityExceededError` fires when the velocity threshold is breached.
+- `BudgetExceededError` is never raised (no total cap to enforce).
+- `b.spent` still accumulates normally for observability.
+
 ---
 
 ## 4. Success Metrics
@@ -79,7 +88,7 @@ As an LLM agent developer, I want `warn_only=True` to suppress velocity errors j
 - `_parse_velocity_spec(spec)` parser supporting `s`/`sec`, `m`/`min`, `h`/`hr` time units and optional numeric multiplier (e.g. `"$0.10/30s"`)
 - Rolling-window velocity tracking via `collections.deque` of `(timestamp, spend_delta)` tuples inside `Budget`
 - `SpendVelocityExceededError` exception subclassing `BudgetExceededError`
-- Velocity check integrated into `_record_spend()` pipeline, after `warn_at` check and before cap check
+- Velocity check integrated into `_record_spend()` pipeline, **before** `warn_at` check and all cap checks, so a runaway is stopped at the most specific error type first
 - `warn_velocity` fires `on_warn` callback (or `warnings.warn`) once per velocity-window breach, then resets
 - `warn_only=True` suppresses velocity raises (consistent with existing cap behavior)
 - Both sync and async context manager paths covered

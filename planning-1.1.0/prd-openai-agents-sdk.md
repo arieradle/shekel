@@ -86,6 +86,18 @@ As a developer who does not use the OpenAI Agents SDK, I want shekel to work exa
 - No `ImportError` propagates to the user's code.
 - Existing tests continue to pass without `openai-agents` installed.
 
+### US-6: warn_only suppresses the agent gate
+
+As a developer in a staging environment, I want `warn_only=True` to suppress `AgentBudgetExceededError` from the agent gate so that my pipeline never hard-stops even when a cap is exceeded, while still logging the violation for observability.
+
+**Acceptance criteria:**
+- When `budget(warn_only=True)` is active and an agent cap is exceeded, a `warnings.warn()` is issued with the agent name, spent, and limit.
+- `AgentBudgetExceededError` is **not** raised; the `Runner.run` call proceeds normally.
+- `ComponentBudget._spent` is still updated post-run regardless of `warn_only`.
+- Behavior is consistent with `warn_only` semantics on `BudgetExceededError` from the core budget.
+
+---
+
 ### US-5: Nested budgets inherit agent caps
 
 As an engineer using nested budgets, I want a child budget's agent cap to be respected, and the parent's remaining budget to also act as a ceiling, consistent with how LangGraph and CrewAI adapters behave.

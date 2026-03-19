@@ -100,8 +100,8 @@ with the other.
 
 | Metric | Target | Measurement Method |
 |--------|--------|--------------------|
-| Time to opt in | < 30 seconds for an existing user | Developer time study / docs user test |
-| False positive rate on known-good agent traces | < 1% at default settings | Replay of 100 curated production traces |
+| Quickstart fits in one line | `loop_guard=True` is the full API; no required configuration | Verify docs quickstart example ≤ 4 lines |
+| Zero false positives on legitimate bursts | N distinct tools, each called M times, never triggers at default settings when M ≤ `loop_guard_max_calls` | Unit test: synthetic trace with 5 tools × 5 calls each, assert no error |
 | Loop detection latency | Fires within the window + 1 dispatch | Unit test: assert fires on call N+1 |
 | Exception field completeness | 100% of fields populated on raise | Unit test: inspect all AgentLoopError attrs |
 | `warn_only` compatibility | No raise, warning emitted | Unit test: assert warning logged, no exception |

@@ -59,11 +59,18 @@ self._loop_guard_windows: dict[str, deque[float]] = {}
 ```
 
 - **Key:** `tool_name` (str) — the canonical tool name from `ToolCallRecord`
-- **Value:** `deque[float]` — monotonic timestamps (from `time.monotonic()`) of recent calls
+- **Value:** `deque[float]` — monotonic timestamps (from `time.monotonic()`) of recent calls, bounded by `maxlen=loop_guard_max_calls + 1`
 
-The deque has no `maxlen` cap; eviction is time-based, not count-based. This allows the deque to
-grow momentarily above `loop_guard_max_calls` (which is what triggers the error on the NEXT call)
-and then shrink again as old entries age out.
+Each deque is created with `maxlen=loop_guard_max_calls + 1`. This bounds memory per tool
+unconditionally, regardless of how long the budget context runs or how many distinct tool names
+accumulate. The `+1` allows the gate to see exactly `max_calls` entries (the threshold) before
+the current call's timestamp is appended by `_record_tool_call`.
+
+**Why `maxlen` does not change gate semantics:** the gate fires when `len(window) >=
+loop_guard_max_calls` *before* appending. At that point the deque holds at most
+`loop_guard_max_calls` entries — the `maxlen` cap is never reached in the gate-fire path.
+The `+1` headroom handles the case where `_record_tool_call` appends after a gate-pass so
+the deque can momentarily hold `max_calls + 1` entries until the next time-eviction sweep.
 
 ### Timestamp source
 
@@ -83,7 +90,9 @@ def _check_loop_guard(self, tool_name: str, framework: str) -> None:
         return
 
     now = time.monotonic()
-    window = self._loop_guard_windows.setdefault(tool_name, deque())
+    window = self._loop_guard_windows.setdefault(
+        tool_name, deque(maxlen=self.loop_guard_max_calls + 1)
+    )
 
     # Evict timestamps outside the rolling window
     if self.loop_guard_window_seconds > 0:
@@ -125,11 +134,24 @@ correct condition.
 
 ### Timestamp append (in `_record_tool_call`)
 
+**Deque write ownership:** `_check_loop_guard` owns the *read + eviction* path (step 1 in the
+pipeline). `_record_tool_call` owns the *write* path (step 3). These are strictly ordered —
+`_check_loop_guard` always runs before `_record_tool_call`, which means the gate never sees
+the timestamp of the call it is currently gating. This is the intended semantics: "N prior calls
+are in the window; this (N+1)th call triggers the violation."
+
+`_check_loop_guard` must **not** append. `_record_tool_call` must **always** append (when
+`loop_guard=True`) — even if subsequent tool-limit checks raise — by running the append before
+calling `_check_tool_warn`. If `_check_loop_guard` raises, execution never reaches
+`_record_tool_call`, so no append occurs. This is correct.
+
 ```python
 def _record_tool_call(self, tool_name: str, cost: float, framework: str) -> None:
-    # NEW: append timestamp to loop guard window
+    # NEW: append timestamp to loop guard window (runs only when gate passed)
     if self.loop_guard:
-        self._loop_guard_windows.setdefault(tool_name, deque()).append(time.monotonic())
+        self._loop_guard_windows.setdefault(
+            tool_name, deque(maxlen=self.loop_guard_max_calls + 1)
+        ).append(time.monotonic())
 
     # existing logic (unchanged):
     self._tool_calls_made += 1

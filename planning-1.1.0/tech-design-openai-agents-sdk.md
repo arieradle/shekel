@@ -463,6 +463,7 @@ def restore_adapter_state():
 | `remove_patches` called when `_patch_refcount == 0` | Guard at top of `remove_patches`: `if _patch_refcount <= 0: return` (mirrors `LangGraphAdapter`) |
 | `_original_run` is `None` when `remove_patches` tries to restore | Guard: `if _original_run is None: return` — defensive null check, same as `crewai.py` |
 | `run_streamed` stream raises before yielding any events | `except` block calls `_attribute_spend` then re-raises; partial spend (zero in this case) attributed correctly |
+| `RunResultStreaming` methods accessed without iterating (e.g. `.final_output`, `.last_response_id`) | **Known gap / documented limitation.** The wrapper only attributes spend after the iteration path is exhausted. If a consumer calls `.final_output` directly on the `RunResultStreaming` object without iterating, the wrapper's post-iteration `_attribute_spend` never runs. Spend is still tracked globally by `openai.py`; only `ComponentBudget._spent` is affected (will undercount). Mitigation: document this in the adapter docstring and in the `run_streamed` edge case note in the PRD. A future release may wrap `RunResultStreaming` more completely. |
 
 ---
 
