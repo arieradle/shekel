@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import dataclasses
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock, patch
 
 from shekel import budget
 from shekel.exceptions import AgentBudgetExceededError, BudgetExceededError
@@ -98,7 +97,7 @@ async def demo_per_agent_caps() -> None:
             b.agent(writer.name, max_usd=1.00)
 
             research_result = await FakeRunner.run(researcher, "Research AI safety")
-            write_result = await FakeRunner.run(writer, research_result.final_output)
+            await FakeRunner.run(writer, research_result.final_output)
 
         print(f"Done. Spent: ${b.spent:.4f}")
         print()
@@ -130,7 +129,7 @@ async def demo_agent_cap_exceeded() -> None:
             print("This line should not be reached")
 
     except AgentBudgetExceededError as e:
-        print(f"Caught AgentBudgetExceededError:")
+        print("Caught AgentBudgetExceededError:")
         print(f"  agent_name: {e.agent_name}")
         print(f"  spent:      ${e.spent:.4f}")
         print(f"  limit:      ${e.limit:.2f}")

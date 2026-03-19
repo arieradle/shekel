@@ -49,7 +49,7 @@ def demo_velocity_guard() -> None:
             print("This line should not be reached — velocity guard should have fired")
 
     except SpendVelocityExceededError as e:
-        print(f"\nCaught SpendVelocityExceededError:")
+        print("\nCaught SpendVelocityExceededError:")
         print(f"  velocity_per_min: ${e.velocity_per_min:.4f}/min")
         print(f"  limit_per_min:    ${e.limit_per_min:.4f}/min")
         print(f"  usd_spent:        ${e.usd_spent:.4f}")
@@ -108,7 +108,8 @@ def demo_velocity_only() -> None:
 
     except SpendVelocityExceededError as e:
         print(
-            f"\nVelocity-only guard fired: ${e.velocity_per_min:.4f}/min > ${e.limit_per_min:.4f}/min"
+            f"\nVelocity-only guard fired: "
+            f"${e.velocity_per_min:.4f}/min > ${e.limit_per_min:.4f}/min"
         )
         print(f"Total spent before block: ${e.usd_spent:.4f}")
     except BudgetExceededError as e:

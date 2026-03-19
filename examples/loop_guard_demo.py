@@ -68,7 +68,7 @@ def demo_loop_detected() -> None:
             print("This line should not be reached — loop guard should have fired")
 
     except AgentLoopError as e:
-        print(f"Caught AgentLoopError:")
+        print("Caught AgentLoopError:")
         print(f"  tool_name:      {e.tool_name}")
         print(f"  call_count:     {e.call_count}")
         print(f"  window_seconds: {e.window_seconds}")
