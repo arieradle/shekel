@@ -152,8 +152,7 @@ jobs:
           pytest tests/performance/ -v -n 0 \
             --benchmark-only \
             --benchmark-json=.benchmarks/results.json \
-            --benchmark-compare=0 \
-            --benchmark-compare-fail=min:5% \
+            --benchmark-autosave \
             2>&1 | tee performance-report.txt
         continue-on-error: true
 

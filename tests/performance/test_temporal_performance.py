@@ -65,18 +65,18 @@ class TestInMemoryBackendPerformance:
             return backend.get_state("unknown_key")
 
         result = benchmark(op)
-        assert result == (0.0, None)
+        assert result == {}
 
     def test_get_state_hit(self, benchmark):
         """get_state on an existing key (warm path)."""
         backend = InMemoryBackend()
-        backend._state["existing"] = (2.5, 1000.0)
+        backend._state["existing"] = {"usd": (2.5, 1000.0)}
 
         def op():
             return backend.get_state("existing")
 
         result = benchmark(op)
-        assert result[0] == 2.5
+        assert result["usd"] == 2.5
 
     def test_check_and_add_within_limit(self, benchmark):
         """check_and_add accepted (most common hot path)."""
@@ -84,34 +84,34 @@ class TestInMemoryBackendPerformance:
 
         def op():
             backend._state.clear()
-            return backend.check_and_add("budget", 0.001, 5.0, 3600.0)
+            return backend.check_and_add("budget", {"usd": 0.001}, {"usd": 5.0}, {"usd": 3600.0})
 
         result = benchmark(op)
-        assert result is True
+        assert result[0] is True
 
     def test_check_and_add_exceeds_limit(self, benchmark):
         """check_and_add rejected (limit exceeded path)."""
         backend = InMemoryBackend()
-        backend._state["budget"] = (4.999, 1000.0)
+        backend._state["budget"] = {"usd": (4.999, 1000.0)}
 
         def op():
-            return backend.check_and_add("budget", 0.002, 5.0, 3600.0)
+            return backend.check_and_add("budget", {"usd": 0.002}, {"usd": 5.0}, {"usd": 3600.0})
 
         result = benchmark(op)
-        assert result is False
+        assert result[0] is False
 
     def test_check_and_add_window_expiry(self, benchmark):
         """check_and_add when window has expired (reset path)."""
         backend = InMemoryBackend()
-        # Window started long ago — will expire on every call
         old_start = time.monotonic() - 7200.0
-        backend._state["budget"] = (4.5, old_start)
 
         def op():
-            return backend.check_and_add("budget", 0.001, 5.0, 3600.0)
+            # Reset to expired state on every call so the window-expiry path always fires.
+            backend._state["budget"] = {"usd": (4.5, old_start)}
+            return backend.check_and_add("budget", {"usd": 0.001}, {"usd": 5.0}, {"usd": 3600.0})
 
         result = benchmark(op)
-        assert result is True
+        assert result[0] is True
 
     def test_check_and_add_many_distinct_users(self, benchmark):
         """check_and_add across 1000 distinct user keys (multi-tenant lookup)."""
@@ -120,7 +120,7 @@ class TestInMemoryBackendPerformance:
 
         def op():
             for key in keys:
-                backend.check_and_add(key, 0.001, 5.0, 3600.0)
+                backend.check_and_add(key, {"usd": 0.001}, {"usd": 5.0}, {"usd": 3600.0})
 
         benchmark(op)
         assert len(backend._state) == 1000
@@ -128,14 +128,14 @@ class TestInMemoryBackendPerformance:
     def test_reset(self, benchmark):
         """Backend reset overhead."""
         backend = InMemoryBackend()
-        backend._state["budget"] = (2.0, 1000.0)
+        backend._state["budget"] = {"usd": (2.0, 1000.0)}
 
         def op():
-            backend._state["budget"] = (2.0, 1000.0)
+            backend._state["budget"] = {"usd": (2.0, 1000.0)}
             backend.reset("budget")
 
         benchmark(op)
-        assert backend.get_state("budget") == (0.0, None)
+        assert backend.get_state("budget") == {}
 
 
 # ---------------------------------------------------------------------------
@@ -173,7 +173,7 @@ class TestTemporalBudgetContextOverhead:
     def test_temporal_budget_enter_with_existing_window(self, benchmark):
         """TemporalBudget enter when window is already active (hot path)."""
         backend = InMemoryBackend()
-        backend._state["hot"] = (1.0, time.monotonic())
+        backend._state["hot"] = {"usd": (1.0, time.monotonic())}
         tb = TemporalBudget(max_usd=5.0, window_seconds=3600, name="hot", backend=backend)
 
         def op():
@@ -186,7 +186,7 @@ class TestTemporalBudgetContextOverhead:
         """TemporalBudget enter when window expired (lazy reset path)."""
         backend = InMemoryBackend()
         old_start = time.monotonic() - 7200.0
-        backend._state["expiry"] = (2.5, old_start)
+        backend._state["expiry"] = {"usd": (2.5, old_start)}
         tb = TemporalBudget(max_usd=5.0, window_seconds=3600, name="expiry", backend=backend)
 
         def op():
@@ -308,17 +308,15 @@ class TestRecordSpendPerformance:
         finally:
             tb.__exit__(None, None, None)
 
-    def test_temporal_budget_record_spend_no_limit(self, benchmark):
-        """TemporalBudget with max_usd=None — skips window check entirely."""
+    def test_temporal_budget_record_spend_large_cap(self, benchmark):
+        """TemporalBudget with large cap — window check always passes (hot path)."""
         backend = InMemoryBackend()
         tb = TemporalBudget(
-            max_usd=0.0,  # won't be enforced; _effective_limit path
+            max_usd=1_000_000.0,
             window_seconds=3600,
-            name="no_lim",
+            name="large_cap",
             backend=backend,
         )
-        # Override effective_limit to None to test the no-limit path
-        tb._effective_limit = None  # type: ignore[assignment]
 
         def op():
             tb._record_spend(0.0001, "gpt-4o-mini", {"input": 10, "output": 5})
@@ -344,7 +342,7 @@ class TestTemporalMemoryFootprint:
         """Backend grows linearly with user count."""
         backend = InMemoryBackend()
         for i in range(1000):
-            backend._state[f"user:{i}"] = (float(i) * 0.001, float(i))
+            backend._state[f"user:{i}"] = {"usd": (float(i) * 0.001, float(i))}
         # Dict with 1000 entries should still be bounded
         size = sys.getsizeof(backend._state)
         assert size < 200_000  # well under 200KB
