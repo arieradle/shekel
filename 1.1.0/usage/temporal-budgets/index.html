@@ -18,7 +18,7 @@
         <link rel="prev" href="../fallback-models/">
       
       
-        <link rel="next" href="../tool-budgets/">
+        <link rel="next" href="../distributed-budgets/">
       
       
         
@@ -1086,6 +1086,34 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../distributed-budgets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Distributed Budgets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -2599,7 +2627,7 @@ Calendar units (<code>day</code>, <code>week</code>, <code>month</code>) are int
 <p>The <code>TemporalBudgetBackend</code> is a <code>@runtime_checkable</code> <code>Protocol</code> — any object with <code>get_state</code>, <code>check_and_add</code>, and <code>reset</code> methods qualifies.</p>
 <div class="admonition tip">
 <p class="admonition-title">Redis backend — available now</p>
-<p><code>RedisBackend</code> and <code>AsyncRedisBackend</code> ship with shekel v1.0.2 and implement this protocol with atomic Lua-script enforcement (one round-trip), a circuit breaker, and fail-closed/open modes. See <a href="./">Distributed Budgets</a> or <code>from shekel.backends.redis import RedisBackend</code>.</p>
+<p><code>RedisBackend</code> and <code>AsyncRedisBackend</code> ship with shekel v1.0.2 and implement this protocol with atomic Lua-script enforcement (one round-trip), a circuit breaker, and fail-closed/open modes. See <a href="../distributed-budgets/">Distributed Budgets</a> or <code>from shekel.backends.redis import RedisBackend</code>.</p>
 </div>
 <hr />
 <h2 id="otel-integration">OTel Integration<a class="headerlink" href="#otel-integration" title="Permanent link">&para;</a></h2>
