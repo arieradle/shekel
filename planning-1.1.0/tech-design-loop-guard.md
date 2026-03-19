@@ -112,6 +112,7 @@ def _check_loop_guard(self, tool_name: str, framework: str) -> None:
                 f"Total spent: ${self._spent:.4f}",
                 stacklevel=4,
             )
+            return  # warn_only: detect but don't block
         else:
             raise AgentLoopError(
                 tool_name=tool_name,
