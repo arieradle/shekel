@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block extrahead %}
+  <!-- SEO Meta Tags -->
+  <meta name="description" content="{{ config.site_description }}">
+  <meta name="author" content="{{ config.site_author }}">
+
+  <!-- Open Graph Meta Tags -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Shekel – LLM Budget Control for AI Agents">
+  <meta property="og:description" content="Open-source Python library for LLM budget control, token budgeting, and AI agent cost governance. Hierarchical budgets for agentic AI, LangGraph, CrewAI, and LLMOps systems.">
+  <meta property="og:url" content="{{ config.site_url }}">
+  <meta property="og:site_name" content="{{ config.site_name }}">
+  <meta property="og:locale" content="en_US">
+
+  <!-- Twitter Card Meta Tags -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Shekel – LLM Budget Control for AI Agents">
+  <meta name="twitter:description" content="Open-source Python library for LLM budget control, token budgeting, and AI agent cost governance for OpenAI, Anthropic, and LLMOps.">
+  <meta name="twitter:site" content="@arieradle">
+
+  <!-- Additional SEO -->
+  <meta name="robots" content="index, follow">
+  <meta name="googlebot" content="index, follow">
+  <link rel="canonical" href="{{ page.canonical_url }}">
+
+  <!-- Schema.org markup for Google -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareSourceCode",
+    "name": "Shekel",
+    "codeRepository": "{{ config.repo_url }}",
+    "programmingLanguage": "Python",
+    "applicationCategory": "DeveloperApplication",
+    "url": "{{ config.site_url }}",
+    "description": "Open-source Python library for LLM budget control, token budgeting, and AI agent cost governance.",
+    "author": {
+      "@type": "Person",
+      "name": "{{ config.site_author }}"
+    }
+  }
+  </script>
+
+  <!-- Google Site Verification -->
+  <meta name="google-site-verification" content="i77BcKjpKR5vvDr7QvJiDaJN9hOBn8oI8Q4DK7Lju7s" />
+{% endblock %}
