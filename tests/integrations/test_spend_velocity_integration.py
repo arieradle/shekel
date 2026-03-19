@@ -159,7 +159,7 @@ class TestSpendVelocityMockIntegration:
                 with pytest.raises(SpendVelocityExceededError):
                     _inject_spend(b, 0.03)
 
-        asyncio.get_event_loop().run_until_complete(_run())
+        asyncio.run(_run())
 
     def test_velocity_error_fields(self) -> None:
         """SpendVelocityExceededError carries correct field values."""
