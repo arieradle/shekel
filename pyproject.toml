@@ -130,7 +130,7 @@ benchmark_warmup = false
 [tool.black]
 line-length = 100
 target-version = ["py39"]
-exclude = "examples/"
+exclude = "examples/|\\.json$"
 
 [tool.isort]
 profile = "black"

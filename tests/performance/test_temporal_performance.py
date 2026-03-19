@@ -283,7 +283,7 @@ class TestRecordSpendPerformance:
 
     def test_plain_budget_record_spend(self, benchmark):
         """Baseline: Budget._record_spend with no window check."""
-        b = Budget(max_usd=5.0, name="base_record")
+        b = Budget(max_usd=1_000_000.0, name="base_record")
         b.__enter__()
         try:
 

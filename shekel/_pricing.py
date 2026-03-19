@@ -113,6 +113,23 @@ def calculate_cost(
             + output_tokens / 1000.0 * prefix_match["output_per_1k"]
         )
 
+    # Tier 1c: strip provider prefix for LiteLLM-style "provider/model" names
+    # e.g. "groq/llama-3.1-8b-instant" → retry lookup with "llama-3.1-8b-instant"
+    if "/" in model:
+        bare_model = model.split("/", 1)[1]
+        if bare_model in _PRICES:
+            entry = _PRICES[bare_model]
+            return (
+                input_tokens / 1000.0 * entry["input_per_1k"]
+                + output_tokens / 1000.0 * entry["output_per_1k"]
+            )
+        bare_prefix = _prefix_lookup(bare_model)
+        if bare_prefix is not None:
+            return (
+                input_tokens / 1000.0 * bare_prefix["input_per_1k"]
+                + output_tokens / 1000.0 * bare_prefix["output_per_1k"]
+            )
+
     # Tier 2: tokencost (lazy import)
     tokencost_cost = _try_tokencost(model, input_tokens, output_tokens)
     if tokencost_cost is not None:

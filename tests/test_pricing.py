@@ -274,8 +274,35 @@ def test_prices_json_schema() -> None:
 
 
 def test_list_models_returns_ten() -> None:
-    assert len(list_models()) == 13
+    assert len(list_models()) == 19
 
 
 def test_anthropic_model_in_list() -> None:
     assert "claude-3-5-sonnet-20241022" in list_models()
+
+
+# ---------------------------------------------------------------------------
+# Provider-prefix stripping (Tier 1c) — LiteLLM "provider/model" names
+# ---------------------------------------------------------------------------
+
+
+def test_provider_prefix_stripped_exact_match() -> None:
+    """groq/llama-3.1-8b-instant resolves to llama-3.1-8b-instant pricing."""
+    cost_prefixed = calculate_cost("groq/llama-3.1-8b-instant", 1000, 1000)
+    cost_bare = calculate_cost("llama-3.1-8b-instant", 1000, 1000)
+    assert cost_prefixed == pytest.approx(cost_bare)
+    assert cost_prefixed > 0
+
+
+def test_provider_prefix_stripped_prefix_match() -> None:
+    """groq/llama-3.1-8b-instant-v2 strips prefix then resolves via prefix lookup."""
+    cost = calculate_cost("groq/llama-3.1-8b-instant-v2", 1000, 1000)
+    cost_bare = calculate_cost("llama-3.1-8b-instant", 1000, 1000)
+    assert cost == pytest.approx(cost_bare)
+    assert cost > 0
+
+
+def test_llama_model_direct_lookup() -> None:
+    """llama-3.1-8b-instant resolves via bundled prices.json."""
+    cost = calculate_cost("llama-3.1-8b-instant", 1000, 500)
+    assert cost == pytest.approx(1000 / 1000 * 0.00005 + 500 / 1000 * 0.00008)
