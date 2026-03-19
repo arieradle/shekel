@@ -149,7 +149,7 @@ jobs:
       - name: Performance Tests (pytest-benchmark)
         run: |
           mkdir -p .benchmarks
-          pytest tests/performance/ -v \
+          pytest tests/performance/ -v -n 0 \
             --benchmark-only \
             --benchmark-json=.benchmarks/results.json \
             --benchmark-compare=0 \
