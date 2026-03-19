@@ -15,7 +15,6 @@ from __future__ import annotations
 from shekel import budget, tool
 from shekel.exceptions import AgentLoopError, BudgetExceededError
 
-
 # ---------------------------------------------------------------------------
 # A tool that always returns the same stale result — a loop magnet
 # ---------------------------------------------------------------------------

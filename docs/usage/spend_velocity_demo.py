@@ -17,7 +17,6 @@ import time
 from shekel import budget
 from shekel.exceptions import BudgetExceededError, SpendVelocityExceededError
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -108,7 +107,9 @@ def demo_velocity_only() -> None:
             print("This line should not be reached")
 
     except SpendVelocityExceededError as e:
-        print(f"\nVelocity-only guard fired: ${e.velocity_per_min:.4f}/min > ${e.limit_per_min:.4f}/min")
+        print(
+            f"\nVelocity-only guard fired: ${e.velocity_per_min:.4f}/min > ${e.limit_per_min:.4f}/min"
+        )
         print(f"Total spent before block: ${e.usd_spent:.4f}")
     except BudgetExceededError as e:
         print(f"Budget exceeded (unexpected type): {e}")

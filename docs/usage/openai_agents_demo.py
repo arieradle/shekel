@@ -20,7 +20,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from shekel import budget
 from shekel.exceptions import AgentBudgetExceededError, BudgetExceededError
 
-
 # ---------------------------------------------------------------------------
 # Minimal mock objects so the demo runs without the openai-agents package
 # ---------------------------------------------------------------------------
