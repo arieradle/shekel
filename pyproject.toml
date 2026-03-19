@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "shekel"
-version = "1.0.2"
+version = "1.1.0"
 description = "LLM budget enforcement and cost tracking. Zero config — with budget(max_usd=1.00): run_agent(). Or: shekel run agent.py --budget 1. Works with LangGraph, CrewAI, raw OpenAI/Anthropic/Gemini."
 readme = "README.md"
 license = { file = "LICENSE" }
