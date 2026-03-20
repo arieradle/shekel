@@ -95,11 +95,6 @@ dev = [
     "isort>=5.12.0",
     "pytest-cov>=4.0.0",
     "click>=8.0.0",
-    "mkdocs-material[imaging]>=9.0.0",
-    "mkdocs-mermaid2-plugin>=1.0.0",
-    "mkdocs-minify-plugin>=0.8.0",
-    "mkdocs-rss-plugin>=1.17.0",
-    "mkdocs-llmstxt>=0.4.0",
     "google-genai>=1.0.0",
     "huggingface-hub>=0.20.0",
     "opentelemetry-api>=1.0.0",
@@ -107,6 +102,13 @@ dev = [
     "redis>=4.0.0",
     "fakeredis>=2.0.0",
     "testcontainers[redis]>=4.0.0",
+]
+docs = [
+    "mkdocs-material[imaging]>=9.0.0",
+    "mkdocs-mermaid2-plugin>=1.0.0",
+    "mkdocs-minify-plugin>=0.8.0",
+    "mkdocs-rss-plugin>=1.17.0",
+    "mkdocs-llmstxt>=0.4.0",
 ]
 
 [project.scripts]

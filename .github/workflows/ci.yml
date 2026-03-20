@@ -52,7 +52,7 @@ jobs:
           python-version: "3.11"
 
       - name: Install dependencies
-        run: pip install -e ".[all,dev]"
+        run: pip install -e ".[all,docs]"
 
       - name: Check mkdocs integrity
         run: mkdocs build --strict --no-directory-urls
