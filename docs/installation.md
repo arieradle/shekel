@@ -1,3 +1,14 @@
+---
+title: Install Shekel – Python LLM Budget Control Library
+description: Install shekel for LLM API budget enforcement in Python. Zero external dependencies, no API keys, no config. Supports OpenAI, Anthropic, LiteLLM, Gemini, HuggingFace, and more.
+tags:
+  - getting-started
+  - openai
+  - anthropic
+  - litellm
+  - budget-enforcement
+---
+
 # Installation
 
 !!! success "Zero external dependencies"

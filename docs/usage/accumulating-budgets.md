@@ -1,3 +1,13 @@
+---
+title: Accumulating Budgets – LLM Spend Tracking Across Multiple Sessions
+description: Track and enforce cumulative LLM spend across multiple context entries with a single budget object. Enforce total spend across batches, retries, or multi-step workflows.
+tags:
+  - budget-enforcement
+  - cost-tracking
+  - agentic-ai
+  - production-ai
+---
+
 # Accumulating Budgets
 
 Budget variables automatically accumulate across multiple uses.

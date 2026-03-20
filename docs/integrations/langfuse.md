@@ -1,3 +1,14 @@
+---
+title: Langfuse Integration – LLM Cost Streaming and Budget Events
+description: Stream per-call LLM cost to Langfuse traces, capture circuit-break and fallback events, and visualize budget hierarchy in spans. Full LLM observability with spend governance.
+tags:
+  - langfuse
+  - llm-observability
+  - budget-enforcement
+  - cost-tracking
+  - production-ai
+---
+
 # Langfuse Integration Guide
 
 Shekel includes built-in integration with [Langfuse](https://langfuse.com), an open-source LLM observability platform. When a budget is exceeded or a fallback is triggered, Langfuse captures the event automatically. Between those moments, per-call spend streams to Langfuse metadata so you can see exactly where your budget went and when it broke.

@@ -1,3 +1,11 @@
+---
+title: Module Map – Shekel Python Package Structure
+description: Complete map of the shekel Python package: every module, its purpose, and how the components connect. Reference for contributors and adapter authors.
+tags:
+  - architecture
+  - internals
+---
+
 # Module Map
 
 | Path | Purpose |

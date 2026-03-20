@@ -1,3 +1,12 @@
+---
+title: Changelog – Shekel LLM Budget Control
+description: Full release history for shekel. Loop Guard, Spend Velocity, OpenAI Agents SDK circuit breaking, Redis distributed budgets, LangGraph/CrewAI/LangChain per-component caps, CLI.
+tags:
+  - budget-enforcement
+  - agent-safety
+  - llm-guardrails
+---
+
 # Changelog
 
 All notable changes to this project are documented here. For detailed information, see [CHANGELOG.md](https://github.com/arieradle/shekel/blob/main/CHANGELOG.md) on GitHub.

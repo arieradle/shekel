@@ -1,3 +1,12 @@
+---
+title: Core Components – Shekel LLM Budget Control Internals
+description: Reference for shekel's core components: Budget, TemporalBudget, ContextVar, patching layer, pricing engine, tool tracker, CLI runner, and Redis backend.
+tags:
+  - architecture
+  - internals
+  - llm-guardrails
+---
+
 # Core Components
 
 ## 1. Budget and context lifecycle

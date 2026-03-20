@@ -1,3 +1,13 @@
+---
+title: Google Gemini Budget Control – Spend Limits and Cost Tracking
+description: Enforce hard USD spend limits on Google Gemini API calls (Gemini 2.0 Flash, 2.5 Flash, 2.5 Pro). Hard caps, fallback models, nested budgets — zero SDK changes.
+tags:
+  - gemini
+  - budget-enforcement
+  - llm-guardrails
+  - cost-tracking
+---
+
 # Google Gemini Integration
 
 One `pip install shekel[gemini]` and one `with budget():` — shekel intercepts every Gemini call, enforces hard spend limits, and shows you exactly what was spent. All the same budget controls (hard caps, fallback models, nested budgets, `BudgetExceededError`) work identically to OpenAI and Anthropic.

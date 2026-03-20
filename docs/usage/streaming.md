@@ -1,3 +1,13 @@
+---
+title: Streaming – LLM Budget Tracking for Streaming Responses
+description: Budget enforcement and spend tracking for streaming LLM responses. Works identically to non-streaming — no code changes needed. Supports OpenAI and Anthropic streaming.
+tags:
+  - budget-enforcement
+  - cost-tracking
+  - openai
+  - anthropic
+---
+
 # Streaming
 
 Budget enforcement and spend tracking work identically for streaming and non-streaming responses — no changes needed to your streaming code.

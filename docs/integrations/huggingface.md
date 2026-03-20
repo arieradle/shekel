@@ -1,3 +1,12 @@
+---
+title: HuggingFace Budget Control – Inference API Spend Limits
+description: Enforce hard USD spend limits on HuggingFace Inference API calls. Hard caps, fallback models, and nested budgets for any model on the HuggingFace hub.
+tags:
+  - budget-enforcement
+  - llm-guardrails
+  - cost-tracking
+---
+
 # HuggingFace Integration
 
 One `pip install shekel[huggingface]` and one `with budget():` — shekel intercepts every HuggingFace `InferenceClient` call, enforces hard spend limits, and shows you exactly what was spent. Hard caps, fallback models, nested budgets, and `BudgetExceededError` all work identically to OpenAI and Anthropic.

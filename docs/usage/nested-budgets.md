@@ -1,3 +1,14 @@
+---
+title: Nested Budgets – Per-Stage LLM Spend Caps for Multi-Step AI Pipelines
+description: Enforce independent USD caps per stage in multi-step AI pipelines. Child budgets auto-cap to the parent's remaining balance. Visual tree breakdown with b.tree().
+tags:
+  - budget-enforcement
+  - cost-tracking
+  - agentic-ai
+  - production-ai
+  - llm-guardrails
+---
+
 # Nested Budgets
 
 Independent spend caps per workflow stage, with automatic rollup — a child stage can never exceed its own cap or what the parent has left.

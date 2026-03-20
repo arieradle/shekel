@@ -1,3 +1,14 @@
+---
+title: OpenAI Budget Control – GPT-4o Spend Limits and Cost Tracking
+description: Enforce hard USD spend limits on OpenAI GPT-4o, o1, and o3 API calls. Hard caps, fallback models, loop detection, velocity limits — one pip install, one context manager.
+tags:
+  - openai
+  - budget-enforcement
+  - llm-guardrails
+  - ai-agent-guardrails
+  - cost-tracking
+---
+
 # OpenAI Integration
 
 One `pip install` and one `with budget():` — shekel intercepts every OpenAI call automatically, enforces hard spend limits, and shows you exactly what was spent. No API keys, no SDK changes, no configuration.

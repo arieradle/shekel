@@ -1,3 +1,14 @@
+---
+title: Supported LLM Models and Pricing – Shekel
+description: Built-in pricing for GPT-4o, o1, o3, Claude 3.5/3/3.7, Gemini 2.0/2.5, and more. Install shekel[all-models] for 400+ models via tokencost.
+tags:
+  - openai
+  - anthropic
+  - litellm
+  - gemini
+  - cost-tracking
+---
+
 # Supported Models
 
 Shekel includes built-in pricing for popular LLM models and supports 400+ additional models via tokencost.

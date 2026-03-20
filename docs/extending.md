@@ -1,3 +1,13 @@
+---
+title: Extending Shekel – Custom LLM Providers and Adapters
+description: Add new LLM providers, custom pricing, and observability backends to shekel. Implement ProviderAdapter or ObservabilityAdapter and register with the global registry.
+tags:
+  - architecture
+  - internals
+  - llm-guardrails
+  - production-ai
+---
+
 # Extending Shekel
 
 Learn how to extend shekel with custom models, new providers, and custom features.

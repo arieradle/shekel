@@ -1,3 +1,13 @@
+---
+title: OpenTelemetry Metrics – LLM Cost and Budget Observability
+description: Export LLM cost, budget utilization, spend rate, fallback activations, and loop events via OpenTelemetry. Compatible with Prometheus, Grafana, Datadog, and any OTel backend.
+tags:
+  - llm-observability
+  - budget-enforcement
+  - production-ai
+  - cost-tracking
+---
+
 # OpenTelemetry Metrics Integration
 
 Shekel exposes LLM cost and budget lifecycle data via OpenTelemetry metrics.

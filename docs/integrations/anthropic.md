@@ -1,3 +1,14 @@
+---
+title: Anthropic Budget Control – Claude Spend Limits and Cost Tracking
+description: Enforce hard USD spend limits on Anthropic Claude API calls. Hard caps, fallback models, loop detection, velocity limits — one pip install, one context manager.
+tags:
+  - anthropic
+  - budget-enforcement
+  - llm-guardrails
+  - ai-agent-guardrails
+  - cost-tracking
+---
+
 # Anthropic Integration
 
 One `pip install` and one `with budget():` — shekel intercepts every Anthropic call automatically, enforces hard spend limits, and shows you exactly what was spent. No API keys, no SDK changes, no configuration.
