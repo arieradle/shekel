@@ -1,0 +1,29 @@
+INHERIT: mkdocs.yml
+
+# CI-only additions — plugins that require git history or native imaging libs
+plugins:
+  - search:
+      separator: '[\s\-,:!=\[\]()"`/]+|\.(?!\d)|&[lg]t;|(?!\b)(?=[A-Z][a-z])'
+  - tags:
+      tags_file: tags.md
+  - social:
+      cards_layout_options:
+        background_color: "#3f51b5"
+        color: "#ffffff"
+  - git-revision-date-localized:
+      enable_creation_date: true
+      type: timeago
+      fallback_to_build_date: true
+  - minify:
+      minify_html: true
+      minify_js: true
+      minify_css: true
+      htmlmin_opts:
+        remove_comments: true
+  - rss:
+      match_path: ".*"
+      date_from_meta:
+        as_creation: date
+      categories:
+        - tags
+  - mermaid2
