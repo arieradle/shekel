@@ -20,11 +20,14 @@ with budget(max_usd=5.00):
     run_my_agent()       # hard stop at $5. no SDK changes. no config. just works.
 ```
 
+```python
+with budget(max_usd=5.00, loop_guard=True, max_velocity="$1/min"):
+    run_my_agent()       # also stops infinite loops and bursty burn
+```
+
 ```bash
 shekel run agent.py --budget 5   # or enforce without touching code at all
 ```
-
-</div>
 
 ---
 

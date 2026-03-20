@@ -283,10 +283,17 @@ print(f"Models used: {list(data['by_model'].keys())}")
 
 ## Next Steps
 
-- **[CLI Reference](../cli.md)** - `shekel run` options for code-free enforcement
-- **[Docker & Containers](../docker.md)** - Entrypoint patterns and env-var budgets
-- **[Budget Enforcement](budget-enforcement.md)** - Learn about hard caps and warnings
-- **[Fallback Models](fallback-models.md)** - Automatic model switching
-- **[Accumulating Budgets](accumulating-budgets.md)** - Multi-session tracking
-- **[Streaming](streaming.md)** - Budget tracking for streams
-- **[API Reference](../api-reference.md)** - Complete API documentation
+**Protect against the other ways agents go wrong:**
+
+- **[Loop Guard](loop-guard.md)** — detect and stop infinite tool-call loops before they drain your budget
+- **[Spend Velocity](spend-velocity.md)** — cap burn rate so a bursty agent can't blow through `max_usd` in seconds
+- **[Tool Budgets](tool-budgets.md)** — cap total tool dispatches and charge per-tool
+
+**Go deeper:**
+
+- **[Budget Enforcement](budget-enforcement.md)** — hard caps, warnings, and `warn_only` mode
+- **[Fallback Models](fallback-models.md)** — automatic model switching instead of crashing
+- **[Nested Budgets](nested-budgets.md)** — per-stage limits for multi-step pipelines
+- **[Accumulating Budgets](accumulating-budgets.md)** — multi-session tracking
+- **[CLI Reference](../cli.md)** — `shekel run` for code-free enforcement
+- **[API Reference](../api-reference.md)** — complete parameter reference

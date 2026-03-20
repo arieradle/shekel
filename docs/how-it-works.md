@@ -318,14 +318,19 @@ The overhead is negligible compared to API latency (100-1000ms).
 
 ## Source Code
 
-The implementation is ~600 lines across 6 files:
+The core package is organized into focused modules:
 
-- `_budget.py` - Budget class and context manager
-- `_patch.py` - Monkey-patching logic
-- `_pricing.py` - Cost calculation
-- `_context.py` - ContextVar management
-- `_decorator.py` - @with_budget decorator
-- `exceptions.py` - BudgetExceededError
+- `_budget.py` — `Budget` and `TemporalBudget` context managers
+- `_patch.py` — Ref-counted monkey-patching and wrapper logic
+- `_pricing.py` — Three-tier cost calculation (override → bundled → tokencost)
+- `_context.py` — `ContextVar` management for active budget tracking
+- `_decorator.py` — `@with_budget` decorator
+- `_tool.py` — `@tool` decorator and tool call interception
+- `_temporal.py` — Rolling-window state management
+- `exceptions.py` — Full exception hierarchy (10 subclasses of `BudgetExceededError`)
+- `providers/` — Per-provider adapters (OpenAI, Anthropic, LiteLLM, Gemini, HuggingFace, LangChain, LangGraph, CrewAI, MCP, OpenAI Agents SDK)
+- `backends/redis.py` — `RedisBackend` and `AsyncRedisBackend` for distributed enforcement
+- `integrations/` — Langfuse and OpenTelemetry adapters
 
 All code is available at [github.com/arieradle/shekel](https://github.com/arieradle/shekel).
 

@@ -25,153 +25,207 @@ usage quotas
 
 # Shekel
 
-**LLM budget enforcement and cost tracking for Python. One line. Zero config.**
+**The missing safety layer for production AI agents.**
 
 ```python
-with budget(max_usd=1.00):
-    run_my_agent()  # raises BudgetExceededError if spend exceeds $1.00
+with budget(max_usd=5.00):
+    run_my_agent()  # hard stop at $5 — no SDK changes, no config
 ```
 
-Or enforce from the command line — no code changes needed:
-
 ```bash
-shekel run agent.py --budget 1
+shekel run agent.py --budget 5   # or enforce without touching code at all
 ```
 
 ---
 
 ## The Story
 
-I spent **$47** debugging a LangGraph retry loop. The agent kept failing, LangGraph kept retrying, and OpenAI kept charging — all while I slept. 
+I spent **$47** debugging a LangGraph retry loop. The agent kept failing, LangGraph kept retrying, and OpenAI kept charging — all while I slept.
 
 I built shekel so you don't have to learn that lesson yourself.
 
+Every serious AI agent needs the same things: spending limits, loop detection, velocity guards, per-component circuit breakers. Shekel is the library that provides all of it, in one import, with zero setup.
+
 ---
 
-## Features
+## What Shekel Does
 
-<div class="grid cards single-col" markdown>
+<div class="grid cards" markdown>
 
--   :material-lightning-bolt:{ .lg .middle } **Zero Config**
+-   :material-lightning-bolt:{ .lg .middle } **Hard Budget Caps**
 
     ---
 
-    One line of code. No API keys, no external services, no setup.
+    Wrap any agent in a context manager. Shekel intercepts every LLM call, tracks exact spend, and raises `BudgetExceededError` the moment you cross the limit. No SDK changes. No config.
 
     ```python
-    with budget(max_usd=1.00):
-        run_agent()
-    # or: shekel run agent.py --budget 1
+    with budget(max_usd=5.00, warn_at=0.8) as b:
+        run_my_agent()
+    # warns at $4.00, hard stops at $5.00
     ```
 
--   :material-shield-check:{ .lg .middle } **Budget Enforcement**
+-   :material-swap-horizontal:{ .lg .middle } **Automatic Model Fallback**
 
     ---
 
-    Hard caps, soft warnings, or track-only mode. You control the spend.
-
-    ```python
-    with budget(max_usd=1.00, warn_at=0.8):
-        run_agent()
-    ```
-
--   :material-swap-horizontal:{ .lg .middle } **Smart Fallback**
-
-    ---
-
-    Automatically switch to cheaper models instead of crashing.
+    Don't crash — switch. Define a cheaper fallback model and shekel transparently rewrites the `model` parameter when the threshold is hit.
 
     ```python
     with budget(max_usd=1.00, fallback={"at_pct": 0.8, "model": "gpt-4o-mini"}):
-        run_agent()
+        run_my_agent()
+    # gpt-4o → gpt-4o-mini at $0.80, hard stop at $1.00
     ```
 
 -   :material-tree:{ .lg .middle } **Nested Budgets**
 
     ---
 
-    Hierarchical tracking for multi-stage workflows.
+    Break multi-stage pipelines into per-stage budgets. Children auto-cap to the parent's remaining balance. `b.tree()` gives you a live visual breakdown.
 
     ```python
-    with budget(max_usd=10, name="workflow"):
-        with budget(max_usd=2, name="research"):
-            run_research()
-        with budget(max_usd=5, name="analysis"):
-            run_analysis()
+    with budget(max_usd=10.00, name="pipeline") as pipeline:
+        with budget(max_usd=2.00, name="research"):
+            search_and_analyze()
+        with budget(max_usd=5.00, name="synthesis"):
+            write_report()
+
+    print(pipeline.tree())
+    # pipeline: $4.80 / $10.00
+    #   research:  $1.20 / $2.00
+    #   synthesis: $3.60 / $5.00
     ```
 
--   :material-telescope:{ .lg .middle } **Langfuse Integration**
+-   :material-tools:{ .lg .middle } **Tool Call Budgets**
 
     ---
 
-    Circuit-break events, per-call spend streaming, and budget hierarchy in Langfuse — see exactly where your budget breaks.
+    Cap agent tool dispatches before they spiral. Auto-intercepted for LangChain, MCP, CrewAI, and OpenAI Agents SDK. One decorator for plain Python.
 
     ```python
-    from shekel.integrations.langfuse import LangfuseAdapter
+    @tool(price=0.01)
+    def web_search(query: str) -> str: ...
 
-    adapter = LangfuseAdapter(client=lf)
-    AdapterRegistry.register(adapter)
-    # Automatic cost tracking and budget monitoring!
+    with budget(max_usd=5.00, max_tool_calls=20) as b:
+        run_my_agent()
+    # ToolBudgetExceededError on call 21 — before the tool runs
     ```
 
--   :material-clock-time-four:{ .lg .middle } **Temporal Budgets**
+-   :material-refresh-auto:{ .lg .middle } **Loop Guard**
 
     ---
 
-    Rolling-window spend limits — enforce `$5/hr` per user, API tier, or agent. Hard stop with `retry_after` in the error.
+    Catches stuck agents before they drain your budget. A per-tool rolling-window counter fires `AgentLoopError` when the same tool repeats too many times — no matter what the total spend is.
 
     ```python
-    tb = budget("$5/hr", name="api-tier")
-    async with tb:
-        response = await client.chat(...)
+    with budget(max_usd=5.00, loop_guard=True) as b:
+        run_my_agent()
+    # AgentLoopError if any tool repeats 5x in 60s
     ```
 
--   :material-tools:{ .lg .middle } **Tool Budgets**
+-   :material-speedometer:{ .lg .middle } **Velocity Circuit Breaker**
 
     ---
 
-    Cap agent tool calls before they bankrupt you. Auto-intercepts LangChain, MCP, CrewAI, OpenAI Agents. `@tool` decorator for plain Python.
+    Cap how fast you burn money, not just how much. A bursty agent can blow through `max_usd` before you can react — `max_velocity` stops it in seconds.
 
     ```python
-    with budget(max_tool_calls=50):
-        run_agent()  # ToolBudgetExceededError on call 51
+    with budget(max_usd=50.00, max_velocity="$1/min") as b:
+        run_my_agent()
+    # SpendVelocityExceededError if burn rate > $1/min
+    ```
+
+-   :material-clock-time-four:{ .lg .middle } **Temporal (Rolling-Window) Budgets**
+
+    ---
+
+    Enforce `$5/hr` per user, per API tier, or per agent. The string DSL handles multi-cap windows. `BudgetExceededError` carries `retry_after` so callers know when the window resets.
+
+    ```python
+    api_budget = budget("$5/hr + 100 calls/hr", name="api-tier")
+    async with api_budget:
+        response = await client.chat.completions.create(...)
+    ```
+
+-   :material-database:{ .lg .middle } **Distributed Budgets**
+
+    ---
+
+    Enforce shared limits atomically across multiple processes, workers, or containers. One Lua script per call — no race conditions.
+
+    ```python
+    from shekel.backends.redis import RedisBackend
+
+    backend = RedisBackend()  # reads REDIS_URL from env
+    with budget("$5/hr", name="api-tier", backend=backend):
+        client.chat.completions.create(...)
+    ```
+
+-   :material-graph:{ .lg .middle } **Framework Circuit Breakers**
+
+    ---
+
+    Per-node, per-chain, per-agent, and per-task caps. Shekel patches your framework transparently — zero changes to your LangGraph graphs, CrewAI crews, or LangChain chains.
+
+    ```python
+    with budget(max_usd=10.00) as b:
+        b.node("fetch_data", max_usd=0.50)   # LangGraph
+        b.chain("retriever", max_usd=0.20)   # LangChain
+        b.agent("researcher", max_usd=2.00)  # CrewAI / OAI Agents
+        b.task("summarize", max_usd=0.50)    # CrewAI
+    ```
+
+-   :material-console:{ .lg .middle } **CLI — Zero Code Changes**
+
+    ---
+
+    Run any Python agent under a budget from the command line. CI-friendly exit codes. Works with Docker, GitHub Actions, and shell scripts.
+
+    ```bash
+    shekel run agent.py --budget 5
+    AGENT_BUDGET_USD=5 shekel run agent.py
     ```
 
 -   :material-chart-line:{ .lg .middle } **OpenTelemetry Metrics**
 
     ---
 
-    Export cost, utilization, spend rate, and fallback data via OTel instruments — compatible with Prometheus, Grafana, Datadog, and any OTel backend.
+    9 OTel instruments covering cost, utilization, spend rate, fallback activations, and loop events. Compatible with Prometheus, Grafana, Datadog, and any OTel backend.
 
     ```python
     from shekel.otel import ShekelMeter
-    meter = ShekelMeter()  # zero config
+    meter = ShekelMeter()  # silent no-op if OTel is absent
     ```
 
--   :material-speedometer:{ .lg .middle } **Framework Agnostic**
+-   :material-telescope:{ .lg .middle } **Langfuse Integration**
 
     ---
 
-    Works with LangGraph, CrewAI, AutoGen, LlamaIndex, Haystack, and any framework that calls OpenAI, Anthropic, or LiteLLM.
-
--   :material-web:{ .lg .middle } **Async & Streaming**
-
-    ---
-
-    Full support for async/await patterns and streaming responses.
+    Per-call cost streaming, circuit-break events, and budget hierarchy in Langfuse spans — see exactly where your budget breaks.
 
     ```python
-    async with budget(max_usd=1.00):
-        await run_async_agent()
+    from shekel.integrations.langfuse import LangfuseAdapter
+    AdapterRegistry.register(LangfuseAdapter(client=lf))
     ```
 
 </div>
 
 ---
 
+## Works with Everything
+
+If it calls OpenAI or Anthropic under the hood, shekel sees it — zero integration code needed.
+
+| Provider | Framework | |
+|---|---|---|
+| OpenAI · Anthropic · Gemini | LangChain · LangGraph | Auto-patched |
+| HuggingFace · LiteLLM · Groq | CrewAI · OpenAI Agents SDK | Auto-patched |
+| MCP · AutoGen · LlamaIndex | Any custom wrapper | Auto-patched |
+
+---
+
 ## Quick Start
 
-### Installation
+### Install
 
 === "OpenAI"
 
@@ -191,324 +245,93 @@ I built shekel so you don't have to learn that lesson yourself.
     pip install shekel[litellm]
     ```
 
-=== "Both"
+=== "All"
 
     ```bash
     pip install shekel[all]
     ```
 
-=== "All Models (400+)"
+=== "CLI only"
+
+    ```bash
+    pip install shekel[cli]
+    ```
+
+=== "400+ models"
 
     ```bash
     pip install shekel[all-models]
     ```
 
-### Basic Usage
+### Your first budget
 
 ```python
 from shekel import budget, BudgetExceededError
 
-# Enforce a hard cap
 try:
     with budget(max_usd=1.00, warn_at=0.8) as b:
         run_my_agent()
-    print(f"Spent ${b.spent:.4f}")
+    print(f"Spent: ${b.spent:.4f}")
 except BudgetExceededError as e:
-    print(e)
-
-# Track spend without enforcing a limit
-with budget() as b:
-    run_my_agent()
-print(f"Cost: ${b.spent:.4f}")
-
-# Decorator
-from shekel import with_budget
-
-@with_budget(max_usd=0.10)
-def call_llm():
-    ...
+    print(f"Budget exceeded: ${e.spent:.4f} / ${e.limit:.2f}")
 ```
 
-### See It In Action
-
-```python
-import openai
-from shekel import budget
-
-client = openai.OpenAI()
-
-with budget(max_usd=0.10) as b:
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[{"role": "user", "content": "Hello!"}],
-    )
-    print(response.choices[0].message.content)
-
-print(f"Total cost: ${b.spent:.4f}")
-print(f"Remaining: ${b.remaining:.4f}")
-```
+No API keys. No external services. No background threads. Nothing leaves your machine.
 
 ---
 
 ## Why Shekel?
 
-| Problem | Solution |
-|---------|----------|
-| Agent retry loops drain your wallet | Hard budget caps stop runaway costs |
-| No visibility into LLM spending | Track every API call automatically |
-| Expensive models blow your budget | Automatic fallback to cheaper models |
-| Need to enforce spend limits | Context manager raises on budget exceeded |
-| Multi-step workflows need session budgets | Budgets always accumulate across runs |
+Production AI agents fail in predictable ways. Shekel is designed around those failure modes:
+
+| Failure Mode | How Shekel Stops It |
+|---|---|
+| Retry loop runs overnight | `max_usd` hard cap |
+| Same tool called 500 times in a loop | `loop_guard=True` |
+| Agent bursts $40 in two minutes | `max_velocity="$1/min"` |
+| One LangGraph node consumes the entire budget | `b.node("name", max_usd=X)` |
+| Expensive model blows your budget mid-task | `fallback={"model": "gpt-4o-mini"}` |
+| Multi-tenant API needs per-user rate limits | Redis backend + temporal budgets |
+| CI pipeline needs cost enforcement | `shekel run agent.py --budget 5` |
+
+All of these work together. `max_usd` + `loop_guard` + `max_velocity` are independent guards that fire on whichever condition triggers first.
 
 ---
 
-## What's New in v1.1.0
+## The Spend Summary
 
-<div class="grid cards" markdown>
+```python
+with budget(max_usd=5.00) as b:
+    run_my_agent()
 
--   :material-robot-excited:{ .lg .middle } **OpenAI Agents SDK — Per-Agent Circuit Breaking**
+print(b.summary())
+```
 
-    ---
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+shekel spend summary
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Total: $1.2450 / $5.00 (25%)
 
-    Automatic patching of `Runner.run`, `run_sync`, and `run_streamed`. Per-agent caps with `b.agent()`. `AgentBudgetExceededError` raised before the agent executes. Zero changes to your agent definitions.
+gpt-4o:       $1.1320  (5 calls)
+  Input:  45.2k tokens → $0.1130
+  Output: 11.3k tokens → $1.1320
 
-    ```python
-    with budget(max_usd=5.00) as b:
-        b.agent("researcher", max_usd=2.00)
-        b.agent("writer", max_usd=1.00)
-        result = await Runner.run(researcher, "Research AI")
+Tool spend:   $0.1130  (9 tool calls)
+  web_search  $0.090  (9 calls)  [langchain]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
 
-    print(b.tree())
-    # [agent] researcher: $1.92 / $2.00 (96.0%)
-    # [agent] writer:     $0.85 / $1.00 (85.0%)
-    ```
+Or machine-readable for log pipelines:
 
-    [OpenAI Agents SDK Integration →](integrations/openai-agents.md)
-
--   :material-refresh-auto:{ .lg .middle } **Loop Guard — Agent Loop Detection**
-
-    ---
-
-    Per-tool rolling-window counter catches stuck agents before they drain your budget. `AgentLoopError` raised before the tool executes on the Nth repeat call.
-
-    ```python
-    with budget(max_usd=5.00, loop_guard=True) as b:
-        run_my_agent()  # AgentLoopError if any tool repeats 5x in 60s
-
-    print(b.loop_guard_counts)
-    # {'web_search': 3, 'read_file': 1}
-    ```
-
-    [Loop Guard →](usage/loop-guard.md)
-
--   :material-speedometer:{ .lg .middle } **Spend Velocity — Burn-Rate Circuit Breaker**
-
-    ---
-
-    Cap how fast you spend, not just how much. `"$0.50/min"` stops a bursty agent after the first half-dollar per minute. Normalized `velocity_per_min` in the exception.
-
-    ```python
-    with budget(max_usd=50.00, max_velocity="$1/min") as b:
-        run_my_agent()  # SpendVelocityExceededError if burn > $1/min
-    ```
-
-    [Spend Velocity →](usage/spend-velocity.md)
-
-</div>
+```bash
+shekel run agent.py --budget 5 --output json
+# {"spent": 1.245, "limit": 5.0, "calls": 5, "tool_calls": 9, "status": "ok"}
+```
 
 ---
 
-## What's New in v1.0.2
-
-<div class="grid cards" markdown>
-
--   :material-graph:{ .lg .middle } **LangGraph Node-Level Circuit Breaking**
-
-    ---
-
-    Per-node USD caps enforced automatically. `NodeBudgetExceededError` raised before the node body runs. Zero graph changes required.
-
-    ```python
-    with budget(max_usd=10.00) as b:
-        b.node("fetch", max_usd=0.50)
-        b.node("summarize", max_usd=1.00)
-        app.invoke(state)
-
-    print(b.tree())
-    # [node] fetch:    $0.12 / $0.50 (24.0%)
-    # [node] summarize: $0.72 / $1.00 (72.0%)
-    ```
-
--   :material-robot:{ .lg .middle } **CrewAI Agent/Task Circuit Breaking**
-
-    ---
-
-    Per-agent and per-task USD caps enforced automatically. `AgentBudgetExceededError` / `TaskBudgetExceededError` raised before the agent executes. Zero crew changes required.
-
-    ```python
-    with budget(max_usd=5.00) as b:
-        b.agent(researcher.role, max_usd=2.00)
-        b.task(research_task.name, max_usd=1.50)
-        crew.kickoff(inputs={"topic": "AI"})
-
-    print(b.tree())
-    # [agent] Senior Researcher: $1.92 / $2.00 (96.0%)
-    # [task]  research:          $1.92 / $1.50 (128.0%)
-    ```
-
--   :material-link-variant:{ .lg .middle } **LangChain Per-Chain Circuit Breaking**
-
-    ---
-
-    Per-chain USD caps enforced automatically. `ChainBudgetExceededError` raised before the chain body runs. Zero changes to your chains required.
-
-    ```python
-    with budget(max_usd=5.00) as b:
-        b.chain("retriever",  max_usd=0.20)
-        b.chain("summarizer", max_usd=1.00)
-        retriever_chain.invoke({"query": "..."})
-        summarizer_chain.invoke({"doc": "..."})
-    ```
-
--   :material-database:{ .lg .middle } **Distributed Budgets — Redis**
-
-    ---
-
-    Enforce spend limits atomically across multiple processes or containers. Atomic Lua-script enforcement, circuit breaker, fail-closed/open.
-
-    ```python
-    from shekel.backends.redis import RedisBackend
-
-    backend = RedisBackend()  # reads REDIS_URL from env
-    with budget("$5/hr + 100 calls/hr", name="api", backend=backend) as b:
-        response = client.chat.completions.create(...)
-    ```
-
--   :material-alert-decagram:{ .lg .middle } **Level-Specific Exceptions**
-
-    ---
-
-    `NodeBudgetExceededError`, `AgentBudgetExceededError`, `TaskBudgetExceededError`, `ChainBudgetExceededError` — all subclass `BudgetExceededError` so existing `except` blocks catch everything.
-
-    ```python
-    except TaskBudgetExceededError as e:
-        print(f"Task '{e.task_name}' over budget")
-    except AgentBudgetExceededError as e:
-        print(f"Agent '{e.agent_name}' over budget")
-    except BudgetExceededError:
-        ...  # catches all budget errors
-    ```
-
-</div>
-
----
-
-## Previous: v0.2.9
-
-<div class="grid cards" markdown>
-
--   :material-console:{ .lg .middle } **[CLI Budget Enforcement](cli.md)**
-
-    ---
-
-    Run any Python agent with a hard USD cap — zero code changes. CI-friendly exit code 1. Docker, GitHub Actions, `.sh` scripts.
-
-    ```bash
-    shekel run agent.py --budget 5
-    AGENT_BUDGET_USD=5 shekel run agent.py
-    ```
-
--   :material-docker:{ .lg .middle } **[Docker & Container Guardrails](docker.md)**
-
-    ---
-
-    Use `shekel run` as a Docker entrypoint wrapper. Set `AGENT_BUDGET_USD` at runtime — no rebuild needed.
-
-    ```dockerfile
-    ENTRYPOINT ["shekel", "run", "agent.py"]
-    ```
-
-</div>
-
----
-
-## Previous: v0.2.8
-
-<div class="grid cards" markdown>
-
--   :material-tools:{ .lg .middle } **[Tool Budgets](usage/tool-budgets.md)**
-
-    ---
-
-    Cap agent tool calls and charge per-tool USD. Auto-intercepts LangChain, MCP, CrewAI, and OpenAI Agents SDK. One decorator for plain Python tools.
-
-    ```python
-    with budget(max_tool_calls=50):
-        run_agent()
-
-    @tool(price=0.005)
-    def web_search(query): ...
-    ```
-
--   :material-clock-time-four:{ .lg .middle } **[Temporal Budgets *(v0.2.8)*](usage/temporal-budgets.md)**
-
-    ---
-
-    Rolling-window spend limits with a string DSL. `TemporalBudgetBackend` Protocol for community-extensible backends (Redis, Postgres, etc.).
-
-    ```python
-    tb = budget("$5/hr", name="api-tier")
-    async with tb:
-        await call_llm()
-    ```
-
--   :material-refresh:{ .lg .middle } **[Window Reset Events](usage/temporal-budgets.md)**
-
-    ---
-
-    New `on_window_reset` adapter event fires lazily when a `TemporalBudget` window expires at `__enter__` time. New `shekel.budget.window_resets_total` OTel counter.
-
--   :material-alert-circle:{ .lg .middle } **[`BudgetExceededError` enrichment](usage/temporal-budgets.md)**
-
-    ---
-
-    `retry_after` (seconds until window reset) and `window_spent` now available on `BudgetExceededError` for temporal budgets.
-
--   :material-chart-line:{ .lg .middle } **[OpenTelemetry Metrics *(v0.2.7)*](integrations/otel.md)**
-
-    ---
-
-    `ShekelMeter` emits 9 OTel instruments covering per-call cost, budget utilization, spend rate, fallback activations, auto-cap events, and window resets. Silent no-op when `opentelemetry-api` is absent.
-
-    ```python
-    pip install shekel[otel]
-    ```
-
--   :material-google:{ .lg .middle } **[Google Gemini *(v0.2.6)*](integrations/gemini.md)**
-
-    ---
-
-    Native adapter for the `google-genai` SDK — enforce budgets on `generate_content` and streaming. Pricing bundled for Gemini 2.0 Flash, 2.5 Flash, and 2.5 Pro.
-
-    ```python
-    pip install shekel[gemini]
-    ```
-
--   :material-robot:{ .lg .middle } **[HuggingFace Inference API *(v0.2.6)*](integrations/huggingface.md)**
-
-    ---
-
-    Native adapter for `huggingface-hub` — budget enforcement for any model on the HuggingFace Inference API, sync and streaming.
-
-    ```python
-    pip install shekel[huggingface]
-    ```
-
-</div>
-
----
-
-## What's Next?
+## Dive Deeper
 
 <div class="grid cards" markdown>
 
@@ -516,25 +339,25 @@ print(f"Remaining: ${b.remaining:.4f}")
 
     ---
 
-    Get up and running in 5 minutes with step-by-step examples.
+    Step-by-step examples — tracking, enforcement, fallback, nested budgets, async, streaming.
 
 -   :material-book-open-variant:{ .lg .middle } **[Usage Guide](usage/basic-usage.md)**
 
     ---
 
-    Learn about all the features: enforcement, fallbacks, streaming, and more.
-
--   :material-api:{ .lg .middle } **[API Reference](api-reference.md)**
-
-    ---
-
-    Complete documentation of all parameters, properties, and methods.
+    Deep-dives into every feature: enforcement modes, tool budgets, loop guard, velocity, temporal budgets.
 
 -   :material-puzzle:{ .lg .middle } **[Integrations](integrations/langgraph.md)**
 
     ---
 
-    See how to use shekel with LangGraph, CrewAI, and other frameworks.
+    Framework-specific guides for LangGraph, CrewAI, LangChain, OpenAI Agents SDK, Gemini, and more.
+
+-   :material-api:{ .lg .middle } **[API Reference](api-reference.md)**
+
+    ---
+
+    Complete documentation of all parameters, properties, methods, and exceptions.
 
 </div>
 
@@ -542,13 +365,26 @@ print(f"Remaining: ${b.remaining:.4f}")
 
 ## Supported Models
 
-Built-in pricing for GPT-4o, GPT-4o-mini, o1, Claude 3.5 Sonnet, Claude 3 Haiku, Gemini 1.5, and more.
+Built-in pricing for GPT-4o, GPT-4o-mini, o1, o3, Claude 3.5/3/3.7 Sonnet, Claude 3 Haiku/Opus, Gemini 2.0/2.5 Flash/Pro, and more.
 
-Install `shekel[litellm]` to enforce hard spend limits across 100+ providers through LiteLLM's unified interface.
+```bash
+shekel models                    # list all bundled models and pricing
+shekel models --provider openai
+shekel estimate --model gpt-4o --input-tokens 1000 --output-tokens 500
+```
 
-Install `shekel[all-models]` for 400+ models via [tokencost](https://github.com/AgentOps-AI/tokencost).
+Install `shekel[all-models]` for [400+ models via tokencost](https://github.com/AgentOps-AI/tokencost). [See full model list →](models.md)
 
-[See full model list →](models.md)
+---
+
+## What's New
+
+See [CHANGELOG](changelog.md) for the full release history.
+
+**v1.1.0** — Loop Guard, Spend Velocity, OpenAI Agents SDK per-agent circuit breaking
+**v1.0.2** — LangGraph node caps, CrewAI agent/task caps, LangChain chain caps, Redis distributed budgets
+**v0.2.9** — CLI `shekel run`; Docker support
+**v0.2.8** — Tool budgets, temporal budgets, OpenTelemetry metrics
 
 ---
 
@@ -556,11 +392,9 @@ Install `shekel[all-models]` for 400+ models via [tokencost](https://github.com/
 
 - **GitHub**: [arieradle/shekel](https://github.com/arieradle/shekel)
 - **PyPI**: [pypi.org/project/shekel](https://pypi.org/project/shekel/)
-- **Issues**: [github.com/arieradle/shekel/issues](https://github.com/arieradle/shekel/issues)
-- **Contributing**: [See our guide](contributing.md)
+- **Issues & PRs**: [github.com/arieradle/shekel/issues](https://github.com/arieradle/shekel/issues)
+- **Contributing**: [See the guide](contributing.md)
 
 ---
 
-## License
-
-MIT License - see [LICENSE](https://github.com/arieradle/shekel/blob/main/LICENSE) for details.
+MIT License

@@ -212,7 +212,7 @@ def generate_summary(text: str) -> str:
 summary = generate_summary("Long text here...")
 ```
 
-### Pattern 6: Async Support
+### Pattern 7: Async Support
 
 Full async/await support:
 
@@ -228,7 +228,7 @@ async def process_items():
     print(f"Processed {len(items)} items for ${b.spent:.4f}")
 ```
 
-### Pattern 7: Streaming
+### Pattern 8: Streaming
 
 Budget tracking works with streaming:
 
@@ -244,6 +244,32 @@ with budget(max_usd=0.50) as b:
 
 print(f"\nStreaming cost: ${b.spent:.4f}")
 ```
+
+## Beyond the Hard Cap
+
+`max_usd` catches slow drain. It won't catch an agent that loops on a cheap tool 500 times in 60 seconds, or one that burns $40 in two minutes before the cap fires. Two parameters close those gaps:
+
+```python
+with budget(
+    max_usd=5.00,
+    loop_guard=True,          # AgentLoopError if any tool repeats 5× in 60s
+    max_velocity="$1/min",    # SpendVelocityExceededError if burn > $1/min
+) as b:
+    run_my_agent()
+```
+
+Both are off by default and zero-config when enabled. For production agents, these three parameters together cover the common failure modes:
+
+| What goes wrong | Guard |
+|---|---|
+| Agent accumulates costs over time | `max_usd` |
+| Agent loops on a stuck tool call | `loop_guard=True` |
+| Agent bursts spend before cap fires | `max_velocity` |
+
+- [Loop Guard →](usage/loop-guard.md)
+- [Spend Velocity →](usage/spend-velocity.md)
+
+---
 
 ## Working with Frameworks
 
