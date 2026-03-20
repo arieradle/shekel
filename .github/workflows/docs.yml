@@ -29,6 +29,7 @@ jobs:
             mkdocs-mermaid2-plugin \
             mkdocs-minify-plugin \
             mkdocs-rss-plugin \
+            mkdocs-llmstxt \
             mike
 
       - name: Build docs

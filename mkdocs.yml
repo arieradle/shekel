@@ -100,6 +100,53 @@ plugins:
         as_creation: date
       categories:
         - tags
+  - llmstxt:
+      full_output: "llms-full.txt"
+      markdown_description: |
+        Shekel enforces hard LLM spend limits in Python with one line of code.
+        Supports OpenAI, Anthropic, LiteLLM, Gemini, LangGraph, CrewAI, OpenAI Agents SDK, MCP, and more.
+        Key features: hard USD caps, loop detection, velocity limits, per-node/agent/task circuit breakers, Redis distributed budgets.
+      sections:
+        Getting Started:
+          - index.md
+          - installation.md
+          - quickstart.md
+        Usage Guide:
+          - usage/basic-usage.md
+          - usage/nested-budgets.md
+          - usage/budget-enforcement.md
+          - usage/fallback-models.md
+          - usage/loop-guard.md
+          - usage/spend-velocity.md
+          - usage/tool-budgets.md
+          - usage/temporal-budgets.md
+          - usage/distributed-budgets.md
+          - usage/accumulating-budgets.md
+          - usage/streaming.md
+          - usage/decorators.md
+        Integrations:
+          - integrations/litellm.md
+          - integrations/langgraph.md
+          - integrations/crewai.md
+          - integrations/openai-agents.md
+          - integrations/openai.md
+          - integrations/anthropic.md
+          - integrations/gemini.md
+          - integrations/huggingface.md
+          - integrations/langfuse.md
+          - integrations/otel.md
+        Reference:
+          - cli.md
+          - docker.md
+          - api-reference.md
+          - models.md
+        Architecture:
+          - how-it-works.md
+          - architecture/overview.md
+          - architecture/components.md
+          - architecture/data-flow.md
+          - architecture/extensibility.md
+          - architecture/concurrency.md
   - mermaid2
 
 markdown_extensions:
