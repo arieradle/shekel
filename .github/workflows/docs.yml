@@ -61,11 +61,9 @@ jobs:
 
       - name: Add root-level verification files to gh-pages
         run: |
-          git stash --include-untracked
-          git checkout gh-pages
-          cp "$GITHUB_WORKSPACE/docs/BingVerify.xml" BingVerify.xml
+          git checkout -f gh-pages
+          git show main:docs/BingVerify.xml > BingVerify.xml
           git add BingVerify.xml
           git diff --staged --quiet || git commit -m "chore: update root verification files [skip ci]"
           git push
           git checkout main
-          git stash pop || true
