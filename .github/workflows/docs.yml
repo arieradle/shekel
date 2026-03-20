@@ -65,5 +65,5 @@ jobs:
           git show main:docs/BingVerify.xml > BingVerify.xml
           git add BingVerify.xml
           git diff --staged --quiet || git commit -m "chore: update root verification files [skip ci]"
-          git push
+          git push origin gh-pages
           git checkout main
