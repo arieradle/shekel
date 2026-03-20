@@ -1,3 +1,12 @@
+---
+title: Spend Velocity – LLM Burn-Rate Circuit Breaker
+description: Cap how fast your AI agent spends money, not just how much. Stop a bursty agent that burns $40 in two minutes before your total USD cap fires. SpendVelocityExceededError.
+tags:
+  - agent-safety
+  - budget-enforcement
+  - circuit-breaker
+---
+
 # Spend Velocity
 
 **Cap how fast you burn money, not just how much. One parameter.**

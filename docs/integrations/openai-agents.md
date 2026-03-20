@@ -1,3 +1,14 @@
+---
+title: OpenAI Agents SDK Budget Control – Per-Agent Circuit Breaking
+description: Enforce hard USD caps on OpenAI Agents SDK runners. Per-agent circuit breaking with b.agent(). AgentBudgetExceededError raised before the agent executes. Zero config.
+tags:
+  - openai
+  - openai-agents
+  - agent-frameworks
+  - circuit-breaker
+  - budget-enforcement
+---
+
 # OpenAI Agents SDK Integration
 
 Shekel integrates with the [OpenAI Agents SDK](https://github.com/openai/openai-agents-python) to enforce per-agent and global spend limits on multi-agent workflows — with zero changes to your agent definitions.

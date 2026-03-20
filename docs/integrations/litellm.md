@@ -1,3 +1,13 @@
+---
+title: LiteLLM Budget Control – 100+ LLM Providers, One Budget
+description: Enforce hard spend limits across 100+ LLM providers through LiteLLM. Hard caps, fallback models, loop detection, and velocity limits — all via LiteLLMs unified interface.
+tags:
+  - litellm
+  - agent-frameworks
+  - budget-enforcement
+  - cost-tracking
+---
+
 # LiteLLM Integration
 
 Shekel natively supports [LiteLLM](https://github.com/BerriAI/litellm), the unified gateway that routes to 100+ LLM providers using an OpenAI-compatible interface. Wrap any LiteLLM call in a `budget()` context to enforce hard spend limits, trigger circuit-breakers, and switch to cheaper fallback models before a runaway agent drains your wallet.

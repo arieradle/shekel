@@ -1,3 +1,13 @@
+---
+title: CrewAI Budget Control – Per-Agent and Per-Task Spend Caps
+description: Enforce LLM spend limits on CrewAI multi-agent workflows. Per-agent and per-task USD caps with AgentBudgetExceededError and TaskBudgetExceededError. Zero crew changes required.
+tags:
+  - crewai
+  - agent-frameworks
+  - circuit-breaker
+  - budget-enforcement
+---
+
 # CrewAI Integration
 
 Shekel integrates with [CrewAI](https://github.com/joaomdmoura/crewAI) to enforce per-agent, per-task, and global spend limits on multi-agent workflows — with zero changes to your crew definition.

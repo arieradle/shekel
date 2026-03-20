@@ -1,3 +1,13 @@
+---
+title: Distributed Budgets – Enforce LLM Spend Limits Across Processes with Redis
+description: Enforce shared LLM API spend limits atomically across multiple processes, workers, or Kubernetes pods. Atomic Lua-script enforcement, circuit breaker, fail-closed by default.
+tags:
+  - distributed
+  - redis
+  - rate-limiting
+  - budget-enforcement
+---
+
 # Distributed Budgets
 
 **Enforce shared LLM spend limits across multiple processes, workers, or pods using Redis.**

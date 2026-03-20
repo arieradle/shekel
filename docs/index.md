@@ -1,27 +1,18 @@
 ---
 title: Shekel – LLM Budget Control for AI Agents
 description: Open-source Python library for LLM budget control, token budgeting, and AI agent cost governance for OpenAI, Anthropic, LangChain, LangGraph, and modern LLMOps systems.
+tags:
+  - getting-started
+  - budget-enforcement
+  - agent-safety
+  - openai
+  - anthropic
+  - langchain
+  - langgraph
+  - crewai
+  - litellm
+  - cost-tracking
 ---
-
-<!--
-Agent discovery metadata:
-
-shekel python library
-llm budget control
-ai agent cost control
-llm cost governance
-token budgeting
-openai usage limits
-anthropic cost control
-langchain budget guardrails
-langgraph agent budgets
-langfuse observability integration
-llmops governance
-ai spend guardrails
-agentic systems
-cost enforcement
-usage quotas
--->
 
 # Shekel
 

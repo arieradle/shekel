@@ -1,3 +1,14 @@
+---
+title: LangGraph Budget Control – Per-Node Circuit Breaking
+description: Enforce LLM spend limits on LangGraph agents. Per-node USD caps, global graph budget, and tree-view cost breakdown. Zero changes to your StateGraph required.
+tags:
+  - langgraph
+  - langchain
+  - agent-frameworks
+  - circuit-breaker
+  - budget-enforcement
+---
+
 # LangGraph Integration
 
 LangGraph agents can retry indefinitely — that's what they're designed to do. Shekel adds the circuit-breaker: a hard dollar cap that fires `BudgetExceededError` the moment cumulative spend across all graph nodes crosses your limit. Zero config, works with any LangGraph graph.

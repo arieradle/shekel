@@ -1,5 +1,5 @@
 site_name: Shekel
-site_description: "Shekel is an open-source Python library for LLM budget control, token budgeting, and AI agent cost governance for OpenAI, Anthropic, LangChain, LangGraph, and modern LLMOps systems."
+site_description: "Shekel: LLM budget control and AI agent cost governance for Python. Hard spend caps, loop detection, velocity limits, and distributed enforcement for OpenAI, Anthropic, LangGraph, CrewAI, and LiteLLM. One line, zero config."
 site_author: Arie Radle
 site_url: https://arieradle.github.io/shekel/
 
@@ -80,6 +80,12 @@ extra:
 plugins:
   - search:
       separator: '[\s\-,:!=\[\]()"`/]+|\.(?!\d)|&[lg]t;|(?!\b)(?=[A-Z][a-z])'
+  - tags:
+      tags_file: tags.md
+  - social:
+      cards_layout_options:
+        background_color: "#3f51b5"
+        color: "#ffffff"
   - mermaid2
 
 markdown_extensions:
@@ -143,6 +149,7 @@ nav:
     - API Reference: api-reference.md
     - Supported Models: models.md
     - Changelog: changelog.md
+    - Tags: tags.md
   - Architecture:
     - Introduction: architecture/index.md
     - Overview: architecture/overview.md

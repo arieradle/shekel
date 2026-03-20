@@ -1,3 +1,13 @@
+---
+title: How Shekel Works – Monkey-Patching, ContextVar Isolation, Zero Config
+description: How shekel intercepts LLM API calls using monkey-patching, tracks spend per-context with Python ContextVar for thread and async safety, and enforces hard caps with zero configuration.
+tags:
+  - architecture
+  - internals
+  - openai
+  - anthropic
+---
+
 # How It Works
 
 Understanding shekel's internals: monkey-patching, context isolation, and zero-config design.
