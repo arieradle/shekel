@@ -27,13 +27,12 @@ jobs:
           pip install \
             "mkdocs-material[imaging]" \
             mkdocs-mermaid2-plugin \
-            mkdocs-git-revision-date-localized \
             mkdocs-minify-plugin \
             mkdocs-rss-plugin \
             mike
 
       - name: Build docs
-        run: mkdocs build --config-file mkdocs-ci.yml --strict
+        run: mkdocs build --strict
 
       - name: Configure git for mike
         run: |
