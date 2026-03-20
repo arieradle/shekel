@@ -1,0 +1,59 @@
+# Shekel
+
+> Shekel: LLM budget control and AI agent cost governance for Python. Hard spend caps, loop detection, velocity limits, and distributed enforcement for OpenAI, Anthropic, LangGraph, CrewAI, and LiteLLM. One line, zero config.
+
+Shekel enforces hard LLM spend limits in Python with one line of code.
+Supports OpenAI, Anthropic, LiteLLM, Gemini, LangGraph, CrewAI, OpenAI Agents SDK, MCP, and more.
+Key features: hard USD caps, loop detection, velocity limits, per-node/agent/task circuit breakers, Redis distributed budgets.
+
+
+## Getting Started
+
+- [Home](https://arieradle.github.io/shekel/1.1.0/index.md)
+- [Installation](https://arieradle.github.io/shekel/1.1.0/installation/index.md)
+- [Quick Start](https://arieradle.github.io/shekel/1.1.0/quickstart/index.md)
+
+## Usage Guide
+
+- [Basic Usage](https://arieradle.github.io/shekel/1.1.0/usage/basic-usage/index.md)
+- [Nested Budgets](https://arieradle.github.io/shekel/1.1.0/usage/nested-budgets/index.md)
+- [Budget Enforcement](https://arieradle.github.io/shekel/1.1.0/usage/budget-enforcement/index.md)
+- [Fallback Models](https://arieradle.github.io/shekel/1.1.0/usage/fallback-models/index.md)
+- [Loop Guard](https://arieradle.github.io/shekel/1.1.0/usage/loop-guard/index.md)
+- [Spend Velocity](https://arieradle.github.io/shekel/1.1.0/usage/spend-velocity/index.md)
+- [Tool Budgets](https://arieradle.github.io/shekel/1.1.0/usage/tool-budgets/index.md)
+- [Temporal Budgets](https://arieradle.github.io/shekel/1.1.0/usage/temporal-budgets/index.md)
+- [Distributed Budgets](https://arieradle.github.io/shekel/1.1.0/usage/distributed-budgets/index.md)
+- [Accumulating Budgets](https://arieradle.github.io/shekel/1.1.0/usage/accumulating-budgets/index.md)
+- [Streaming](https://arieradle.github.io/shekel/1.1.0/usage/streaming/index.md)
+- [Decorators](https://arieradle.github.io/shekel/1.1.0/usage/decorators/index.md)
+
+## Integrations
+
+- [LiteLLM](https://arieradle.github.io/shekel/1.1.0/integrations/litellm/index.md)
+- [LangGraph](https://arieradle.github.io/shekel/1.1.0/integrations/langgraph/index.md)
+- [CrewAI](https://arieradle.github.io/shekel/1.1.0/integrations/crewai/index.md)
+- [OpenAI Agents SDK](https://arieradle.github.io/shekel/1.1.0/integrations/openai-agents/index.md)
+- [OpenAI](https://arieradle.github.io/shekel/1.1.0/integrations/openai/index.md)
+- [Anthropic](https://arieradle.github.io/shekel/1.1.0/integrations/anthropic/index.md)
+- [Google Gemini](https://arieradle.github.io/shekel/1.1.0/integrations/gemini/index.md)
+- [HuggingFace](https://arieradle.github.io/shekel/1.1.0/integrations/huggingface/index.md)
+- [Langfuse](https://arieradle.github.io/shekel/1.1.0/integrations/langfuse/index.md)
+- [OpenTelemetry](https://arieradle.github.io/shekel/1.1.0/integrations/otel/index.md)
+
+## Reference
+
+- [CLI Tools](https://arieradle.github.io/shekel/1.1.0/cli/index.md)
+- [Docker & Containers](https://arieradle.github.io/shekel/1.1.0/docker/index.md)
+- [API Reference](https://arieradle.github.io/shekel/1.1.0/api-reference/index.md)
+- [Supported Models](https://arieradle.github.io/shekel/1.1.0/models/index.md)
+
+## Architecture
+
+- [How It Works](https://arieradle.github.io/shekel/1.1.0/how-it-works/index.md)
+- [Overview](https://arieradle.github.io/shekel/1.1.0/architecture/overview/index.md)
+- [Core Components](https://arieradle.github.io/shekel/1.1.0/architecture/components/index.md)
+- [Data Flow](https://arieradle.github.io/shekel/1.1.0/architecture/data-flow/index.md)
+- [Extensibility](https://arieradle.github.io/shekel/1.1.0/architecture/extensibility/index.md)
+- [Concurrency & Safety](https://arieradle.github.io/shekel/1.1.0/architecture/concurrency/index.md)
+
