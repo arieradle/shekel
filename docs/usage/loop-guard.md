@@ -1,6 +1,6 @@
 ---
 title: Loop Guard – Detect and Stop Infinite AI Agent Tool Loops
-description: Automatically detect and stop infinite tool-call loops before they drain your LLM budget. Per-tool rolling-window counter raises AgentLoopError before the tool executes.
+description: "Automatically detect and stop infinite tool-call loops before they drain your LLM budget. Per-tool rolling-window counter raises AgentLoopError before the tool executes."
 tags:
   - agent-safety
   - loop-detection

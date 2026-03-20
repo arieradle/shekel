@@ -1,6 +1,6 @@
 ---
 title: Docker & Container Guardrails – LLM Cost Limits with No Code Changes
-description: Enforce LLM spend limits on AI agents running in Docker containers. Use shekel run as an entrypoint wrapper. Set AGENT_BUDGET_USD at runtime — no rebuild required.
+description: "Enforce LLM spend limits on AI agents running in Docker containers. Use shekel run as an entrypoint wrapper. Set AGENT_BUDGET_USD at runtime — no rebuild required."
 tags:
   - docker
   - cli

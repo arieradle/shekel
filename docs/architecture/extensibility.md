@@ -1,6 +1,6 @@
 ---
 title: Extensibility – Add Custom LLM Providers and Observability Backends
-description: How to extend shekel with new LLM provider adapters, custom observability backends, and additional pricing. Implement ProviderAdapter or ObservabilityAdapter.
+description: "How to extend shekel with new LLM provider adapters, custom observability backends, and additional pricing. Implement ProviderAdapter or ObservabilityAdapter."
 tags:
   - architecture
   - internals

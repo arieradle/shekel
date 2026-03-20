@@ -1,6 +1,6 @@
 ---
 title: OpenAI Budget Control – GPT-4o Spend Limits and Cost Tracking
-description: Enforce hard USD spend limits on OpenAI GPT-4o, o1, and o3 API calls. Hard caps, fallback models, loop detection, velocity limits — one pip install, one context manager.
+description: "Enforce hard USD spend limits on OpenAI GPT-4o, o1, and o3 API calls. Hard caps, fallback models, loop detection, velocity limits — one pip install, one context manager."
 tags:
   - openai
   - budget-enforcement

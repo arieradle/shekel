@@ -1,6 +1,6 @@
 ---
 title: Concurrency & Thread Safety – Shekel LLM Budget Control
-description: How shekel achieves thread safety and async safety: ContextVar isolation per thread and asyncio task, ref-counted patching with locks, and persistent budget caveats.
+description: "How shekel achieves thread safety and async safety: ContextVar isolation per thread and asyncio task, ref-counted patching with locks, and persistent budget caveats."
 tags:
   - architecture
   - internals

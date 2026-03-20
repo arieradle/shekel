@@ -1,6 +1,6 @@
 ---
 title: Contributing to Shekel – LLM Budget Control for Python
-description: Contribute to shekel, the open-source Python library for LLM budget control and AI agent cost governance. TDD required, 100% coverage, MIT license.
+description: "Contribute to shekel, the open-source Python library for LLM budget control and AI agent cost governance. TDD required, 100% coverage, MIT license."
 tags:
   - getting-started
 ---

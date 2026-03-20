@@ -1,6 +1,6 @@
 ---
 title: OpenAI Agents SDK Budget Control – Per-Agent Circuit Breaking
-description: Enforce hard USD caps on OpenAI Agents SDK runners. Per-agent circuit breaking with b.agent(). AgentBudgetExceededError raised before the agent executes. Zero config.
+description: "Enforce hard USD caps on OpenAI Agents SDK runners. Per-agent circuit breaking with b.agent(). AgentBudgetExceededError raised before the agent executes. Zero config."
 tags:
   - openai
   - openai-agents

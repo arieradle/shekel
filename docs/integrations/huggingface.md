@@ -1,6 +1,6 @@
 ---
 title: HuggingFace Budget Control – Inference API Spend Limits
-description: Enforce hard USD spend limits on HuggingFace Inference API calls. Hard caps, fallback models, and nested budgets for any model on the HuggingFace hub.
+description: "Enforce hard USD spend limits on HuggingFace Inference API calls. Hard caps, fallback models, and nested budgets for any model on the HuggingFace hub."
 tags:
   - budget-enforcement
   - llm-guardrails

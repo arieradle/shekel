@@ -1,6 +1,6 @@
 ---
 title: Tool Budgets – Cap AI Agent Tool Calls and Charge Per-Tool
-description: Enforce limits on AI agent tool dispatches. Cap total calls, charge per-tool USD, and auto-intercept LangChain, MCP, CrewAI, and OpenAI Agents SDK tools with zero config.
+description: "Enforce limits on AI agent tool dispatches. Cap total calls, charge per-tool USD, and auto-intercept LangChain, MCP, CrewAI, and OpenAI Agents SDK tools with zero config."
 tags:
   - tool-budgets
   - agent-safety

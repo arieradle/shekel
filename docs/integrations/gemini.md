@@ -1,6 +1,6 @@
 ---
 title: Google Gemini Budget Control – Spend Limits and Cost Tracking
-description: Enforce hard USD spend limits on Google Gemini API calls (Gemini 2.0 Flash, 2.5 Flash, 2.5 Pro). Hard caps, fallback models, nested budgets — zero SDK changes.
+description: "Enforce hard USD spend limits on Google Gemini API calls (Gemini 2.0 Flash, 2.5 Flash, 2.5 Pro). Hard caps, fallback models, nested budgets — zero SDK changes."
 tags:
   - gemini
   - budget-enforcement

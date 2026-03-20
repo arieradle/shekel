@@ -1,6 +1,6 @@
 ---
 title: LangGraph Budget Control – Per-Node Circuit Breaking
-description: Enforce LLM spend limits on LangGraph agents. Per-node USD caps, global graph budget, and tree-view cost breakdown. Zero changes to your StateGraph required.
+description: "Enforce LLM spend limits on LangGraph agents. Per-node USD caps, global graph budget, and tree-view cost breakdown. Zero changes to your StateGraph required."
 tags:
   - langgraph
   - langchain

@@ -1,6 +1,6 @@
 ---
 title: Architecture – How Shekel Enforces LLM Budgets
-description: Overview of shekel's internal architecture: budget enforcement lifecycle, provider adapter pattern, observability integrations, and CLI execution model.
+description: "Overview of shekel's internal architecture: budget enforcement lifecycle, provider adapter pattern, observability integrations, and CLI execution model."
 tags:
   - architecture
   - internals

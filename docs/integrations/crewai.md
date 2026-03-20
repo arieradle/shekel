@@ -1,6 +1,6 @@
 ---
 title: CrewAI Budget Control – Per-Agent and Per-Task Spend Caps
-description: Enforce LLM spend limits on CrewAI multi-agent workflows. Per-agent and per-task USD caps with AgentBudgetExceededError and TaskBudgetExceededError. Zero crew changes required.
+description: "Enforce LLM spend limits on CrewAI multi-agent workflows. Per-agent and per-task USD caps with AgentBudgetExceededError and TaskBudgetExceededError. Zero crew changes required."
 tags:
   - crewai
   - agent-frameworks

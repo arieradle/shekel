@@ -1,6 +1,6 @@
 ---
 title: Decorators – Wrap Python Functions with LLM Budget Enforcement
-description: Use the @with_budget decorator to enforce an independent LLM spend limit on every function call. Ideal for reusable LLM utility functions and agent tools.
+description: "Use the @with_budget decorator to enforce an independent LLM spend limit on every function call. Ideal for reusable LLM utility functions and agent tools."
 tags:
   - budget-enforcement
   - cost-tracking

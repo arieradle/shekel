@@ -1,6 +1,6 @@
 ---
 title: Langfuse Integration – LLM Cost Streaming and Budget Events
-description: Stream per-call LLM cost to Langfuse traces, capture circuit-break and fallback events, and visualize budget hierarchy in spans. Full LLM observability with spend governance.
+description: "Stream per-call LLM cost to Langfuse traces, capture circuit-break and fallback events, and visualize budget hierarchy in spans. Full LLM observability with spend governance."
 tags:
   - langfuse
   - llm-observability

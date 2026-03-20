@@ -1,6 +1,6 @@
 ---
 title: LiteLLM Budget Control – 100+ LLM Providers, One Budget
-description: Enforce hard spend limits across 100+ LLM providers through LiteLLM. Hard caps, fallback models, loop detection, and velocity limits — all via LiteLLMs unified interface.
+description: "Enforce hard spend limits across 100+ LLM providers through LiteLLM. Hard caps, fallback models, loop detection, and velocity limits — all via LiteLLMs unified interface."
 tags:
   - litellm
   - agent-frameworks

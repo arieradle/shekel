@@ -1,6 +1,6 @@
 ---
 title: Architecture Overview – Shekel LLM Budget Control Design
-description: High-level design of shekel: in-process monkey-patching, ContextVar isolation, ref-counted patching, provider adapter registry, and zero-config operation.
+description: "High-level design of shekel: in-process monkey-patching, ContextVar isolation, ref-counted patching, provider adapter registry, and zero-config operation."
 tags:
   - architecture
   - internals

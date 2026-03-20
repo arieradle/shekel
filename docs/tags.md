@@ -1,6 +1,6 @@
 ---
 title: Tags – Shekel Documentation
-description: Browse Shekel documentation by topic.
+description: "Browse Shekel documentation by topic."
 ---
 
 # Tags

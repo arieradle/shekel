@@ -1,6 +1,6 @@
 ---
 title: Fallback Models – Automatic LLM Model Switching on Budget Pressure
-description: Automatically switch to a cheaper LLM model instead of raising an exception when budget pressure hits. Configure threshold percentage and target model. Zero code changes.
+description: "Automatically switch to a cheaper LLM model instead of raising an exception when budget pressure hits. Configure threshold percentage and target model. Zero code changes."
 tags:
   - budget-enforcement
   - llm-guardrails

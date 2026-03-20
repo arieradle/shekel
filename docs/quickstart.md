@@ -1,6 +1,6 @@
 ---
 title: Quick Start – Shekel LLM Budget Enforcement
-description: Enforce LLM API spend limits in Python in 5 minutes. Hard caps, early warnings, fallback models, nested budgets, loop detection, and CLI enforcement — zero config.
+description: "Enforce LLM API spend limits in Python in 5 minutes. Hard caps, early warnings, fallback models, nested budgets, loop detection, and CLI enforcement — zero config."
 tags:
   - getting-started
   - budget-enforcement

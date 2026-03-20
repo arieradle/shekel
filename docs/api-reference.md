@@ -1,6 +1,6 @@
 ---
 title: API Reference – Shekel LLM Budget Control
-description: Complete Python API reference for shekel: budget(), TemporalBudget, with_budget, @tool, all parameters, properties, methods, and the full exception hierarchy.
+description: "Complete Python API reference for shekel: budget(), TemporalBudget, with_budget, @tool, all parameters, properties, methods, and the full exception hierarchy."
 tags:
   - budget-enforcement
   - cost-tracking

@@ -1,6 +1,6 @@
 ---
 title: Temporal Budgets – Rolling-Window LLM Spend Limits
-description: Enforce per-hour, per-minute, or rolling-window LLM spend limits in Python. Multi-cap DSL, retry_after on exception, Redis backend for distributed rate limiting.
+description: "Enforce per-hour, per-minute, or rolling-window LLM spend limits in Python. Multi-cap DSL, retry_after on exception, Redis backend for distributed rate limiting."
 tags:
   - temporal-budgets
   - rate-limiting

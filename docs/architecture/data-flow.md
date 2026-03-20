@@ -1,6 +1,6 @@
 ---
 title: Data Flow – How an LLM Call Passes Through Shekel
-description: Step-by-step data flow through shekel: from LLM API call interception through token extraction, cost calculation, budget check, and spend recording.
+description: "Step-by-step data flow through shekel: from LLM API call interception through token extraction, cost calculation, budget check, and spend recording."
 tags:
   - architecture
   - internals

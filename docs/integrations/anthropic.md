@@ -1,6 +1,6 @@
 ---
 title: Anthropic Budget Control – Claude Spend Limits and Cost Tracking
-description: Enforce hard USD spend limits on Anthropic Claude API calls. Hard caps, fallback models, loop detection, velocity limits — one pip install, one context manager.
+description: "Enforce hard USD spend limits on Anthropic Claude API calls. Hard caps, fallback models, loop detection, velocity limits — one pip install, one context manager."
 tags:
   - anthropic
   - budget-enforcement

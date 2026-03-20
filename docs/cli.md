@@ -1,6 +1,6 @@
 ---
 title: CLI Reference – shekel run, estimate, models
-description: Run any Python agent under a hard LLM budget from the command line with no code changes. CI-friendly exit codes, Docker support, GitHub Actions, JSON output, env-var budgets.
+description: "Run any Python agent under a hard LLM budget from the command line with no code changes. CI-friendly exit codes, Docker support, GitHub Actions, JSON output, env-var budgets."
 tags:
   - cli
   - getting-started

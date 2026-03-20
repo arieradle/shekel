@@ -1,6 +1,6 @@
 ---
 title: Budget Enforcement – Hard Caps, Warnings, and Callbacks
-description: Enforce LLM API spending limits with hard USD caps, soft warnings at configurable thresholds, warn-only mode, and custom callbacks. Full control over how budgets fire.
+description: "Enforce LLM API spending limits with hard USD caps, soft warnings at configurable thresholds, warn-only mode, and custom callbacks. Full control over how budgets fire."
 tags:
   - budget-enforcement
   - llm-guardrails
