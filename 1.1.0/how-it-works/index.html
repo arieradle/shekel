@@ -854,14 +854,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../usage/temporal-budgets/" class="md-nav__link">
+      <a href="../usage/loop-guard/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Temporal Budgets
+    Loop Guard
   
 
     
@@ -882,14 +882,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../usage/distributed-budgets/" class="md-nav__link">
+      <a href="../usage/spend-velocity/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Distributed Budgets
+    Spend Velocity
   
 
     
@@ -938,14 +938,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../usage/loop-guard/" class="md-nav__link">
+      <a href="../usage/temporal-budgets/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Loop Guard
+    Temporal Budgets
   
 
     
@@ -966,14 +966,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../usage/spend-velocity/" class="md-nav__link">
+      <a href="../usage/distributed-budgets/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Spend Velocity
+    Distributed Budgets
   
 
     
@@ -2893,14 +2893,19 @@
 <li><strong>Patching</strong>: ✅ Thread-safe (uses lock)</li>
 </ul>
 <h2 id="source-code">Source Code<a class="headerlink" href="#source-code" title="Permanent link">&para;</a></h2>
-<p>The implementation is ~600 lines across 6 files:</p>
+<p>The core package is organized into focused modules:</p>
 <ul>
-<li><code>_budget.py</code> - Budget class and context manager</li>
-<li><code>_patch.py</code> - Monkey-patching logic</li>
-<li><code>_pricing.py</code> - Cost calculation</li>
-<li><code>_context.py</code> - ContextVar management</li>
-<li><code>_decorator.py</code> - @with_budget decorator</li>
-<li><code>exceptions.py</code> - BudgetExceededError</li>
+<li><code>_budget.py</code> — <code>Budget</code> and <code>TemporalBudget</code> context managers</li>
+<li><code>_patch.py</code> — Ref-counted monkey-patching and wrapper logic</li>
+<li><code>_pricing.py</code> — Three-tier cost calculation (override → bundled → tokencost)</li>
+<li><code>_context.py</code> — <code>ContextVar</code> management for active budget tracking</li>
+<li><code>_decorator.py</code> — <code>@with_budget</code> decorator</li>
+<li><code>_tool.py</code> — <code>@tool</code> decorator and tool call interception</li>
+<li><code>_temporal.py</code> — Rolling-window state management</li>
+<li><code>exceptions.py</code> — Full exception hierarchy (10 subclasses of <code>BudgetExceededError</code>)</li>
+<li><code>providers/</code> — Per-provider adapters (OpenAI, Anthropic, LiteLLM, Gemini, HuggingFace, LangChain, LangGraph, CrewAI, MCP, OpenAI Agents SDK)</li>
+<li><code>backends/redis.py</code> — <code>RedisBackend</code> and <code>AsyncRedisBackend</code> for distributed enforcement</li>
+<li><code>integrations/</code> — Langfuse and OpenTelemetry adapters</li>
 </ul>
 <p>All code is available at <a href="https://github.com/arieradle/shekel">github.com/arieradle/shekel</a>.</p>
 <h2 id="next-steps">Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>

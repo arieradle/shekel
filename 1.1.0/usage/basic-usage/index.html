@@ -1036,14 +1036,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../temporal-budgets/" class="md-nav__link">
+      <a href="../loop-guard/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Temporal Budgets
+    Loop Guard
   
 
     
@@ -1064,14 +1064,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../distributed-budgets/" class="md-nav__link">
+      <a href="../spend-velocity/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Distributed Budgets
+    Spend Velocity
   
 
     
@@ -1120,14 +1120,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../loop-guard/" class="md-nav__link">
+      <a href="../temporal-budgets/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Loop Guard
+    Temporal Budgets
   
 
     
@@ -1148,14 +1148,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../spend-velocity/" class="md-nav__link">
+      <a href="../distributed-budgets/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Spend Velocity
+    Distributed Budgets
   
 
     
@@ -2634,14 +2634,20 @@
 </span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Models used: </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;by_model&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </span></code></pre></div>
 <h2 id="next-steps">Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
+<p><strong>Protect against the other ways agents go wrong:</strong></p>
 <ul>
-<li><strong><a href="../../cli/">CLI Reference</a></strong> - <code>shekel run</code> options for code-free enforcement</li>
-<li><strong><a href="../../docker/">Docker &amp; Containers</a></strong> - Entrypoint patterns and env-var budgets</li>
-<li><strong><a href="../budget-enforcement/">Budget Enforcement</a></strong> - Learn about hard caps and warnings</li>
-<li><strong><a href="../fallback-models/">Fallback Models</a></strong> - Automatic model switching</li>
-<li><strong><a href="../accumulating-budgets/">Accumulating Budgets</a></strong> - Multi-session tracking</li>
-<li><strong><a href="../streaming/">Streaming</a></strong> - Budget tracking for streams</li>
-<li><strong><a href="../../api-reference/">API Reference</a></strong> - Complete API documentation</li>
+<li><strong><a href="../loop-guard/">Loop Guard</a></strong> — detect and stop infinite tool-call loops before they drain your budget</li>
+<li><strong><a href="../spend-velocity/">Spend Velocity</a></strong> — cap burn rate so a bursty agent can't blow through <code>max_usd</code> in seconds</li>
+<li><strong><a href="../tool-budgets/">Tool Budgets</a></strong> — cap total tool dispatches and charge per-tool</li>
+</ul>
+<p><strong>Go deeper:</strong></p>
+<ul>
+<li><strong><a href="../budget-enforcement/">Budget Enforcement</a></strong> — hard caps, warnings, and <code>warn_only</code> mode</li>
+<li><strong><a href="../fallback-models/">Fallback Models</a></strong> — automatic model switching instead of crashing</li>
+<li><strong><a href="../nested-budgets/">Nested Budgets</a></strong> — per-stage limits for multi-step pipelines</li>
+<li><strong><a href="../accumulating-budgets/">Accumulating Budgets</a></strong> — multi-session tracking</li>
+<li><strong><a href="../../cli/">CLI Reference</a></strong> — <code>shekel run</code> for code-free enforcement</li>
+<li><strong><a href="../../api-reference/">API Reference</a></strong> — complete parameter reference</li>
 </ul>
 
 
