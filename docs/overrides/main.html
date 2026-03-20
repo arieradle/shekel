@@ -4,7 +4,9 @@
 
   {%- set page_title = page.meta.title if page.meta and page.meta.title else page.title ~ " – Shekel" -%}
   {%- set page_desc = page.meta.description if page.meta and page.meta.description else config.site_description -%}
-  {%- set page_url = page.canonical_url if page.canonical_url else config.site_url -%}
+  {%- set _base = config.site_url | trim('/') -%}
+  {%- set _path = page.url | default('') | trim('/') -%}
+  {%- set page_url = _base ~ '/latest/' ~ (_path ~ '/' if _path else '') -%}
 
   <!-- Canonical -->
   <link rel="canonical" href="{{ page_url }}">
