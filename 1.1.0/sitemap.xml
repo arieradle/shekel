@@ -2,170 +2,170 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://arieradle.github.io/shekel/1.1.0/</loc>
-         <lastmod>2026-03-20</lastmod>
+         <lastmod>2026-03-23</lastmod>
     </url>
     <url>
          <loc>https://arieradle.github.io/shekel/1.1.0/api-reference/</loc>
-         <lastmod>2026-03-20</lastmod>
+         <lastmod>2026-03-23</lastmod>
     </url>
     <url>
          <loc>https://arieradle.github.io/shekel/1.1.0/changelog/</loc>
-         <lastmod>2026-03-20</lastmod>
+         <lastmod>2026-03-23</lastmod>
     </url>
     <url>
          <loc>https://arieradle.github.io/shekel/1.1.0/ci-and-branch-protection/</loc>
-         <lastmod>2026-03-20</lastmod>
+         <lastmod>2026-03-23</lastmod>
     </url>
     <url>
          <loc>https://arieradle.github.io/shekel/1.1.0/cli/</loc>
-         <lastmod>2026-03-20</lastmod>
+         <lastmod>2026-03-23</lastmod>
     </url>
     <url>
          <loc>https://arieradle.github.io/shekel/1.1.0/contributing/</loc>
-         <lastmod>2026-03-20</lastmod>
+         <lastmod>2026-03-23</lastmod>
     </url>
     <url>
          <loc>https://arieradle.github.io/shekel/1.1.0/docker/</loc>
-         <lastmod>2026-03-20</lastmod>
+         <lastmod>2026-03-23</lastmod>
     </url>
     <url>
          <loc>https://arieradle.github.io/shekel/1.1.0/extending/</loc>
-         <lastmod>2026-03-20</lastmod>
+         <lastmod>2026-03-23</lastmod>
     </url>
     <url>
          <loc>https://arieradle.github.io/shekel/1.1.0/how-it-works/</loc>
-         <lastmod>2026-03-20</lastmod>
+         <lastmod>2026-03-23</lastmod>
     </url>
     <url>
          <loc>https://arieradle.github.io/shekel/1.1.0/installation/</loc>
-         <lastmod>2026-03-20</lastmod>
+         <lastmod>2026-03-23</lastmod>
     </url>
     <url>
          <loc>https://arieradle.github.io/shekel/1.1.0/models/</loc>
-         <lastmod>2026-03-20</lastmod>
+         <lastmod>2026-03-23</lastmod>
     </url>
     <url>
          <loc>https://arieradle.github.io/shekel/1.1.0/quickstart/</loc>
-         <lastmod>2026-03-20</lastmod>
+         <lastmod>2026-03-23</lastmod>
     </url>
     <url>
          <loc>https://arieradle.github.io/shekel/1.1.0/tags/</loc>
-         <lastmod>2026-03-20</lastmod>
+         <lastmod>2026-03-23</lastmod>
     </url>
     <url>
          <loc>https://arieradle.github.io/shekel/1.1.0/architecture/</loc>
-         <lastmod>2026-03-20</lastmod>
+         <lastmod>2026-03-23</lastmod>
     </url>
     <url>
          <loc>https://arieradle.github.io/shekel/1.1.0/architecture/components/</loc>
-         <lastmod>2026-03-20</lastmod>
+         <lastmod>2026-03-23</lastmod>
     </url>
     <url>
          <loc>https://arieradle.github.io/shekel/1.1.0/architecture/concurrency/</loc>
-         <lastmod>2026-03-20</lastmod>
+         <lastmod>2026-03-23</lastmod>
     </url>
     <url>
          <loc>https://arieradle.github.io/shekel/1.1.0/architecture/data-flow/</loc>
-         <lastmod>2026-03-20</lastmod>
+         <lastmod>2026-03-23</lastmod>
     </url>
     <url>
          <loc>https://arieradle.github.io/shekel/1.1.0/architecture/extensibility/</loc>
-         <lastmod>2026-03-20</lastmod>
+         <lastmod>2026-03-23</lastmod>
     </url>
     <url>
          <loc>https://arieradle.github.io/shekel/1.1.0/architecture/module-map/</loc>
-         <lastmod>2026-03-20</lastmod>
+         <lastmod>2026-03-23</lastmod>
     </url>
     <url>
          <loc>https://arieradle.github.io/shekel/1.1.0/architecture/overview/</loc>
-         <lastmod>2026-03-20</lastmod>
+         <lastmod>2026-03-23</lastmod>
     </url>
     <url>
          <loc>https://arieradle.github.io/shekel/1.1.0/integrations/anthropic/</loc>
-         <lastmod>2026-03-20</lastmod>
+         <lastmod>2026-03-23</lastmod>
     </url>
     <url>
          <loc>https://arieradle.github.io/shekel/1.1.0/integrations/crewai/</loc>
-         <lastmod>2026-03-20</lastmod>
+         <lastmod>2026-03-23</lastmod>
     </url>
     <url>
          <loc>https://arieradle.github.io/shekel/1.1.0/integrations/gemini/</loc>
-         <lastmod>2026-03-20</lastmod>
+         <lastmod>2026-03-23</lastmod>
     </url>
     <url>
          <loc>https://arieradle.github.io/shekel/1.1.0/integrations/huggingface/</loc>
-         <lastmod>2026-03-20</lastmod>
+         <lastmod>2026-03-23</lastmod>
     </url>
     <url>
          <loc>https://arieradle.github.io/shekel/1.1.0/integrations/langfuse/</loc>
-         <lastmod>2026-03-20</lastmod>
+         <lastmod>2026-03-23</lastmod>
     </url>
     <url>
          <loc>https://arieradle.github.io/shekel/1.1.0/integrations/langgraph/</loc>
-         <lastmod>2026-03-20</lastmod>
+         <lastmod>2026-03-23</lastmod>
     </url>
     <url>
          <loc>https://arieradle.github.io/shekel/1.1.0/integrations/litellm/</loc>
-         <lastmod>2026-03-20</lastmod>
+         <lastmod>2026-03-23</lastmod>
     </url>
     <url>
          <loc>https://arieradle.github.io/shekel/1.1.0/integrations/openai-agents/</loc>
-         <lastmod>2026-03-20</lastmod>
+         <lastmod>2026-03-23</lastmod>
     </url>
     <url>
          <loc>https://arieradle.github.io/shekel/1.1.0/integrations/openai/</loc>
-         <lastmod>2026-03-20</lastmod>
+         <lastmod>2026-03-23</lastmod>
     </url>
     <url>
          <loc>https://arieradle.github.io/shekel/1.1.0/integrations/otel/</loc>
-         <lastmod>2026-03-20</lastmod>
+         <lastmod>2026-03-23</lastmod>
     </url>
     <url>
          <loc>https://arieradle.github.io/shekel/1.1.0/usage/accumulating-budgets/</loc>
-         <lastmod>2026-03-20</lastmod>
+         <lastmod>2026-03-23</lastmod>
     </url>
     <url>
          <loc>https://arieradle.github.io/shekel/1.1.0/usage/basic-usage/</loc>
-         <lastmod>2026-03-20</lastmod>
+         <lastmod>2026-03-23</lastmod>
     </url>
     <url>
          <loc>https://arieradle.github.io/shekel/1.1.0/usage/budget-enforcement/</loc>
-         <lastmod>2026-03-20</lastmod>
+         <lastmod>2026-03-23</lastmod>
     </url>
     <url>
          <loc>https://arieradle.github.io/shekel/1.1.0/usage/decorators/</loc>
-         <lastmod>2026-03-20</lastmod>
+         <lastmod>2026-03-23</lastmod>
     </url>
     <url>
          <loc>https://arieradle.github.io/shekel/1.1.0/usage/distributed-budgets/</loc>
-         <lastmod>2026-03-20</lastmod>
+         <lastmod>2026-03-23</lastmod>
     </url>
     <url>
          <loc>https://arieradle.github.io/shekel/1.1.0/usage/fallback-models/</loc>
-         <lastmod>2026-03-20</lastmod>
+         <lastmod>2026-03-23</lastmod>
     </url>
     <url>
          <loc>https://arieradle.github.io/shekel/1.1.0/usage/loop-guard/</loc>
-         <lastmod>2026-03-20</lastmod>
+         <lastmod>2026-03-23</lastmod>
     </url>
     <url>
          <loc>https://arieradle.github.io/shekel/1.1.0/usage/nested-budgets/</loc>
-         <lastmod>2026-03-20</lastmod>
+         <lastmod>2026-03-23</lastmod>
     </url>
     <url>
          <loc>https://arieradle.github.io/shekel/1.1.0/usage/spend-velocity/</loc>
-         <lastmod>2026-03-20</lastmod>
+         <lastmod>2026-03-23</lastmod>
     </url>
     <url>
          <loc>https://arieradle.github.io/shekel/1.1.0/usage/streaming/</loc>
-         <lastmod>2026-03-20</lastmod>
+         <lastmod>2026-03-23</lastmod>
     </url>
     <url>
          <loc>https://arieradle.github.io/shekel/1.1.0/usage/temporal-budgets/</loc>
-         <lastmod>2026-03-20</lastmod>
+         <lastmod>2026-03-23</lastmod>
     </url>
     <url>
          <loc>https://arieradle.github.io/shekel/1.1.0/usage/tool-budgets/</loc>
-         <lastmod>2026-03-20</lastmod>
+         <lastmod>2026-03-23</lastmod>
     </url>
 </urlset>
