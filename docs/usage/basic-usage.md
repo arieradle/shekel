@@ -3,6 +3,9 @@ title: Basic Usage – LLM Budget Tracking and Enforcement in Python
 description: "Track LLM API spend and enforce hard USD caps with one line of Python. Works with OpenAI, Anthropic, LiteLLM, and any framework that calls them. No API keys, no setup."
 tags:
   - budget-enforcement
+  - budget-control
+  - cost-cap
+  - spending-limit
   - cost-tracking
   - openai
   - anthropic

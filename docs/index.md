@@ -4,6 +4,10 @@ description: "Open-source Python library for LLM budget control, token budgeting
 tags:
   - getting-started
   - budget-enforcement
+  - budget-control
+  - circuit-breaker
+  - cost-cap
+  - spending-limit
   - agent-safety
   - openai
   - anthropic

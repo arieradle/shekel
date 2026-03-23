@@ -4,6 +4,10 @@ description: "Enforce LLM API spend limits in Python in 5 minutes. Hard caps, ea
 tags:
   - getting-started
   - budget-enforcement
+  - budget-control
+  - circuit-breaker
+  - cost-cap
+  - spending-limit
   - openai
   - anthropic
   - cost-tracking
