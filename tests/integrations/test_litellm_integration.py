@@ -29,7 +29,7 @@ except ImportError:
 
 pytestmark = pytest.mark.skipif(not LITELLM_AVAILABLE, reason="litellm not installed")
 
-_GROQ_MODEL = "groq/llama-3.1-8b-instant"
+_GROQ_MODEL = "groq/llama-3.3-70b-versatile"
 _GEMINI_MODEL = "gemini/gemini-2.0-flash-lite"
 _HF_MODEL = "huggingface/HuggingFaceH4/zephyr-7b-beta"
 
@@ -281,6 +281,8 @@ class TestLiteLLMGroqIntegration:
         msg = str(exc)
         if "429" in msg or "rate_limit" in msg.lower() or "quota" in msg.lower():
             pytest.skip(f"Groq rate-limit: {msg[:120]}")
+        if "permission" in msg.lower() or "blocked" in msg.lower():
+            pytest.skip(f"Groq model unavailable: {msg[:120]}")
 
     def test_completion_tracks_spend(self, api_key: str | None, available: bool) -> None:
         """budget() tracks spend from litellm.completion() via Groq."""
