@@ -24,4 +24,5 @@ site/
 _bmad-output/
 _bmad/
 .cursor/
+.claude/settings.local.json
 *.cover
