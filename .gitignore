@@ -24,5 +24,4 @@ site/
 _bmad-output/
 _bmad/
 .cursor/
-.claude/
 *.cover
