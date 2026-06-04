@@ -1,11 +1,13 @@
-"""Tests for SHEK-16: in-cluster Kubernetes auto-discovery from ConfigMap.
+"""Tests for SHEK-16 / SHEK-17: Kubernetes auto-discovery and spend reporting.
 
 All tests mock kubernetes.client.CoreV1Api — no live cluster required.
 """
 
 from __future__ import annotations
 
+import contextlib
 import sys
+import threading
 from typing import Any
 from unittest.mock import MagicMock, patch
 
@@ -681,3 +683,519 @@ class TestShek17Fields:
     def test_scope_group_by_stored(self) -> None:
         b = _budget_with_k8s({"scope_group_by": "team"})
         assert b._k8s_scope_group_by == "team"
+
+
+# ---------------------------------------------------------------------------
+# SHEK-17: KubernetesSpendReporter
+# ---------------------------------------------------------------------------
+
+
+@contextlib.contextmanager
+def _k8s_sys_modules(k8s_mock: MagicMock):  # type: ignore[return]
+    with patch.dict(
+        "sys.modules",
+        {
+            "kubernetes": k8s_mock,
+            "kubernetes.client": k8s_mock.client,
+            "kubernetes.config": k8s_mock.config,
+        },
+    ):
+        yield
+
+
+@contextlib.contextmanager
+def _flush_env(k8s_mock: MagicMock, hostname: str = "test-pod"):  # type: ignore[return]
+    with patch.dict("os.environ", {"HOSTNAME": hostname}, clear=False):
+        with _k8s_sys_modules(k8s_mock):
+            yield
+
+
+def _make_api_exception_class(k8s_mock: MagicMock) -> type:
+    class FakeApiException(Exception):
+        def __init__(self, status: int = 500) -> None:
+            self.status = status
+
+    k8s_mock.client.ApiException = FakeApiException
+    return FakeApiException
+
+
+class TestKubernetesSpendReporter:
+    # ── Activation ────────────────────────────────────────────────────────
+
+    def test_reporter_not_started_when_backend_absent(self) -> None:
+        b = _budget_with_k8s({})
+        assert b._k8s_reporter is None
+
+    def test_reporter_not_started_when_backend_redis(self) -> None:
+        b = _budget_with_k8s({"backend": "redis"}, extra_env={"REDIS_URL": "redis://localhost"})
+        assert b._k8s_reporter is None
+
+    def test_reporter_started_when_backend_k8s(self) -> None:
+        b = _budget_with_k8s({"backend": "k8s"})
+        assert b._k8s_reporter is not None
+
+    def test_reporter_flush_every_seconds_from_configmap(self) -> None:
+        b = _budget_with_k8s({"backend": "k8s", "flush_every_seconds": "45"})
+        assert b._k8s_reporter._flush_every_seconds == pytest.approx(45.0)
+
+    def test_reporter_flush_every_usd_from_configmap(self) -> None:
+        b = _budget_with_k8s({"backend": "k8s", "flush_every_usd": "0.25"})
+        assert b._k8s_reporter._flush_every_usd == pytest.approx(0.25)
+
+    def test_reporter_flush_every_seconds_defaults_to_60(self) -> None:
+        b = _budget_with_k8s({"backend": "k8s"})
+        assert b._k8s_reporter._flush_every_seconds == pytest.approx(60.0)
+
+    def test_reporter_group_value_from_env(self) -> None:
+        b = _budget_with_k8s({"backend": "k8s"}, extra_env={"SHEKEL_GROUP_VALUE": "team-a"})
+        assert b._k8s_reporter._group_value == "team-a"
+
+    def test_reporter_group_value_empty_by_default(self) -> None:
+        import os
+
+        env = {k: v for k, v in os.environ.items() if k != "SHEKEL_GROUP_VALUE"}
+        b = _budget_with_k8s({"backend": "k8s"}, extra_env=env)
+        assert b._k8s_reporter._group_value == ""
+
+    # ── Spend accumulation ─────────────────────────────────────────────────
+
+    def test_on_spend_accumulates_total_spent(self) -> None:
+        from shekel.integrations.kubernetes import KubernetesSpendReporter
+
+        r = KubernetesSpendReporter("b", "ns")
+        r.on_spend(0.10)
+        r.on_spend(0.25)
+        assert r._total_spent == pytest.approx(0.35)
+
+    def test_on_spend_accumulates_total_calls(self) -> None:
+        from shekel.integrations.kubernetes import KubernetesSpendReporter
+
+        r = KubernetesSpendReporter("b", "ns")
+        r.on_spend(0.10)
+        r.on_spend(0.20)
+        assert r._total_calls == 2
+
+    def test_on_spend_no_flush_when_no_usd_threshold(self) -> None:
+        from shekel.integrations.kubernetes import KubernetesSpendReporter
+
+        r = KubernetesSpendReporter("b", "ns", flush_every_usd=None)
+        with patch.object(r, "_flush") as mock_flush:
+            r.on_spend(999.99)
+        mock_flush.assert_not_called()
+
+    # ── USD threshold ──────────────────────────────────────────────────────
+
+    def test_usd_threshold_triggers_flush(self) -> None:
+        from shekel.integrations.kubernetes import KubernetesSpendReporter
+
+        r = KubernetesSpendReporter("b", "ns", flush_every_usd=0.10)
+        with patch.object(r, "_flush") as mock_flush:
+            r.on_spend(0.11)
+        mock_flush.assert_called_once()
+
+    def test_usd_threshold_not_triggered_below_threshold(self) -> None:
+        from shekel.integrations.kubernetes import KubernetesSpendReporter
+
+        r = KubernetesSpendReporter("b", "ns", flush_every_usd=1.00)
+        with patch.object(r, "_flush") as mock_flush:
+            r.on_spend(0.50)
+        mock_flush.assert_not_called()
+
+    def test_usd_threshold_exact_boundary_triggers_flush(self) -> None:
+        from shekel.integrations.kubernetes import KubernetesSpendReporter
+
+        r = KubernetesSpendReporter("b", "ns", flush_every_usd=0.10)
+        with patch.object(r, "_flush") as mock_flush:
+            r.on_spend(0.10)
+        mock_flush.assert_called_once()
+
+    def test_usd_threshold_delta_uses_last_flush_as_baseline(self) -> None:
+        """Delta is relative to _last_flush_spent, not zero."""
+        from shekel.integrations.kubernetes import KubernetesSpendReporter
+
+        r = KubernetesSpendReporter("b", "ns", flush_every_usd=0.50)
+        r._last_flush_spent = 0.40
+        r._total_spent = 0.40
+
+        with patch.object(r, "_flush") as mock_flush:
+            r.on_spend(0.45)  # total=0.85, delta=0.45 — below 0.50
+            mock_flush.assert_not_called()
+            r.on_spend(0.10)  # total=0.95, delta=0.55 — above 0.50
+            mock_flush.assert_called_once()
+
+    # ── Background flush thread ────────────────────────────────────────────
+
+    def test_run_calls_flush_on_interval(self) -> None:
+        from shekel.integrations.kubernetes import KubernetesSpendReporter
+
+        r = KubernetesSpendReporter("b", "ns", flush_every_seconds=60.0)
+        flush_calls = [0]
+        r._flush = lambda: flush_calls.__setitem__(0, flush_calls[0] + 1)  # type: ignore[assignment]
+
+        with patch.object(r._stop_event, "wait", side_effect=iter([False, True])):
+            r.run()
+
+        assert flush_calls[0] == 1
+
+    def test_run_passes_interval_to_wait(self) -> None:
+        from shekel.integrations.kubernetes import KubernetesSpendReporter
+
+        r = KubernetesSpendReporter("b", "ns", flush_every_seconds=30.0)
+        r._flush = MagicMock()  # type: ignore[assignment]
+
+        with patch.object(r._stop_event, "wait", side_effect=iter([True])) as mock_wait:
+            r.run()
+
+        mock_wait.assert_called_with(30.0)
+
+    def test_run_stops_when_stop_event_set(self) -> None:
+        from shekel.integrations.kubernetes import KubernetesSpendReporter
+
+        r = KubernetesSpendReporter("b", "ns")
+        r._flush = MagicMock()  # type: ignore[assignment]
+
+        with patch.object(r._stop_event, "wait", side_effect=iter([True])):
+            r.run()
+
+        r._flush.assert_not_called()  # type: ignore[union-attr]
+
+    # ── Exit flush ─────────────────────────────────────────────────────────
+
+    def test_exit_flush_on_sync_context_exit(self) -> None:
+        b = _budget_with_k8s({"backend": "k8s"})
+        mock_flush_stop = MagicMock()
+        b._k8s_reporter.flush_and_stop = mock_flush_stop
+
+        with patch("shekel._patch.remove_patches"):
+            b.__exit__(None, None, None)
+
+        mock_flush_stop.assert_called_once()
+
+    def test_exit_flush_on_exception_exit(self) -> None:
+        b = _budget_with_k8s({"backend": "k8s"})
+        mock_flush_stop = MagicMock()
+        b._k8s_reporter.flush_and_stop = mock_flush_stop
+
+        with patch("shekel._patch.remove_patches"):
+            b.__exit__(RuntimeError, RuntimeError("boom"), None)
+
+        mock_flush_stop.assert_called_once()
+
+    def test_exit_flush_on_async_context_exit(self) -> None:
+        import asyncio
+
+        b = _budget_with_k8s({"backend": "k8s"})
+        mock_flush_stop = MagicMock()
+        b._k8s_reporter.flush_and_stop = mock_flush_stop
+
+        async def run() -> None:
+            with patch("shekel._patch.remove_patches"):
+                await b.__aexit__(None, None, None)
+
+        asyncio.run(run())
+        mock_flush_stop.assert_called_once()
+
+    def test_exit_flush_on_async_exception_exit(self) -> None:
+        import asyncio
+
+        b = _budget_with_k8s({"backend": "k8s"})
+        mock_flush_stop = MagicMock()
+        b._k8s_reporter.flush_and_stop = mock_flush_stop
+
+        async def run() -> None:
+            with patch("shekel._patch.remove_patches"):
+                await b.__aexit__(RuntimeError, RuntimeError("async boom"), None)
+
+        asyncio.run(run())
+        mock_flush_stop.assert_called_once()
+
+    # ── _flush() — hostname guard ──────────────────────────────────────────
+
+    def test_flush_skipped_when_hostname_absent(self) -> None:
+        import os
+
+        k8s_mock = _make_k8s_mock({})
+        from shekel.integrations.kubernetes import KubernetesSpendReporter
+
+        r = KubernetesSpendReporter("b", "default")
+        r._total_spent = 0.50
+
+        env = {k: v for k, v in os.environ.items() if k != "HOSTNAME"}
+        with patch.dict("os.environ", env, clear=True):
+            with _k8s_sys_modules(k8s_mock):
+                r._flush()
+
+        api = k8s_mock.client.CoreV1Api.return_value
+        assert not api.patch_namespaced_config_map.called
+        assert not api.create_namespaced_config_map.called
+
+    # ── _flush() — patch-or-create logic ──────────────────────────────────
+
+    def test_flush_patches_configmap_first(self) -> None:
+        k8s_mock = _make_k8s_mock({})
+        from shekel.integrations.kubernetes import KubernetesSpendReporter
+
+        r = KubernetesSpendReporter("b", "default")
+        r._total_spent = 0.42
+        r._total_calls = 3
+
+        with _flush_env(k8s_mock, hostname="my-pod"):
+            r._flush()
+
+        api = k8s_mock.client.CoreV1Api.return_value
+        api.patch_namespaced_config_map.assert_called_once()
+        api.create_namespaced_config_map.assert_not_called()
+
+    def test_flush_creates_on_404(self) -> None:
+        k8s_mock = _make_k8s_mock({})
+        FakeApiException = _make_api_exception_class(k8s_mock)
+        api = k8s_mock.client.CoreV1Api.return_value
+        api.patch_namespaced_config_map.side_effect = FakeApiException(404)
+
+        from shekel.integrations.kubernetes import KubernetesSpendReporter
+
+        r = KubernetesSpendReporter("b", "default")
+        r._total_spent = 0.10
+
+        with _flush_env(k8s_mock, hostname="my-pod"):
+            r._flush()
+
+        api.create_namespaced_config_map.assert_called_once()
+
+    def test_flush_non_404_api_exception_logged_as_warning(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        import logging
+
+        k8s_mock = _make_k8s_mock({})
+        FakeApiException = _make_api_exception_class(k8s_mock)
+        api = k8s_mock.client.CoreV1Api.return_value
+        api.patch_namespaced_config_map.side_effect = FakeApiException(503)
+
+        from shekel.integrations.kubernetes import KubernetesSpendReporter
+
+        r = KubernetesSpendReporter("b", "default")
+        r._total_spent = 0.10
+
+        with caplog.at_level(logging.WARNING, logger="shekel.integrations.kubernetes"):
+            with _flush_env(k8s_mock, hostname="my-pod"):
+                r._flush()  # must not raise
+
+        assert any("Failed to flush" in rec.message for rec in caplog.records)
+
+    def test_flush_logs_warning_on_generic_failure(self, caplog: pytest.LogCaptureFixture) -> None:
+        import logging
+
+        k8s_mock = _make_k8s_mock({})
+        api = k8s_mock.client.CoreV1Api.return_value
+        api.patch_namespaced_config_map.side_effect = OSError("connection refused")
+
+        from shekel.integrations.kubernetes import KubernetesSpendReporter
+
+        r = KubernetesSpendReporter("b", "default")
+        r._total_spent = 0.10
+
+        with caplog.at_level(logging.WARNING, logger="shekel.integrations.kubernetes"):
+            with _flush_env(k8s_mock, hostname="my-pod"):
+                r._flush()  # must not raise
+
+        assert any("Failed to flush" in rec.message for rec in caplog.records)
+
+    def test_flush_does_not_raise_on_failure(self) -> None:
+        k8s_mock = _make_k8s_mock({})
+        api = k8s_mock.client.CoreV1Api.return_value
+        api.patch_namespaced_config_map.side_effect = OSError("network error")
+
+        from shekel.integrations.kubernetes import KubernetesSpendReporter
+
+        r = KubernetesSpendReporter("b", "default")
+        r._total_spent = 0.10
+
+        with _flush_env(k8s_mock, hostname="my-pod"):
+            r._flush()  # must not raise
+
+    # ── _flush() — ConfigMap body ──────────────────────────────────────────
+
+    def test_flush_configmap_name_and_namespace(self) -> None:
+        k8s_mock = _make_k8s_mock({})
+        from shekel.integrations.kubernetes import KubernetesSpendReporter
+
+        r = KubernetesSpendReporter("my-budget", "production")
+        r._total_spent = 0.10
+
+        with _flush_env(k8s_mock, hostname="worker-pod-7"):
+            r._flush()
+
+        api = k8s_mock.client.CoreV1Api.return_value
+        args = api.patch_namespaced_config_map.call_args[0]
+        assert args[0] == "shekel-spend-worker-pod-7"
+        assert args[1] == "production"
+
+    def test_flush_configmap_labels_correct(self) -> None:
+        k8s_mock = _make_k8s_mock({})
+        from shekel.integrations.kubernetes import KubernetesSpendReporter
+
+        r = KubernetesSpendReporter("my-budget", "default", group_value="team-a")
+        r._total_spent = 0.10
+
+        with _flush_env(k8s_mock, hostname="pod-1"):
+            r._flush()
+
+        body = k8s_mock.client.CoreV1Api.return_value.patch_namespaced_config_map.call_args[0][2]
+        labels = body["metadata"]["labels"]
+        assert labels["shekel.dev/spend-report"] == "true"
+        assert labels["shekel.dev/budget"] == "my-budget"
+        assert labels["shekel.dev/group"] == "team-a"
+
+    def test_flush_group_label_omitted_when_empty(self) -> None:
+        k8s_mock = _make_k8s_mock({})
+        from shekel.integrations.kubernetes import KubernetesSpendReporter
+
+        r = KubernetesSpendReporter("b", "default", group_value="")
+        r._total_spent = 0.10
+
+        with _flush_env(k8s_mock, hostname="pod-1"):
+            r._flush()
+
+        body = k8s_mock.client.CoreV1Api.return_value.patch_namespaced_config_map.call_args[0][2]
+        assert "shekel.dev/group" not in body["metadata"]["labels"]
+
+    def test_flush_configmap_data_fields(self) -> None:
+        k8s_mock = _make_k8s_mock({})
+        from shekel.integrations.kubernetes import KubernetesSpendReporter
+
+        r = KubernetesSpendReporter("b", "default")
+        r._total_spent = 1.23
+        r._total_calls = 7
+
+        with _flush_env(k8s_mock, hostname="test-pod"):
+            r._flush()
+
+        data = k8s_mock.client.CoreV1Api.return_value.patch_namespaced_config_map.call_args[0][2][
+            "data"
+        ]
+        assert data["spent_usd"] == "1.23"
+        assert data["call_count"] == "7"
+        assert data["pod_name"] == "test-pod"
+        assert "T" in data["last_updated"] and data["last_updated"].endswith("Z")
+
+    def test_flush_writes_cumulative_total_not_delta(self) -> None:
+        k8s_mock = _make_k8s_mock({})
+        from shekel.integrations.kubernetes import KubernetesSpendReporter
+
+        r = KubernetesSpendReporter("b", "default")
+        r._last_flush_spent = 0.50
+        r._total_spent = 0.75  # delta = 0.25, but we expect cumulative 0.75
+        r._total_calls = 5
+
+        with _flush_env(k8s_mock, hostname="pod-1"):
+            r._flush()
+
+        body = k8s_mock.client.CoreV1Api.return_value.patch_namespaced_config_map.call_args[0][2]
+        assert body["data"]["spent_usd"] == "0.75"
+
+    # ── _flush() — baseline tracking ──────────────────────────────────────
+
+    def test_flush_updates_last_flush_spent_on_success(self) -> None:
+        k8s_mock = _make_k8s_mock({})
+        from shekel.integrations.kubernetes import KubernetesSpendReporter
+
+        r = KubernetesSpendReporter("b", "default")
+        r._total_spent = 0.75
+        r._total_calls = 5
+
+        with _flush_env(k8s_mock, hostname="pod-1"):
+            r._flush()
+
+        assert r._last_flush_spent == pytest.approx(0.75)
+
+    def test_flush_does_not_update_baseline_on_failure(self) -> None:
+        """After a failed flush, _last_flush_spent is unchanged for retry with full total."""
+        k8s_mock = _make_k8s_mock({})
+        api = k8s_mock.client.CoreV1Api.return_value
+        api.patch_namespaced_config_map.side_effect = OSError("network error")
+
+        from shekel.integrations.kubernetes import KubernetesSpendReporter
+
+        r = KubernetesSpendReporter("b", "default")
+        r._total_spent = 0.75
+        r._last_flush_spent = 0.50
+
+        with _flush_env(k8s_mock, hostname="pod-1"):
+            r._flush()
+
+        assert r._last_flush_spent == pytest.approx(0.50)
+
+    # ── stop / flush_and_stop ──────────────────────────────────────────────
+
+    def test_stop_sets_stop_event(self) -> None:
+        from shekel.integrations.kubernetes import KubernetesSpendReporter
+
+        r = KubernetesSpendReporter("b", "ns")
+        assert not r._stop_event.is_set()
+        r.stop()
+        assert r._stop_event.is_set()
+
+    def test_flush_and_stop_calls_flush(self) -> None:
+        from shekel.integrations.kubernetes import KubernetesSpendReporter
+
+        r = KubernetesSpendReporter("b", "ns")
+        with patch.object(r, "_flush") as mock_flush:
+            r.flush_and_stop()
+        mock_flush.assert_called_once()
+
+    def test_flush_and_stop_sets_stop_event(self) -> None:
+        from shekel.integrations.kubernetes import KubernetesSpendReporter
+
+        r = KubernetesSpendReporter("b", "ns")
+        with patch.object(r, "_flush"):
+            r.flush_and_stop()
+        assert r._stop_event.is_set()
+
+    # ── Budget._record_spend integration ──────────────────────────────────
+
+    def test_record_spend_notifies_reporter(self) -> None:
+        b = _budget_with_k8s({"backend": "k8s"}, budget_kwargs={"max_usd": 10.0})
+        assert b._k8s_reporter is not None
+
+        with patch.object(b._k8s_reporter, "on_spend") as mock_on_spend:
+            b._record_spend(0.05, "gpt-4", {"input": 100, "output": 50})
+
+        mock_on_spend.assert_called_once_with(0.05)
+
+    def test_record_spend_does_not_notify_when_no_reporter(self) -> None:
+        """Budget without K8s env doesn't have a reporter — no crash."""
+        import os
+
+        from shekel._budget import Budget
+
+        env = {
+            k: v
+            for k, v in os.environ.items()
+            if k not in ("KUBERNETES_SERVICE_HOST", "SHEKEL_BUDGET_NAME")
+        }
+        with patch.dict("os.environ", env, clear=True):
+            b = Budget(max_usd=10.0)
+
+        assert b._k8s_reporter is None
+        b._record_spend(0.05, "gpt-4", {"input": 100, "output": 50})  # must not raise
+
+    # ── Thread safety ──────────────────────────────────────────────────────
+
+    def test_concurrent_on_spend_calls_thread_safe(self) -> None:
+        from shekel.integrations.kubernetes import KubernetesSpendReporter
+
+        r = KubernetesSpendReporter("b", "ns", flush_every_usd=None)
+
+        def spend_batch() -> None:
+            for _ in range(100):
+                r.on_spend(0.01)
+
+        threads = [threading.Thread(target=spend_batch) for _ in range(10)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
+        assert r._total_spent == pytest.approx(10.0)
+        assert r._total_calls == 1000

@@ -300,9 +300,10 @@ class Budget:
         self._chain_budgets: dict[str, ComponentBudget] = {}
         self._runtime: Any = None
 
-        # --- Kubernetes auto-discovery (SHEK-16) ---
+        # --- Kubernetes auto-discovery (SHEK-16) / spend reporting (SHEK-17) ---
         self._paused_externally: bool = False
         self._k8s_poller: Any = None
+        self._k8s_reporter: Any = None
         self._per_pod_budget: Any = None
         self._k8s_redis_backend: Any = None
         self._k8s_redis_name: str | None = None
@@ -487,6 +488,8 @@ class Budget:
         if self._runtime is not None:
             self._runtime.release()
             self._runtime = None
+        if self._k8s_reporter is not None:
+            self._k8s_reporter.flush_and_stop()
         if self._k8s_poller is not None:
             self._k8s_poller.stop()
         _patch.remove_patches()
@@ -629,6 +632,8 @@ class Budget:
         if self._runtime is not None:
             self._runtime.release()
             self._runtime = None
+        if self._k8s_reporter is not None:
+            self._k8s_reporter.flush_and_stop()
         if self._k8s_poller is not None:
             self._k8s_poller.stop()
         _patch.remove_patches()
@@ -695,6 +700,8 @@ class Budget:
         self._check_warn()
         self._check_limit()
         self._check_call_limit()
+        if self._k8s_reporter is not None:
+            self._k8s_reporter.on_spend(cost)
 
     def _check_warn(self) -> None:
         effective_limit = self._effective_limit
