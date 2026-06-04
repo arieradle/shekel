@@ -300,6 +300,23 @@ class Budget:
         self._chain_budgets: dict[str, ComponentBudget] = {}
         self._runtime: Any = None
 
+        # --- Kubernetes auto-discovery (SHEK-16) ---
+        self._paused_externally: bool = False
+        self._k8s_poller: Any = None
+        self._per_pod_budget: Any = None
+        self._k8s_redis_backend: Any = None
+        self._k8s_redis_name: str | None = None
+        self._k8s_flush_every_usd: float | None = None
+        self._k8s_flush_every_seconds: float | None = None
+        self._k8s_scope_mode: str | None = None
+        self._k8s_scope_group_by: str | None = None
+        try:
+            from shekel.integrations.kubernetes import apply_k8s_config  # noqa: PLC0415
+
+            apply_k8s_config(self)
+        except Exception:
+            pass
+
     # ------------------------------------------------------------------
     # Internal state reset
     # ------------------------------------------------------------------
@@ -470,6 +487,8 @@ class Budget:
         if self._runtime is not None:
             self._runtime.release()
             self._runtime = None
+        if self._k8s_poller is not None:
+            self._k8s_poller.stop()
         _patch.remove_patches()
         # returning None (not False) — never suppress exceptions
 
@@ -610,6 +629,8 @@ class Budget:
         if self._runtime is not None:
             self._runtime.release()
             self._runtime = None
+        if self._k8s_poller is not None:
+            self._k8s_poller.stop()
         _patch.remove_patches()
 
     # ------------------------------------------------------------------
@@ -634,6 +655,16 @@ class Budget:
     # ------------------------------------------------------------------
 
     def _record_spend(self, cost: float, model: str, tokens: dict[str, int]) -> None:
+        if self._paused_externally:
+            from shekel.exceptions import BudgetExceededError  # noqa: PLC0415
+
+            raise BudgetExceededError(
+                spent=self._spent,
+                limit=self.max_usd or 0.0,
+                model=model,
+                tokens=tokens,
+            )
+
         # Parent locking: cannot record spend while a child budget is active
         if self.active_child is not None:
             raise RuntimeError(
