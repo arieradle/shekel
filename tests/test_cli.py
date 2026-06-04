@@ -220,3 +220,19 @@ def test_tenants_json_null_limit(runner: CliRunner) -> None:
     rows = json.loads(result.output)
     assert rows[0]["limit"] is None
     assert rows[0]["utilization"] is None
+
+
+def test_tenants_redis_unreachable_exits_nonzero(runner: CliRunner) -> None:
+    """list_tenants raising an exception prints an error and exits non-zero."""
+    from unittest.mock import MagicMock, patch
+
+    mock_backend = MagicMock()
+    mock_backend.list_tenants.side_effect = RuntimeError("connection refused")
+
+    with patch("shekel.backends.redis.RedisBackend", return_value=mock_backend):
+        result = runner.invoke(
+            cli, ["tenants", "--name", "api", "--redis-url", "redis://localhost"]
+        )
+
+    assert result.exit_code != 0
+    assert "Redis unreachable" in result.output
