@@ -80,8 +80,8 @@ gemini = ["google-genai>=1.0.0"]
 huggingface = ["huggingface-hub>=0.20.0"]
 otel = ["opentelemetry-api>=1.0.0"]
 redis = ["redis>=4.0.0"]
-autogen = ["pyautogen>=0.2.0"]
-all = ["openai>=1.0.0", "anthropic>=0.7.0", "langfuse>=2.0.0", "litellm>=1.0.0", "google-genai>=1.0.0", "huggingface-hub>=0.20.0", "opentelemetry-api>=1.0.0", "redis>=4.0.0", "pyautogen>=0.2.0"]
+autogen = ["pyautogen>=0.2.0,<0.3.0"]
+all = ["openai>=1.0.0", "anthropic>=0.7.0", "langfuse>=2.0.0", "litellm>=1.0.0", "google-genai>=1.0.0", "huggingface-hub>=0.20.0", "opentelemetry-api>=1.0.0", "redis>=4.0.0", "pyautogen>=0.2.0,<0.3.0"]
 all-models = ["openai>=1.0.0", "anthropic>=0.7.0", "langfuse>=2.0.0", "tokencost>=0.1.0"]
 cli = ["click>=8.0.0"]
 dev = [
@@ -205,6 +205,10 @@ ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = ["crewai", "crewai.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["autogen", "autogen.*"]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
