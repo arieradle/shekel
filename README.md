@@ -55,6 +55,7 @@ If it calls OpenAI or Anthropic under the hood, shekel sees it — **zero integr
 | OpenAI · Anthropic · Gemini | LangChain · LangGraph | Auto-patched |
 | HuggingFace · LiteLLM · Groq | CrewAI · OpenAI Agents SDK | Auto-patched |
 | MCP · AutoGen · LlamaIndex | Any custom wrapper | Auto-patched |
+| — | AutoGen (per-agent caps) | `b.agent("name", max_usd=X)` |
 | — | OpenAI Agents SDK (per-agent caps) | `b.agent("name", max_usd=X)` |
 
 ---
@@ -422,6 +423,7 @@ Every PR and push to `main` runs CodeQL, Trivy, Bandit, and pip-audit. See the [
 - [Temporal Budgets](https://arieradle.github.io/shekel/latest/usage/temporal-budgets/)
 - [LangGraph Integration](https://arieradle.github.io/shekel/latest/integrations/langgraph/)
 - [CrewAI Integration](https://arieradle.github.io/shekel/latest/integrations/crewai/)
+- [AutoGen Integration](https://arieradle.github.io/shekel/latest/integrations/autogen/)
 - [API Reference](https://arieradle.github.io/shekel/latest/api-reference/)
 
 ---
