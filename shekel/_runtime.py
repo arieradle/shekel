@@ -76,6 +76,7 @@ class ShekelRuntime:
 
 
 def _register_builtin_adapters() -> None:
+    from shekel.providers.autogen import AutoGenAdapter  # noqa: PLC0415
     from shekel.providers.crewai import CrewAIExecutionAdapter  # noqa: PLC0415
     from shekel.providers.langchain import LangChainRunnerAdapter  # noqa: PLC0415
     from shekel.providers.langgraph import LangGraphAdapter  # noqa: PLC0415
@@ -87,6 +88,7 @@ def _register_builtin_adapters() -> None:
     ShekelRuntime.register(LangChainRunnerAdapter)
     ShekelRuntime.register(CrewAIExecutionAdapter)
     ShekelRuntime.register(OpenAIAgentsRunnerAdapter)
+    ShekelRuntime.register(AutoGenAdapter)
 
 
 _register_builtin_adapters()
