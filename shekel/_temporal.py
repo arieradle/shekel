@@ -440,6 +440,20 @@ class TemporalBudget(Budget):
 
         super()._record_spend(cost, model, tokens)
 
+    def summary_data(self) -> dict[str, object]:
+        data = super().summary_data()
+        data["tenant_id"] = self._tenant_id
+        return data
+
+    def summary(self) -> str:
+        text = super().summary()
+        if not self._tenant_id:
+            return text
+        lines = text.split("\n")
+        # Insert "Tenant:" after the first line (the top border)
+        lines.insert(1, f"│ Tenant: {self._tenant_id}")
+        return "\n".join(lines)
+
     def __enter__(self) -> TemporalBudget:
         self._check_temporal_ancestor()
         self._lazy_window_reset()

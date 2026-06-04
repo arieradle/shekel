@@ -701,3 +701,52 @@ class TestAsyncTenantQuotaManagement:
 
         tenants = await backend.list_tenants(name="api")
         assert sorted(tenants) == ["user-a", "user-b"]
+
+
+# ---------------------------------------------------------------------------
+# SHEK-5: summary() and summary_data() tenant display
+# ---------------------------------------------------------------------------
+
+
+class TestTenantSummary:
+    """b.summary() and b.summary_data() surface tenant_id when set."""
+
+    def test_summary_data_includes_tenant_id_when_set(self) -> None:
+        from shekel import budget
+
+        b = budget(max_usd=1.00, tenant_id="user-42", name="api", backend=_make_backend())
+        with b:
+            pass
+        data = b.summary_data()
+        assert data["tenant_id"] == "user-42"
+
+    def test_summary_data_tenant_id_none_on_plain_budget(self) -> None:
+        from shekel import budget
+        from shekel._budget import Budget
+
+        b = budget(max_usd=1.00)
+        assert isinstance(b, Budget)
+        with b:
+            pass
+        data = b.summary_data()
+        assert data.get("tenant_id") is None
+
+    def test_summary_contains_tenant_line_when_set(self) -> None:
+        from shekel import budget
+
+        b = budget(max_usd=1.00, tenant_id="user-42", name="api", backend=_make_backend())
+        with b:
+            pass
+        text = b.summary()
+        assert "Tenant: user-42" in text
+
+    def test_summary_has_no_tenant_line_when_not_set(self) -> None:
+        from shekel import budget
+        from shekel._temporal import TemporalBudget
+
+        b = budget(max_usd=1.00, name="api", backend=_make_backend(), window_seconds=3600)
+        assert isinstance(b, TemporalBudget)
+        with b:
+            pass
+        text = b.summary()
+        assert "Tenant:" not in text

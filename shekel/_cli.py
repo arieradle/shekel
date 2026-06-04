@@ -286,6 +286,7 @@ def run(
                 "calls": data["calls_used"],
                 "tool_calls": data["tool_calls_used"],
                 "status": status,
+                "tenant_id": data.get("tenant_id"),
             }
             if by_model:
                 top_model = max(
@@ -303,3 +304,63 @@ def run(
                 )
 
     sys.exit(script_exit_code)
+
+
+@cli.command()
+@click.option("--name", required=True, help="Budget name to inspect")
+@click.option(
+    "--redis-url",
+    default=None,
+    envvar="REDIS_URL",
+    help="Redis URL (falls back to REDIS_URL env var)",
+)
+@click.option(
+    "--output",
+    type=click.Choice(["table", "json"]),
+    default="table",
+    help="Output format",
+)
+def tenants(name: str, redis_url: str | None, output: str) -> None:
+    """List all tenants for a named budget with their spend and limit."""
+    import json as _json
+
+    from shekel.backends.redis import RedisBackend
+
+    if not redis_url:
+        click.echo("Error: Redis URL required. Set --redis-url or REDIS_URL.", err=False)
+        sys.exit(1)
+
+    backend = RedisBackend(url=redis_url)
+    try:
+        tenant_ids = backend.list_tenants(name=name)
+    except Exception as exc:  # noqa: BLE001
+        click.echo(f"Error: Redis unreachable — {exc}", err=True)
+        sys.exit(1)
+
+    TenantRow = dict[str, object]
+    rows: list[TenantRow] = []
+    for tid in tenant_ids:
+        spent: float = backend.get_tenant_spend(name=name, tenant_id=tid)
+        limit: float | None = backend.get_tenant_limit(name=name, tenant_id=tid)
+        utilization: float | None = (spent / limit) if limit else None
+        rows.append({"tenant_id": tid, "spent": spent, "limit": limit, "utilization": utilization})
+
+    if output == "json":
+        click.echo(_json.dumps(rows))
+        return
+
+    # Table output
+    w0 = max(len("TENANT"), max((len(str(r["tenant_id"])) for r in rows), default=0))
+    w1, w2, w3 = 9, 9, 7
+    header = f"{'TENANT':<{w0}}  {'SPENT':>{w1}}  {'LIMIT':>{w2}}  {'USED%':>{w3}}"
+    click.echo(header)
+    click.echo("-" * (w0 + w1 + w2 + w3 + 6))
+    for r in rows:
+        tid_s = str(r["tenant_id"])
+        spent_f = float(r["spent"])  # type: ignore[arg-type]
+        limit_f: float | None = float(r["limit"]) if r["limit"] is not None else None  # type: ignore[arg-type]
+        util_f: float | None = float(r["utilization"]) if r["utilization"] is not None else None  # type: ignore[arg-type]
+        spent_s = f"${spent_f:.4f}"
+        limit_s = f"${limit_f:.4f}" if limit_f is not None else "—"
+        pct_s = f"{util_f * 100:.1f}%" if util_f is not None else "—"
+        click.echo(f"{tid_s:<{w0}}  {spent_s:>{w1}}  {limit_s:>{w2}}  {pct_s:>{w3}}")
