@@ -1,0 +1,3 @@
+.grid.cards.single-col {
+  grid-template-columns: 1fr !important;
+}

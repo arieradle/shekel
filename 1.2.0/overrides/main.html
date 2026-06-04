@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block extrahead %}
+
+  {%- set page_title = page.meta.title if page.meta and page.meta.title else page.title ~ " – Shekel" -%}
+  {%- set page_desc = page.meta.description if page.meta and page.meta.description else config.site_description -%}
+  {%- set _base = config.site_url | trim('/') -%}
+  {%- set _path = page.url | default('') | trim('/') -%}
+  {%- set page_url = _base ~ '/latest/' ~ (_path ~ '/' if _path else '') -%}
+
+  <!-- Canonical -->
+  <link rel="canonical" href="{{ page_url }}">
+
+  <!-- Core meta -->
+  <meta name="description" content="{{ page_desc }}">
+  <meta name="author" content="{{ config.site_author }}">
+  <meta name="robots" content="index, follow">
+  <meta name="googlebot" content="index, follow">
+  <meta name="keywords" content="LLM budget control, budget enforcement, AI agent guardrails, LLM guardrails, circuit breaker, LLM circuit breaker, AI circuit breaker, budget control, cost cap, LLM cost cap, AI cost cap, spending limit, LLM spending limit, AI spending limit, spend limit, AI agent cost control, LLM cost governance, token budgeting, token cap, budget enforcement Python, OpenAI spending limit, OpenAI cost control, Anthropic cost control, LangGraph budget, LangChain budget, CrewAI budget, agentic AI safety, LLM rate limiting, AI cost tracking, production AI safety, LLMOps, runaway agent prevention, infinite loop prevention, agent loop detection, loop guard, spend velocity, burn rate limit, AI cost management, AI agent reliability, AI agent governance, LLM spend cap, agent cost runaway, shekel Python">
+  <meta name="google-site-verification" content="i77BcKjpKR5vvDr7QvJiDaJN9hOBn8oI8Q4DK7Lju7s" />
+  <meta name="yandex-verification" content="424a76ee5b243bc0" />
+  <meta name="msvalidate.01" content="F77EA53BF6FA441C93AB434E7601EEE0" />
+
+  <!-- Open Graph (per-page) -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="{{ config.site_name }}">
+  <meta property="og:url" content="{{ page_url }}">
+  <meta property="og:title" content="{{ page_title }}">
+  <meta property="og:description" content="{{ page_desc }}">
+  <meta property="og:locale" content="en_US">
+
+  <!-- Twitter Card (per-page) -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@arieradle">
+  <meta name="twitter:title" content="{{ page_title }}">
+  <meta name="twitter:description" content="{{ page_desc }}">
+
+  <!-- JSON-LD: SoftwareApplication (site-wide, every page) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Shekel",
+    "url": "{{ config.site_url }}",
+    "description": "Open-source Python library for LLM budget control and AI agent cost governance. Hard spend caps, loop detection, velocity limits, and distributed enforcement for OpenAI, Anthropic, LangGraph, CrewAI, and LiteLLM.",
+    "applicationCategory": "DeveloperApplication",
+    "applicationSubCategory": "AI / LLMOps",
+    "operatingSystem": "Linux, macOS, Windows",
+    "programmingLanguage": "Python",
+    "softwareVersion": "1.1.0",
+    "license": "https://opensource.org/licenses/MIT",
+    "codeRepository": "{{ config.repo_url }}",
+    "downloadUrl": "https://pypi.org/project/shekel/",
+    "author": {
+      "@type": "Person",
+      "name": "{{ config.site_author }}"
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "keywords": [
+      "LLM budget control", "budget enforcement", "budget control",
+      "AI agent guardrails", "LLM guardrails", "circuit breaker",
+      "LLM circuit breaker", "AI circuit breaker", "cost cap", "LLM cost cap",
+      "spending limit", "LLM spending limit", "spend limit", "token cap",
+      "AI agent cost control", "LLM cost governance", "token budgeting",
+      "LLM spend cap", "AI spend limit", "AI cost management",
+      "OpenAI spending limit", "OpenAI cost control", "Anthropic cost control",
+      "LangGraph budget", "LangChain budget", "CrewAI budget",
+      "agentic AI safety", "AI agent reliability", "AI agent governance",
+      "LLM rate limiting", "AI cost tracking", "production AI safety", "LLMOps",
+      "agent loop guard", "loop detection", "runaway agent prevention",
+      "infinite loop prevention", "AI velocity limit", "burn rate limit",
+      "spend velocity", "agent cost runaway"
+    ]
+  }
+  </script>
+
+  <!-- JSON-LD: TechArticle (per documentation page) -->
+  {% if page and page.title %}
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "{{ page_title }}",
+    "description": "{{ page_desc }}",
+    "url": "{{ page_url }}",
+    "isPartOf": {
+      "@type": "TechArticle",
+      "name": "Shekel Documentation",
+      "url": "{{ config.site_url }}"
+    },
+    "author": {
+      "@type": "Person",
+      "name": "{{ config.site_author }}"
+    },
+    "publisher": {
+      "@type": "Person",
+      "name": "{{ config.site_author }}"
+    },
+    "inLanguage": "en",
+    "about": {
+      "@type": "SoftwareApplication",
+      "name": "Shekel",
+      "url": "{{ config.site_url }}"
+    }
+  }
+  </script>
+  {% endif %}
+
+  <!-- JSON-LD: BreadcrumbList -->
+  {% if page and page.title %}
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Shekel",
+        "item": "{{ config.site_url }}"
+      }{% if page.title != "Shekel" %},
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "{{ page_title }}",
+        "item": "{{ page_url }}"
+      }
+      {% endif %}
+    ]
+  }
+  </script>
+  {% endif %}
+
+{% endblock %}
