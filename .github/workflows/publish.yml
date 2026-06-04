@@ -35,7 +35,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           VERSION=${GITHUB_REF_NAME}
-          gh release create "$VERSION" dist/* \
-            --title "$VERSION" \
-            --generate-notes \
-            --verify-tag
+          if gh release view "$VERSION" &>/dev/null; then
+            gh release upload "$VERSION" dist/* --clobber
+          else
+            gh release create "$VERSION" dist/* \
+              --title "$VERSION" \
+              --generate-notes \
+              --verify-tag
+          fi
