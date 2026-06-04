@@ -11,6 +11,51 @@ tags:
 
 All notable changes to this project are documented here. For detailed information, see [CHANGELOG.md](https://github.com/arieradle/shekel/blob/main/CHANGELOG.md) on GitHub.
 
+## [1.2.0] {#120}
+
+### AutoGen Adapter and Per-Tenant Budget Enforcement
+
+Two new capabilities for multi-agent and SaaS use cases.
+
+**AutoGen adapter** (`shekel/providers/autogen.py`):
+- Patches `ConversableAgent.initiate_chat` and `ConversableAgent.generate_reply` transparently on `budget().__enter__()` and restores them on `__exit__()`
+- Per-agent caps via `b.agent("name", max_usd=X)` — `AgentBudgetExceededError` raised before an agent's reply when its cap is exhausted
+- Spend attribution visible in `budget.tree()` alongside per-agent caps and utilization percentages
+- Auto-skipped when `pyautogen` is not installed; compatible with `pyautogen<0.3.0`
+- Documentation: [AutoGen integration page](integrations/autogen.md) with example script
+
+**Per-tenant budget enforcement** (`tenant_id` on `budget()`):
+- `budget(max_usd=X, tenant_id=user.id, name="api", backend=RedisBackend())` — each tenant gets an isolated spend cap with no cross-contamination
+- Redis state namespaced under `shekel:tb:{name}:{tenant_id}`; one shared backend, zero per-tenant infrastructure
+- Default window: 30-day rolling period (`window_seconds=86400*30`); overridable
+- `BudgetConfigMismatchError` raised when the same `(name, tenant_id)` is opened with a different `max_usd`
+- `Budget.tenant_id` property; `b.summary()` and `b.summary_data()` surface the tenant ID
+
+**Quota management API** on `RedisBackend` and `AsyncRedisBackend`:
+- `get_tenant_spend(name, tenant_id) → float` — current window spend; `0.0` if unknown
+- `get_tenant_limit(name, tenant_id) → float | None` — active limit; `None` if not set
+- `set_tenant_limit(name, tenant_id, max_usd)` — override limit without resetting spend (e.g. plan upgrades)
+- `reset_tenant(name, tenant_id)` — zero spend while preserving limit (e.g. billing period rollover)
+- `list_tenants(name) → list[str]` — all tenant IDs with recorded spend for a budget name
+- All five methods available as coroutines on `AsyncRedisBackend`
+
+**`shekel tenants` CLI** — inspect and manage tenant quotas from the command line:
+- `shekel tenants list --name api` — table of tenant IDs, spend, limit, and utilization
+- `shekel tenants list --name api --json` — JSON array output
+- `shekel tenants set-limit --name api --tenant <id> --max-usd <float>` — admin limit override
+- `shekel tenants reset --name api --tenant <id>` — reset spend for a tenant
+
+**New exceptions**:
+- `BudgetConfigMismatchError` — raised when `(name, tenant_id)` is opened with a different limit than what is stored in Redis (subclass of `BudgetExceededError`)
+
+**Documentation**:
+- New usage page: [Per-Tenant Budgets](usage/per-tenant-budgets.md)
+- Updated: [Distributed Budgets](usage/distributed-budgets.md), [API Reference](api-reference.md), README
+
+[Full CHANGELOG →](https://github.com/arieradle/shekel/blob/main/CHANGELOG.md#120)
+
+---
+
 ## [1.1.0] {#110}
 
 ### OpenAI Agents SDK Adapter, Loop Guard, and Spend Velocity
