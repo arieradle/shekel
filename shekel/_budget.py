@@ -1285,6 +1285,8 @@ class Budget:
             "tool_calls_limit": self.max_tool_calls,
             "tool_spent": self._tool_spent,
             "by_tool": by_tool,
+            # Tenant tracking (v1.2.0)
+            "tenant_id": None,
         }
 
     def summary(self) -> str:
