@@ -324,6 +324,70 @@ class RedisBackend:
         key = f"shekel:tb:{budget_name}"
         self._ensure_client().delete(key)
 
+    # ------------------------------------------------------------------
+    # Per-tenant quota management API (SHEK-4)
+    # ------------------------------------------------------------------
+
+    def _tenant_key(self, name: str, tenant_id: str) -> str:
+        return f"shekel:tb:{name}:{tenant_id}"
+
+    def get_tenant_spend(self, name: str, tenant_id: str) -> float:
+        """Return accumulated spend for a tenant; 0.0 if the tenant is unknown."""
+        key = self._tenant_key(name, tenant_id)
+        try:
+            raw = self._ensure_client().hget(key, "usd:spent")
+        except Exception:  # noqa: BLE001
+            return 0.0
+        return float(raw) if raw else 0.0
+
+    def get_tenant_limit(self, name: str, tenant_id: str) -> float | None:
+        """Return the stored limit for a tenant, or None if not set."""
+        key = self._tenant_key(name, tenant_id)
+        try:
+            raw = self._ensure_client().hget(key, "usd:max")
+        except Exception:  # noqa: BLE001
+            return None
+        if not raw or raw in (b"", ""):
+            return None
+        return float(raw)
+
+    def set_tenant_limit(self, name: str, tenant_id: str, max_usd: float) -> None:
+        """Update a tenant's limit and recompute spec_hash so budget() calls with
+        the new limit succeed without BudgetConfigMismatchError."""
+        key = self._tenant_key(name, tenant_id)
+        client = self._ensure_client()
+        raw_window = client.hget(key, "usd:window_s")
+        window_s: float | int = float(86400 * 30)
+        if raw_window:
+            w = float(raw_window)
+            window_s = int(w) if w.is_integer() else w
+        new_hash = _build_spec_hash({"usd": max_usd}, {"usd": window_s})
+        client.hset(key, mapping={"usd:max": str(max_usd), "spec_hash": new_hash})
+
+    def reset_tenant(self, name: str, tenant_id: str) -> None:
+        """Zero the spend counter for a tenant; preserves limit and spec_hash."""
+        key = self._tenant_key(name, tenant_id)
+        self._ensure_client().hset(key, "usd:spent", "0")
+
+    def list_tenants(self, name: str) -> list[str]:
+        """Return all tenant IDs that have a key under this budget name."""
+        prefix = f"shekel:tb:{name}:"
+        pattern = f"{prefix}*"
+        client = self._ensure_client()
+        tenant_ids: list[str] = []
+        try:
+            cursor = 0
+            while True:
+                cursor, keys = client.scan(cursor, match=pattern, count=100)
+                for key in keys:
+                    key_str = key.decode() if isinstance(key, bytes) else key
+                    tenant_ids.append(key_str[len(prefix) :])
+                if cursor == 0:
+                    break
+        except Exception:  # noqa: BLE001
+            return []
+        return tenant_ids
+
     def close(self) -> None:
         if self._client is not None:
             self._client.close()
@@ -473,6 +537,72 @@ class AsyncRedisBackend:
         key = f"shekel:tb:{budget_name}"
         client = await self._ensure_client()
         await client.delete(key)
+
+    # ------------------------------------------------------------------
+    # Per-tenant quota management API (SHEK-4)
+    # ------------------------------------------------------------------
+
+    def _tenant_key(self, name: str, tenant_id: str) -> str:
+        return f"shekel:tb:{name}:{tenant_id}"
+
+    async def get_tenant_spend(self, name: str, tenant_id: str) -> float:
+        """Return accumulated spend for a tenant; 0.0 if the tenant is unknown."""
+        key = self._tenant_key(name, tenant_id)
+        try:
+            client = await self._ensure_client()
+            raw = await client.hget(key, "usd:spent")
+        except Exception:  # noqa: BLE001
+            return 0.0
+        return float(raw) if raw else 0.0
+
+    async def get_tenant_limit(self, name: str, tenant_id: str) -> float | None:
+        """Return the stored limit for a tenant, or None if not set."""
+        key = self._tenant_key(name, tenant_id)
+        try:
+            client = await self._ensure_client()
+            raw = await client.hget(key, "usd:max")
+        except Exception:  # noqa: BLE001
+            return None
+        if not raw or raw in (b"", ""):
+            return None
+        return float(raw)
+
+    async def set_tenant_limit(self, name: str, tenant_id: str, max_usd: float) -> None:
+        """Update a tenant's limit and recompute spec_hash."""
+        key = self._tenant_key(name, tenant_id)
+        client = await self._ensure_client()
+        raw_window = await client.hget(key, "usd:window_s")
+        window_s: float | int = float(86400 * 30)
+        if raw_window:
+            w = float(raw_window)
+            window_s = int(w) if w.is_integer() else w
+        new_hash = _build_spec_hash({"usd": max_usd}, {"usd": window_s})
+        await client.hset(key, mapping={"usd:max": str(max_usd), "spec_hash": new_hash})
+
+    async def reset_tenant(self, name: str, tenant_id: str) -> None:
+        """Zero the spend counter for a tenant; preserves limit and spec_hash."""
+        key = self._tenant_key(name, tenant_id)
+        client = await self._ensure_client()
+        await client.hset(key, "usd:spent", "0")
+
+    async def list_tenants(self, name: str) -> list[str]:
+        """Return all tenant IDs that have a key under this budget name."""
+        prefix = f"shekel:tb:{name}:"
+        pattern = f"{prefix}*"
+        client = await self._ensure_client()
+        tenant_ids: list[str] = []
+        try:
+            cursor = 0
+            while True:
+                cursor, keys = await client.scan(cursor, match=pattern, count=100)
+                for key in keys:
+                    key_str = key.decode() if isinstance(key, bytes) else key
+                    tenant_ids.append(key_str[len(prefix) :])
+                if cursor == 0:
+                    break
+        except Exception:  # noqa: BLE001
+            return []
+        return tenant_ids
 
     async def close(self) -> None:
         if self._client is not None:

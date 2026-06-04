@@ -440,3 +440,264 @@ def _fake_openai_response(input_tokens: int, output_tokens: int):
     m.usage.completion_tokens = output_tokens
     m.model = "gpt-4o-mini"
     return m
+
+
+def _shared_fakeredis_backend():
+    """Return a factory that produces backends sharing one FakeServer."""
+    server = fakeredis.FakeServer()
+    from shekel.backends.redis import RedisBackend
+
+    def _make():
+        b = RedisBackend.__new__(RedisBackend)
+        b._url = "redis://localhost"
+        b._tls = False
+        b._on_unavailable = "closed"
+        b._cb_threshold = 3
+        b._cb_cooldown = 10.0
+        b._client = fakeredis.FakeRedis(server=server, decode_responses=False)
+        b._script_sha = None
+        b._consecutive_errors = 0
+        b._circuit_open_at = None
+        return b
+
+    return _make
+
+
+def _shared_async_fakeredis_backend():
+    """Return a factory that produces async backends sharing one FakeServer."""
+    server = fakeredis.FakeServer()
+    from shekel.backends.redis import AsyncRedisBackend
+
+    def _make():
+        b = AsyncRedisBackend.__new__(AsyncRedisBackend)
+        b._url = "redis://localhost"
+        b._tls = False
+        b._on_unavailable = "closed"
+        b._cb_threshold = 3
+        b._cb_cooldown = 10.0
+        b._client = fakeredis.aioredis.FakeRedis(server=server, decode_responses=False)
+        b._script_sha = None
+        b._consecutive_errors = 0
+        b._circuit_open_at = None
+        return b
+
+    return _make
+
+
+def _seed_spend(make, name: str, tenant_id: str, max_usd: float) -> None:
+    """Open a budget and make a tiny LLM call to seed Redis spend + spec_hash."""
+    import openai
+
+    from shekel import budget
+
+    mock_resp = _fake_openai_response(1, 1)
+    with patch("openai.resources.chat.completions.Completions.create", return_value=mock_resp):
+        client = openai.OpenAI(api_key="test")
+        with budget(
+            max_usd=max_usd,
+            tenant_id=tenant_id,
+            name=name,
+            backend=make(),
+            price_per_1k_tokens={"input": 0.001, "output": 0.001},
+        ):
+            client.chat.completions.create(
+                model="gpt-4o-mini", messages=[{"role": "user", "content": "hi"}]
+            )
+
+
+# ---------------------------------------------------------------------------
+# SHEK-4: sync quota management API
+# ---------------------------------------------------------------------------
+
+
+class TestTenantQuotaManagement:
+    """RedisBackend quota management methods: get_tenant_spend, get_tenant_limit,
+    set_tenant_limit, reset_tenant, list_tenants."""
+
+    def test_get_tenant_spend_unknown_tenant_returns_zero(self) -> None:
+
+        backend = _make_backend()
+        assert backend.get_tenant_spend(name="api", tenant_id="nobody") == 0.0
+
+    def test_get_tenant_spend_returns_accumulated_spend(self) -> None:
+        make = _shared_fakeredis_backend()
+        _seed_spend(make, "api", "user-1", 1.00)
+
+        backend = make()
+        spent = backend.get_tenant_spend(name="api", tenant_id="user-1")
+        assert spent > 0.0
+
+    def test_get_tenant_limit_unknown_tenant_returns_none(self) -> None:
+        backend = _make_backend()
+        assert backend.get_tenant_limit(name="api", tenant_id="nobody") is None
+
+    def test_get_tenant_limit_returns_limit_after_set(self) -> None:
+        backend = _make_backend()
+        backend.set_tenant_limit(name="api", tenant_id="user-1", max_usd=0.50)
+        assert backend.get_tenant_limit(name="api", tenant_id="user-1") == pytest.approx(0.50)
+
+    def test_set_tenant_limit_allows_budget_with_new_limit(self) -> None:
+        make = _shared_fakeredis_backend()
+        # Seed with 0.10
+        _seed_spend(make, "api", "user-1", 0.10)
+
+        # Admin raises limit to 0.20
+        make().set_tenant_limit(name="api", tenant_id="user-1", max_usd=0.20)
+
+        # budget(max_usd=0.20) must now succeed without BudgetConfigMismatchError
+        import openai
+
+        from shekel import budget
+
+        mock_resp = _fake_openai_response(1, 1)
+        with patch("openai.resources.chat.completions.Completions.create", return_value=mock_resp):
+            client = openai.OpenAI(api_key="test")
+            with budget(
+                max_usd=0.20,
+                tenant_id="user-1",
+                name="api",
+                backend=make(),
+                price_per_1k_tokens={"input": 0.001, "output": 0.001},
+            ):
+                client.chat.completions.create(
+                    model="gpt-4o-mini", messages=[{"role": "user", "content": "hi"}]
+                )
+
+    def test_set_tenant_limit_old_limit_raises_mismatch(self) -> None:
+        from shekel import budget
+        from shekel.exceptions import BudgetConfigMismatchError
+
+        make = _shared_fakeredis_backend()
+        _seed_spend(make, "api", "user-1", 0.10)
+
+        # Admin raises limit to 0.20
+        make().set_tenant_limit(name="api", tenant_id="user-1", max_usd=0.20)
+
+        # budget with OLD limit must raise BudgetConfigMismatchError
+        import openai
+
+        mock_resp = _fake_openai_response(1, 1)
+        with patch("openai.resources.chat.completions.Completions.create", return_value=mock_resp):
+            client = openai.OpenAI(api_key="test")
+            with pytest.raises(BudgetConfigMismatchError):
+                with budget(
+                    max_usd=0.10,
+                    tenant_id="user-1",
+                    name="api",
+                    backend=make(),
+                    price_per_1k_tokens={"input": 0.001, "output": 0.001},
+                ):
+                    client.chat.completions.create(
+                        model="gpt-4o-mini", messages=[{"role": "user", "content": "hi"}]
+                    )
+
+    def test_reset_tenant_zeroes_spend(self) -> None:
+        make = _shared_fakeredis_backend()
+        _seed_spend(make, "api", "user-1", 1.00)
+
+        backend = make()
+        assert backend.get_tenant_spend(name="api", tenant_id="user-1") > 0.0
+
+        backend.reset_tenant(name="api", tenant_id="user-1")
+        assert backend.get_tenant_spend(name="api", tenant_id="user-1") == pytest.approx(0.0)
+
+    def test_reset_tenant_preserves_limit(self) -> None:
+        make = _shared_fakeredis_backend()
+        _seed_spend(make, "api", "user-1", 0.50)
+
+        backend = make()
+        backend.reset_tenant(name="api", tenant_id="user-1")
+
+        # Limit should still be readable after reset
+        limit = backend.get_tenant_limit(name="api", tenant_id="user-1")
+        assert limit == pytest.approx(0.50)
+
+    def test_reset_tenant_allows_re_accumulation(self) -> None:
+        make = _shared_fakeredis_backend()
+        _seed_spend(make, "api", "user-1", 1.00)
+
+        make().reset_tenant(name="api", tenant_id="user-1")
+
+        # Can accumulate spend again from zero without BudgetConfigMismatchError
+        _seed_spend(make, "api", "user-1", 1.00)
+        spent = make().get_tenant_spend(name="api", tenant_id="user-1")
+        assert spent > 0.0
+
+    def test_list_tenants_empty_when_no_tenants(self) -> None:
+        backend = _make_backend()
+        assert backend.list_tenants(name="api") == []
+
+    def test_list_tenants_returns_all_tenant_ids(self) -> None:
+        make = _shared_fakeredis_backend()
+        _seed_spend(make, "api", "user-1", 1.00)
+        _seed_spend(make, "api", "user-2", 1.00)
+        _seed_spend(make, "api", "user-3", 1.00)
+
+        tenants = make().list_tenants(name="api")
+        assert sorted(tenants) == ["user-1", "user-2", "user-3"]
+
+    def test_list_tenants_excludes_other_budget_names(self) -> None:
+        make = _shared_fakeredis_backend()
+        _seed_spend(make, "api", "user-1", 1.00)
+        _seed_spend(make, "other", "user-9", 1.00)
+
+        tenants = make().list_tenants(name="api")
+        assert tenants == ["user-1"]
+
+    def test_list_tenants_handles_colon_in_tenant_id(self) -> None:
+        make = _shared_fakeredis_backend()
+        _seed_spend(make, "api", "org:user-1", 1.00)
+
+        tenants = make().list_tenants(name="api")
+        assert tenants == ["org:user-1"]
+
+
+# ---------------------------------------------------------------------------
+# SHEK-4: async quota management API
+# ---------------------------------------------------------------------------
+
+
+class TestAsyncTenantQuotaManagement:
+    """AsyncRedisBackend mirrors all five sync methods."""
+
+    @pytest.mark.asyncio
+    async def test_async_get_tenant_spend_unknown_returns_zero(self) -> None:
+        make = _shared_async_fakeredis_backend()
+        backend = make()
+        assert await backend.get_tenant_spend(name="api", tenant_id="nobody") == 0.0
+
+    @pytest.mark.asyncio
+    async def test_async_get_tenant_limit_unknown_returns_none(self) -> None:
+        make = _shared_async_fakeredis_backend()
+        backend = make()
+        assert await backend.get_tenant_limit(name="api", tenant_id="nobody") is None
+
+    @pytest.mark.asyncio
+    async def test_async_set_and_get_tenant_limit(self) -> None:
+        make = _shared_async_fakeredis_backend()
+        backend = make()
+        await backend.set_tenant_limit(name="api", tenant_id="user-1", max_usd=0.75)
+        limit = await backend.get_tenant_limit(name="api", tenant_id="user-1")
+        assert limit == pytest.approx(0.75)
+
+    @pytest.mark.asyncio
+    async def test_async_reset_tenant_zeroes_spend(self) -> None:
+        make = _shared_async_fakeredis_backend()
+        backend = make()
+        # Seed spend via the async set
+        key = "shekel:tb:api:user-1"
+        await backend._client.hset(key, "usd:spent", "0.42")
+
+        await backend.reset_tenant(name="api", tenant_id="user-1")
+        assert await backend.get_tenant_spend(name="api", tenant_id="user-1") == pytest.approx(0.0)
+
+    @pytest.mark.asyncio
+    async def test_async_list_tenants(self) -> None:
+        make = _shared_async_fakeredis_backend()
+        backend = make()
+        # Seed two tenant keys via async client
+        await backend._client.hset("shekel:tb:api:user-a", "usd:spent", "0.10")
+        await backend._client.hset("shekel:tb:api:user-b", "usd:spent", "0.20")
+
+        tenants = await backend.list_tenants(name="api")
+        assert sorted(tenants) == ["user-a", "user-b"]
