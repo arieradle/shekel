@@ -48,6 +48,9 @@ def budget(
 | `loop_guard_window_seconds` | `float` | `60.0` | Rolling window duration in seconds. `0` = all-time cap (no rolling window). Only applies when `loop_guard=True`. |
 | `max_velocity` | `str \| None` | `None` | Spend velocity cap. Format: `"$<amount>/<unit>"` (e.g. `"$0.50/min"`, `"$5/hr"`). Raises `SpendVelocityExceededError` when the burn rate exceeds this threshold. |
 | `warn_velocity` | `str \| None` | `None` | Soft velocity warning threshold. Same format as `max_velocity`. Must be less than `max_velocity`. Fires `on_warn` callback when crossed; does not raise. |
+| `tenant_id` | `str \| None` | `None` | Tenant or user identifier for per-tenant spend isolation. When set, Redis state is namespaced under `shekel:tb:{name}:{tenant_id}`. Requires `name` and `backend`. Empty string raises `ValueError`. |
+| `backend` | `RedisBackend \| AsyncRedisBackend \| None` | `None` | Redis backend for distributed or per-tenant enforcement. Required when `tenant_id` is set. |
+| `window_seconds` | `float \| None` | `None` | Rolling-window duration in seconds. Required (or inferred from a spec string) for temporal budgets. Default when `tenant_id` is set: `86400 * 30` (30 days). |
 
 ### Returns
 
@@ -172,6 +175,7 @@ The budget context manager object.
 | `switched_at_usd` | `float \| None` | USD spent when fallback occurred, or `None`. |
 | `fallback_spent` | `float` | USD spent on the fallback model. |
 | `loop_guard_counts` | `dict[str, int]` | Per-tool call counts recorded by the loop guard. Empty dict when `loop_guard=False`. Keys are tool names; values are total calls recorded within the current window. |
+| `tenant_id` | `str \| None` | Tenant identifier passed to `budget()`, or `None` if not set. |
 
 ### Nested Budget Properties {#nested-budget-properties}
 
@@ -444,6 +448,38 @@ with budget("$5/hr + 100 calls/hr", name="api-tier", backend=backend) as b:
 
 **Raises:** `BudgetConfigMismatchError` if `budget_name` is already registered with different limits or windows.
 
+### Per-Tenant Methods
+
+| Method | Returns | Description |
+|---|---|---|
+| `get_tenant_spend(name, tenant_id)` | `float` | Current window spend for the tenant. Returns `0.0` if unknown. |
+| `get_tenant_limit(name, tenant_id)` | `float \| None` | Active spend limit for the tenant. Returns `None` if no limit recorded. |
+| `set_tenant_limit(name, tenant_id, max_usd)` | `None` | Override the tenant's spend limit without resetting accumulated spend. |
+| `reset_tenant(name, tenant_id)` | `None` | Zero out accumulated spend while preserving the limit. |
+| `list_tenants(name)` | `list[str]` | All tenant IDs that have recorded spend for the budget name. |
+
+```python
+from shekel.backends.redis import RedisBackend
+
+backend = RedisBackend()
+
+# Inspect a tenant
+spent = backend.get_tenant_spend(name="api", tenant_id="user-42")
+limit = backend.get_tenant_limit(name="api", tenant_id="user-42")
+
+# Adjust quota
+backend.set_tenant_limit(name="api", tenant_id="user-42", max_usd=0.50)
+
+# Reset at billing period rollover
+backend.reset_tenant(name="api", tenant_id="user-42")
+
+# Enumerate all tenants
+for tid in backend.list_tenants(name="api"):
+    print(tid, backend.get_tenant_spend(name="api", tenant_id=tid))
+```
+
+See [Per-Tenant Budgets](usage/per-tenant-budgets.md) for the full guide.
+
 ---
 
 ## `AsyncRedisBackend`
@@ -460,6 +496,16 @@ async with budget("$5/hr", name="api", backend=backend) as b:
 ```
 
 Constructor and parameters are identical to `RedisBackend`.
+
+All five per-tenant methods are available as coroutines:
+
+```python
+spent  = await backend.get_tenant_spend(name="api", tenant_id="user-42")
+limit  = await backend.get_tenant_limit(name="api", tenant_id="user-42")
+await backend.set_tenant_limit(name="api", tenant_id="user-42", max_usd=0.50)
+await backend.reset_tenant(name="api", tenant_id="user-42")
+tenants = await backend.list_tenants(name="api")
+```
 
 ---
 

@@ -291,8 +291,29 @@ See [Docker & Containers](../docker.md) for a full production setup.
 
 ---
 
+## Per-Tenant Namespacing
+
+When `tenant_id` is passed to `budget()`, shekel appends it to the Redis key so each tenant gets fully isolated state:
+
+```
+shekel:tb:{name}:{tenant_id}   # with tenant_id
+shekel:tb:{name}               # without tenant_id (shared)
+```
+
+This means you can enforce per-user spend caps in a SaaS app with a single shared `RedisBackend`:
+
+```python
+with budget(max_usd=0.10, tenant_id=user.id, name="api", backend=backend) as b:
+    run_agent()
+```
+
+See **[Per-Tenant Budgets](per-tenant-budgets.md)** for the full guide, including quota management methods and the `shekel tenants` CLI.
+
+---
+
 ## Next Steps
 
+- **[Per-Tenant Budgets](per-tenant-budgets.md)** - Per-user spend isolation for SaaS apps
 - **[Temporal Budgets](temporal-budgets.md)** - Rolling-window budget fundamentals
 - **[Docker & Containers](../docker.md)** - Full containerized production setup
 - **[API Reference](../api-reference.md)** - Complete parameter reference

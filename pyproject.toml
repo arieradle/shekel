@@ -101,7 +101,7 @@ dev = [
     "opentelemetry-api>=1.0.0",
     "opentelemetry-sdk>=1.0.0",
     "redis>=4.0.0",
-    "fakeredis>=2.0.0",
+    "fakeredis[lua]>=2.0.0",
     "testcontainers[redis]>=4.0.0",
 ]
 docs = [

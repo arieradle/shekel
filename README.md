@@ -221,6 +221,20 @@ with budget("$5/hr + 100 calls/hr", name="api-tier", backend=backend) as b:
 
 Works with `AsyncRedisBackend` for async workflows. Circuit breaker built in — configurable threshold + cooldown. Fail-open or fail-closed.
 
+### Per-user / per-tenant enforcement
+
+```python
+from shekel.backends.redis import RedisBackend
+
+backend = RedisBackend()  # reads REDIS_URL from env
+
+with budget(max_usd=0.10, tenant_id=user.id, name="api", backend=backend) as b:
+    run_agent()
+# Each user gets their own isolated $0.10 cap — same Redis, zero per-tenant config
+```
+
+Quota management: `backend.set_tenant_limit(...)`, `backend.get_tenant_spend(...)`, `backend.reset_tenant(...)`, `backend.list_tenants(...)`. Inspect from the command line with `shekel tenants list --name api`.
+
 ### Rolling-window rate limits
 
 ```python
