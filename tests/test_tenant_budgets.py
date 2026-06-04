@@ -750,3 +750,312 @@ class TestTenantSummary:
             pass
         text = b.summary()
         assert "Tenant:" not in text
+
+
+# ---------------------------------------------------------------------------
+# SHEK-6: concurrency — 10 async tenants via asyncio.gather
+# ---------------------------------------------------------------------------
+
+
+class TestTenantConcurrency:
+    """10 async budget() contexts running concurrently enforce independently."""
+
+    @pytest.mark.asyncio
+    async def test_ten_concurrent_tenants_enforce_independently(self) -> None:
+        import asyncio
+
+        import openai
+
+        from shekel import budget
+
+        server = fakeredis.FakeServer()
+
+        def _make():
+            from shekel.backends.redis import RedisBackend
+
+            b = RedisBackend.__new__(RedisBackend)
+            b._url = "redis://localhost"
+            b._tls = False
+            b._on_unavailable = "closed"
+            b._cb_threshold = 3
+            b._cb_cooldown = 10.0
+            b._client = fakeredis.FakeRedis(server=server, decode_responses=False)
+            b._script_sha = None
+            b._consecutive_errors = 0
+            b._circuit_open_at = None
+            return b
+
+        mock_resp = _fake_openai_response(1, 1)
+
+        async def run_tenant(tid: str) -> float:
+            with patch(
+                "openai.resources.chat.completions.Completions.create",
+                return_value=mock_resp,
+            ):
+                client = openai.OpenAI(api_key="test")
+                async with budget(
+                    max_usd=1.00,
+                    tenant_id=tid,
+                    name="api",
+                    backend=_make(),
+                    price_per_1k_tokens={"input": 0.001, "output": 0.001},
+                ) as b:
+                    client.chat.completions.create(
+                        model="gpt-4o-mini",
+                        messages=[{"role": "user", "content": "hi"}],
+                    )
+                return b.spent
+
+        results = await asyncio.gather(*[run_tenant(f"user-{i}") for i in range(10)])
+
+        # Every tenant must have recorded independent spend
+        assert len(results) == 10
+        assert all(s > 0 for s in results)
+
+    @pytest.mark.asyncio
+    async def test_concurrent_tenants_do_not_cross_contaminate(self) -> None:
+        """A tiny budget for one tenant doesn't affect others running simultaneously."""
+        import asyncio
+
+        import openai
+
+        from shekel import budget
+        from shekel.exceptions import BudgetExceededError
+
+        server = fakeredis.FakeServer()
+
+        def _make():
+            from shekel.backends.redis import RedisBackend
+
+            b = RedisBackend.__new__(RedisBackend)
+            b._url = "redis://localhost"
+            b._tls = False
+            b._on_unavailable = "closed"
+            b._cb_threshold = 3
+            b._cb_cooldown = 10.0
+            b._client = fakeredis.FakeRedis(server=server, decode_responses=False)
+            b._script_sha = None
+            b._consecutive_errors = 0
+            b._circuit_open_at = None
+            return b
+
+        exceeded_tenants: list[str] = []
+        succeeded_tenants: list[str] = []
+
+        async def run_tenant(tid: str, max_usd: float) -> None:
+            # price: 1 token * 0.001/1k = 0.000001 — tiny cost per call
+            mock_resp = _fake_openai_response(1, 1)
+            with patch(
+                "openai.resources.chat.completions.Completions.create",
+                return_value=mock_resp,
+            ):
+                client = openai.OpenAI(api_key="test")
+                try:
+                    async with budget(
+                        max_usd=max_usd,
+                        tenant_id=tid,
+                        name="api",
+                        backend=_make(),
+                        price_per_1k_tokens={"input": 0.001, "output": 0.001},
+                    ):
+                        client.chat.completions.create(
+                            model="gpt-4o-mini",
+                            messages=[{"role": "user", "content": "hi"}],
+                        )
+                    succeeded_tenants.append(tid)
+                except BudgetExceededError:
+                    exceeded_tenants.append(tid)
+
+        # user-tiny: budget 1e-6 < cost 2e-6 → exceeded; others: 5.00 >> 2e-6 → ok
+        await asyncio.gather(
+            run_tenant("user-tiny", 0.000001),
+            *[run_tenant(f"user-ok-{i}", 5.00) for i in range(5)],
+        )
+
+        assert "user-tiny" in exceeded_tenants
+        assert len(succeeded_tenants) == 5
+        assert all(t.startswith("user-ok-") for t in succeeded_tenants)
+
+
+# ---------------------------------------------------------------------------
+# SHEK-6: circuit breaker — global, not per-tenant
+# ---------------------------------------------------------------------------
+
+
+class TestTenantCircuitBreaker:
+    """Circuit breaker is global — Redis failure affects all tenants together."""
+
+    def test_circuit_breaker_fires_for_all_tenants_on_redis_failure(self) -> None:
+        from unittest.mock import MagicMock
+        from unittest.mock import patch as upatch
+
+        from shekel.backends.redis import RedisBackend
+        from shekel.exceptions import BudgetExceededError
+
+        # Build a backend whose evalsha always raises (simulates Redis down)
+        backend = RedisBackend.__new__(RedisBackend)
+        backend._url = "redis://localhost"
+        backend._tls = False
+        backend._on_unavailable = "closed"
+        backend._cb_threshold = 1
+        backend._cb_cooldown = 60.0
+        backend._consecutive_errors = 0
+        backend._circuit_open_at = None
+        backend._script_sha = "fakecha"
+
+        mock_client = MagicMock()
+        mock_client.evalsha.side_effect = RuntimeError("connection refused")
+        backend._client = mock_client
+
+        import openai
+
+        from shekel import budget
+
+        mock_resp = _fake_openai_response(1, 1)
+
+        with upatch(
+            "openai.resources.chat.completions.Completions.create",
+            return_value=mock_resp,
+        ):
+            client = openai.OpenAI(api_key="test")
+
+            # First call opens the circuit breaker
+            with pytest.raises(BudgetExceededError):
+                with budget(
+                    max_usd=1.00,
+                    tenant_id="user-a",
+                    name="api",
+                    backend=backend,
+                    price_per_1k_tokens={"input": 0.001, "output": 0.001},
+                ):
+                    client.chat.completions.create(
+                        model="gpt-4o-mini", messages=[{"role": "user", "content": "hi"}]
+                    )
+
+            # Circuit is now open — affects user-b too (same backend, global breaker)
+            assert backend._circuit_open_at is not None, "Circuit breaker should be open"
+            assert backend._is_circuit_open()
+
+
+# ---------------------------------------------------------------------------
+# SHEK-6: exception path coverage — new method error returns
+# ---------------------------------------------------------------------------
+
+
+class TestTenantErrorPaths:
+    """Defensive error paths in new RedisBackend tenant methods return safe defaults."""
+
+    def test_get_tenant_spend_returns_zero_on_redis_error(self) -> None:
+        from unittest.mock import MagicMock
+
+        from shekel.backends.redis import RedisBackend
+
+        backend = RedisBackend.__new__(RedisBackend)
+        backend._url = "redis://localhost"
+        backend._tls = False
+        mock_client = MagicMock()
+        mock_client.hget.side_effect = RuntimeError("connection refused")
+        backend._client = mock_client
+
+        assert backend.get_tenant_spend(name="api", tenant_id="user-1") == 0.0
+
+    def test_get_tenant_limit_returns_none_on_redis_error(self) -> None:
+        from unittest.mock import MagicMock
+
+        from shekel.backends.redis import RedisBackend
+
+        backend = RedisBackend.__new__(RedisBackend)
+        backend._url = "redis://localhost"
+        backend._tls = False
+        mock_client = MagicMock()
+        mock_client.hget.side_effect = RuntimeError("connection refused")
+        backend._client = mock_client
+
+        assert backend.get_tenant_limit(name="api", tenant_id="user-1") is None
+
+    def test_list_tenants_returns_empty_on_redis_error(self) -> None:
+        from unittest.mock import MagicMock
+
+        from shekel.backends.redis import RedisBackend
+
+        backend = RedisBackend.__new__(RedisBackend)
+        backend._url = "redis://localhost"
+        backend._tls = False
+        mock_client = MagicMock()
+        mock_client.scan.side_effect = RuntimeError("connection refused")
+        backend._client = mock_client
+
+        assert backend.list_tenants(name="api") == []
+
+    @pytest.mark.asyncio
+    async def test_async_get_tenant_spend_returns_zero_on_error(self) -> None:
+        from unittest.mock import AsyncMock, MagicMock
+
+        from shekel.backends.redis import AsyncRedisBackend
+
+        backend = AsyncRedisBackend.__new__(AsyncRedisBackend)
+        backend._url = "redis://localhost"
+        backend._tls = False
+        mock_client = MagicMock()
+        mock_client.hget = AsyncMock(side_effect=RuntimeError("connection refused"))
+        backend._client = mock_client
+
+        assert await backend.get_tenant_spend(name="api", tenant_id="user-1") == 0.0
+
+    @pytest.mark.asyncio
+    async def test_async_get_tenant_limit_returns_none_on_error(self) -> None:
+        from unittest.mock import AsyncMock, MagicMock
+
+        from shekel.backends.redis import AsyncRedisBackend
+
+        backend = AsyncRedisBackend.__new__(AsyncRedisBackend)
+        backend._url = "redis://localhost"
+        backend._tls = False
+        mock_client = MagicMock()
+        mock_client.hget = AsyncMock(side_effect=RuntimeError("connection refused"))
+        backend._client = mock_client
+
+        assert await backend.get_tenant_limit(name="api", tenant_id="user-1") is None
+
+    @pytest.mark.asyncio
+    async def test_async_list_tenants_returns_empty_on_error(self) -> None:
+        from unittest.mock import AsyncMock, MagicMock
+
+        from shekel.backends.redis import AsyncRedisBackend
+
+        backend = AsyncRedisBackend.__new__(AsyncRedisBackend)
+        backend._url = "redis://localhost"
+        backend._tls = False
+        mock_client = MagicMock()
+        mock_client.scan = AsyncMock(side_effect=RuntimeError("connection refused"))
+        backend._client = mock_client
+
+        assert await backend.list_tenants(name="api") == []
+
+
+class TestAsyncTenantEdgeCases:
+    """Cover remaining async method branches."""
+
+    @pytest.mark.asyncio
+    async def test_async_set_tenant_limit_with_existing_window(self) -> None:
+        """set_tenant_limit reads existing usd:window_s when key already populated."""
+        make = _shared_async_fakeredis_backend()
+        backend = make()
+        # Seed key with usd:window_s already present (simulates a budget having run)
+        key = "shekel:tb:api:user-1"
+        await backend._client.hset(key, mapping={"usd:spent": "0.01", "usd:window_s": "2592000"})
+
+        # Now set_tenant_limit must read the existing window_s (lines 577-578)
+        await backend.set_tenant_limit(name="api", tenant_id="user-1", max_usd=0.50)
+        limit = await backend.get_tenant_limit(name="api", tenant_id="user-1")
+        assert limit == pytest.approx(0.50)
+
+    @pytest.mark.asyncio
+    async def test_async_close(self) -> None:
+        """AsyncRedisBackend.close() releases the client without raising."""
+        make = _shared_async_fakeredis_backend()
+        backend = make()
+        # Ensure _client is set
+        await backend._client.ping()
+        # close() should not raise
+        await backend.close()
