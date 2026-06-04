@@ -85,6 +85,15 @@ def budget(
             raise ValueError("TemporalBudget requires name=")
         return TemporalBudget(window_seconds=window_seconds, name=name, **kwargs)
 
+    # Route to TemporalBudget when backend or tenant_id is set (Redis-backed enforcement).
+    # Default window: 30 days (one billing period) when not explicitly provided.
+    tenant_id = kwargs.get("tenant_id")
+    backend = kwargs.get("backend")
+    if tenant_id is not None or backend is not None:
+        if not name:
+            raise ValueError("budget() with tenant_id or backend requires name=")
+        return TemporalBudget(window_seconds=86400 * 30, name=name, **kwargs)
+
     return Budget(name=name, **kwargs)
 
 

@@ -263,10 +263,17 @@ class TemporalBudget(Budget):
         name: str,
         backend: TemporalBudgetBackend | None = None,
         caps: list[tuple[str, float | None, float]] | None = None,
+        tenant_id: str | None = None,
         **kwargs: Any,
     ) -> None:
         if not name:
             raise ValueError("TemporalBudget requires a non-empty name=")
+
+        if tenant_id is not None:
+            if not isinstance(tenant_id, str) or tenant_id == "":
+                raise ValueError("tenant_id must be a non-empty string")
+            if backend is None:
+                raise ValueError("tenant_id requires a Redis backend")
 
         # Extract multi-cap kwargs that should NOT be passed to Budget
         # (Budget enforces them cumulatively; TemporalBudget enforces via backend).
@@ -285,6 +292,7 @@ class TemporalBudget(Budget):
         # Pass max_usd to parent for .spent / .remaining / .limit property tracking.
         super().__init__(max_usd=effective_max_usd, name=name, **kwargs)
         self._backend: TemporalBudgetBackend = backend or InMemoryBackend()
+        self._tenant_id: str | None = tenant_id
 
         if caps is not None:
             # Structured caps from factory (spec-string form).
@@ -326,9 +334,16 @@ class TemporalBudget(Budget):
                 )
             current = current.parent
 
+    @property
+    def tenant_id(self) -> str | None:
+        """The tenant identifier scoping this budget's Redis key, or None."""
+        return self._tenant_id
+
     def _lazy_window_reset(self) -> None:
         """If the primary window has expired since last entry, emit on_window_reset."""
-        budget_name = self.name or "unnamed"
+        budget_name = (
+            f"{self.name}:{self._tenant_id}" if self._tenant_id else (self.name or "unnamed")
+        )
 
         # Use get_window_info if available (InMemoryBackend exposes it).
         if not hasattr(self._backend, "get_window_info"):
@@ -365,7 +380,9 @@ class TemporalBudget(Budget):
 
     def _record_spend(self, cost: float, model: str, tokens: dict[str, int]) -> None:
         """Override to enforce rolling-window spend via backend before calling parent."""
-        budget_name = self.name or "unnamed"
+        budget_name = (
+            f"{self.name}:{self._tenant_id}" if self._tenant_id else (self.name or "unnamed")
+        )
 
         # Build amounts/limits/windows for backend call.
         # Only include LLM-relevant counters (usd + llm_calls).
