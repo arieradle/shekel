@@ -21,12 +21,14 @@ from shekel.exceptions import BudgetExceededError
 try:
     from huggingface_hub import InferenceClient
     from huggingface_hub.errors import BadRequestError as HFBadRequestError
+    from huggingface_hub.errors import HfHubHTTPError
     from huggingface_hub.inference import _client as hf_client
 
     HF_AVAILABLE = True
 except ImportError:
     HF_AVAILABLE = False
     HFBadRequestError = Exception  # type: ignore[assignment,misc]
+    HfHubHTTPError = Exception  # type: ignore[assignment,misc]
 
 pytestmark = pytest.mark.skipif(not HF_AVAILABLE, reason="huggingface-hub not installed")
 
@@ -56,10 +58,12 @@ class TestHuggingFaceRealIntegration:
         return InferenceClient(token=api_key)
 
     def _skip_on_api_error(self, exc: Exception) -> None:
-        """Skip test gracefully on model-not-supported or provider errors."""
+        """Skip test gracefully on model-not-supported or infrastructure errors."""
         msg = str(exc)
         if "not supported" in msg or "model_not_supported" in msg or "503" in msg:
             pytest.skip(f"HuggingFace model unavailable: {msg[:120]}")
+        if isinstance(exc, HfHubHTTPError):
+            pytest.skip(f"HuggingFace infrastructure error: {msg[:120]}")
 
     def test_basic_chat_completion_tracks_spend(self, client: Any, available: bool) -> None:
         """budget() tracks spend from InferenceClient.chat.completions.create()."""
@@ -77,7 +81,7 @@ class TestHuggingFaceRealIntegration:
                     max_tokens=10,
                 )
                 assert response is not None
-        except HFBadRequestError as e:
+        except (HFBadRequestError, HfHubHTTPError) as e:
             self._skip_on_api_error(e)
             raise
 
@@ -103,7 +107,7 @@ class TestHuggingFaceRealIntegration:
                     )
                 )
                 assert len(chunks) > 0
-        except HFBadRequestError as e:
+        except (HFBadRequestError, HfHubHTTPError) as e:
             self._skip_on_api_error(e)
             raise
 
@@ -125,7 +129,7 @@ class TestHuggingFaceRealIntegration:
                         messages=[{"role": "user", "content": "Hello."}],
                         max_tokens=5,
                     )
-        except HFBadRequestError as e:
+        except (HFBadRequestError, HfHubHTTPError) as e:
             self._skip_on_api_error(e)
             raise
 
@@ -151,7 +155,7 @@ class TestHuggingFaceRealIntegration:
                         max_tokens=5,
                     )
                 assert outer.spent >= inner.spent
-        except HFBadRequestError as e:
+        except (HFBadRequestError, HfHubHTTPError) as e:
             self._skip_on_api_error(e)
             raise
 
