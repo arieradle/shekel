@@ -77,6 +77,8 @@ def apply_k8s_config(budget: Budget) -> None:
 
     budget_name = os.environ["SHEKEL_BUDGET_NAME"]
     namespace = _read_namespace()
+    budget._k8s_budget_name = budget_name
+    budget._k8s_namespace = namespace
     cm = _fetch_configmap(budget_name, namespace)
 
     if cm is None:
@@ -150,6 +152,7 @@ def apply_k8s_config(budget: Budget) -> None:
 
     # --- Start background kill-switch poller ---
     interval = float(os.environ.get("SHEKEL_POLL_INTERVAL_SECONDS", "10"))
+    budget._k8s_poll_interval = interval
     poller = KubernetesPoller(budget, budget_name, namespace, interval)
     poller.start()
     budget._k8s_poller = poller

@@ -600,6 +600,81 @@ class TestPerPodCap:
 
 
 # ---------------------------------------------------------------------------
+# SHEK-27: poller/reporter restart on Budget re-entry
+# ---------------------------------------------------------------------------
+
+
+class TestPollerRestart:
+    def test_poller_restarts_on_re_entry(self) -> None:
+        # Regression for SHEK-27: re-entering a session budget must spawn a new
+        # live poller thread — the old one was stopped on __exit__.
+        b = _budget_with_k8s({"max_usd": "1.00"})
+        with b:
+            first_poller = b._k8s_poller
+        first_poller.join(timeout=2.0)  # wait for thread to actually die after stop()
+        assert not first_poller.is_alive()
+        with b:
+            assert b._k8s_poller is not first_poller
+            assert b._k8s_poller.is_alive()
+
+    def test_reporter_restarts_on_re_entry(self) -> None:
+        b = _budget_with_k8s({"max_usd": "1.00", "backend": "k8s"})
+        with b:
+            first_reporter = b._k8s_reporter
+        first_reporter.join(timeout=2.0)  # wait for thread to actually die
+        assert not first_reporter.is_alive()
+        with b:
+            assert b._k8s_reporter is not first_reporter
+            assert b._k8s_reporter.is_alive()
+
+    def test_restart_idempotent_when_thread_alive(self) -> None:
+        # Calling _restart_k8s_threads() while the thread is still alive must not
+        # create a duplicate — the same instance should be kept.
+        b = _budget_with_k8s({"max_usd": "1.00"})
+        with b:
+            poller_id = id(b._k8s_poller)
+            b._restart_k8s_threads()
+            assert id(b._k8s_poller) == poller_id
+
+    def test_restart_noop_outside_k8s(self) -> None:
+        from shekel._budget import Budget
+
+        b = Budget(max_usd=1.0)
+        b._restart_k8s_threads()  # must not raise
+        assert b._k8s_poller is None
+        assert b._k8s_reporter is None
+
+    async def test_async_poller_restarts_on_re_entry(self) -> None:
+        # Same as test_poller_restarts_on_re_entry but via async with — covers
+        # __aenter__ / __aexit__ paths including _restart_k8s_threads() call.
+        b = _budget_with_k8s({"max_usd": "1.00"})
+        async with b:
+            first_poller = b._k8s_poller
+        first_poller.join(timeout=2.0)
+        assert not first_poller.is_alive()
+        async with b:
+            assert b._k8s_poller is not first_poller
+            assert b._k8s_poller.is_alive()
+
+    def test_exit_exceeded_status_with_k8s_poller(self) -> None:
+        # Exercises the "exceeded" exit-status branch in __exit__ while K8s threads are active.
+        from shekel.exceptions import BudgetExceededError
+
+        b = _budget_with_k8s({"max_usd": "0.01"})
+        with pytest.raises(BudgetExceededError):
+            with b:
+                b._record_spend(0.02, "gpt-4o", {"input": 10, "output": 5})
+
+    def test_exit_warned_status_with_k8s_poller(self) -> None:
+        # Exercises the "warned" exit-status branch in __exit__ while K8s threads are active.
+        warned = []
+        b = _budget_with_k8s({"max_usd": "1.00", "warn_at": "0.5"})
+        b.on_warn = lambda spent, limit: warned.append(spent)
+        with b:
+            b._record_spend(0.60, "gpt-4o", {"input": 10, "output": 5})
+
+
+# ---------------------------------------------------------------------------
 # SHEK-17 fields stored
 # ---------------------------------------------------------------------------
 

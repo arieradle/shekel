@@ -311,6 +311,9 @@ class Budget:
         self._k8s_flush_every_seconds: float | None = None
         self._k8s_scope_mode: str | None = None
         self._k8s_scope_group_by: str | None = None
+        self._k8s_budget_name: str | None = None
+        self._k8s_namespace: str | None = None
+        self._k8s_poll_interval: float = 10.0
         try:
             from shekel.integrations.kubernetes import apply_k8s_config  # noqa: PLC0415
 
@@ -434,6 +437,7 @@ class Budget:
 
         self._runtime = ShekelRuntime(self)
         self._runtime.probe()
+        self._restart_k8s_threads()
         return self
 
     def __exit__(self, exc_type: object, exc_val: object, exc_tb: object) -> None:
@@ -579,6 +583,7 @@ class Budget:
 
         self._runtime = ShekelRuntime(self)
         self._runtime.probe()
+        self._restart_k8s_threads()
         return self
 
     async def __aexit__(self, exc_type: object, exc_val: object, exc_tb: object) -> None:
@@ -823,6 +828,42 @@ class Budget:
             )
 
     # ------------------------------------------------------------------
+    def _restart_k8s_threads(self) -> None:
+        """Restart stopped K8s poller/reporter on Budget re-entry (SHEK-27).
+
+        Called by __enter__ / __aenter__. No-op when not in K8s mode or when
+        threads are still alive (idempotent on nested/repeated enters).
+        """
+        if self._k8s_budget_name is None:
+            return
+
+        if self._k8s_poller is not None and not self._k8s_poller.is_alive():
+            from shekel.integrations.kubernetes import KubernetesPoller  # noqa: PLC0415
+
+            poller = KubernetesPoller(
+                self,
+                self._k8s_budget_name,
+                self._k8s_namespace or "",
+                self._k8s_poll_interval,
+            )
+            poller.start()
+            self._k8s_poller = poller
+
+        if self._k8s_reporter is not None and not self._k8s_reporter.is_alive():
+            import os  # noqa: PLC0415
+
+            from shekel.integrations.kubernetes import KubernetesSpendReporter  # noqa: PLC0415
+
+            reporter = KubernetesSpendReporter(
+                budget_name=self._k8s_budget_name,
+                namespace=self._k8s_namespace or "",
+                flush_every_seconds=self._k8s_flush_every_seconds or 60.0,
+                flush_every_usd=self._k8s_flush_every_usd,
+                group_value=os.environ.get("SHEKEL_GROUP_VALUE", ""),
+            )
+            reporter.start()
+            self._k8s_reporter = reporter
+
     # Loop guard enforcement (v1.1.0)
     # ------------------------------------------------------------------
 
