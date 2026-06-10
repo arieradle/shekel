@@ -8,6 +8,7 @@ from __future__ import annotations
 import contextlib
 import sys
 import threading
+from collections.abc import Iterator
 from typing import Any
 from unittest.mock import MagicMock, patch
 
@@ -16,6 +17,14 @@ import pytest
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+
+@pytest.fixture(autouse=True)
+def _stop_k8s_threads() -> Iterator[None]:
+    yield
+    for thread in threading.enumerate():
+        if thread.name.startswith("shekel-k8s-") and hasattr(thread, "stop"):
+            thread.stop()
 
 
 def _make_configmap(data: dict[str, str]) -> MagicMock:
@@ -603,7 +612,9 @@ class TestPerPodCap:
         b = _budget_with_k8s({"per_pod_cap": "0.05"}, budget_kwargs={"warn_only": True})
         with b:
             b._record_spend(0.03, "gpt-4o", {"input": 10, "output": 5})
-            b._record_spend(0.03, "gpt-4o", {"input": 10, "output": 5})  # exceeds cap — must not raise
+            b._record_spend(
+                0.03, "gpt-4o", {"input": 10, "output": 5}
+            )  # exceeds cap — must not raise
         assert b._spent == pytest.approx(0.06)
 
 
