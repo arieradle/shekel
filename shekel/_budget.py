@@ -307,6 +307,7 @@ class Budget:
         self._per_pod_cap_usd: float | None = None
         self._k8s_redis_backend: Any = None
         self._k8s_redis_name: str | None = None
+        self._k8s_redis_window_seconds: float = 86400.0
         self._k8s_flush_every_usd: float | None = None
         self._k8s_flush_every_seconds: float | None = None
         self._k8s_scope_mode: str | None = None
@@ -715,6 +716,7 @@ class Budget:
         self._check_limit()
         self._check_call_limit()
         self._check_per_pod_limit()
+        self._check_redis_limit(cost)
 
     def _check_warn(self) -> None:
         effective_limit = self._effective_limit
@@ -836,6 +838,31 @@ class Budget:
 
             raise BudgetExceededError(
                 self._spent, self._per_pod_cap_usd, self._last_model, self._last_tokens
+            )
+
+    def _check_redis_limit(self, cost: float) -> None:
+        """Distributed enforcement via Redis backend (SHEK-30)."""
+        if self._k8s_redis_backend is None or self._k8s_redis_name is None:
+            return
+        allowed, exceeded = self._k8s_redis_backend.check_and_add(
+            self._k8s_redis_name,
+            {"usd": cost},
+            {"usd": self.max_usd},
+            {"usd": self._k8s_redis_window_seconds},
+        )
+        if not allowed:
+            self._emit_budget_exceeded_event()
+            if self.warn_only:
+                self._check_warn()
+                return
+            from shekel.exceptions import BudgetExceededError  # noqa: PLC0415
+
+            raise BudgetExceededError(
+                self._spent,
+                self.max_usd or 0.0,
+                self._last_model,
+                self._last_tokens,
+                exceeded_counter=exceeded,
             )
 
     # ------------------------------------------------------------------

@@ -124,6 +124,7 @@ def apply_k8s_config(budget: Budget) -> None:
 
                 budget._k8s_redis_backend = RedisBackend(url=redis_url)
                 budget._k8s_redis_name = cm.get("redis_key", f"shekel:{namespace}:{budget_name}")
+                budget._k8s_redis_window_seconds = float(cm.get("redis_window_seconds", "86400"))
             except ImportError:
                 logger.warning(
                     "shekel[k8s]: 'redis' package not installed — skipping Redis backend."

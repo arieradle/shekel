@@ -587,6 +587,53 @@ class TestRedisBackendActivation:
 
         assert not hasattr(b, "_k8s_redis_backend") or b._k8s_redis_backend is None
 
+    # ── Runtime enforcement ────────────────────────────────────────────────
+
+    def test_redis_check_and_add_called_on_spend(self) -> None:
+        from shekel import Budget
+
+        b = Budget(max_usd=1.0)
+        mock_backend = MagicMock()
+        mock_backend.check_and_add.return_value = (True, None)
+        b._k8s_redis_backend = mock_backend
+        b._k8s_redis_name = "shekel:ns:budget"
+
+        with b:
+            b._record_spend(0.10, "gpt-4o", {"input": 10, "output": 5})
+
+        mock_backend.check_and_add.assert_called_once_with(
+            "shekel:ns:budget",
+            {"usd": 0.10},
+            {"usd": 1.0},
+            {"usd": 86400.0},
+        )
+
+    def test_redis_limit_raises_when_backend_rejects(self) -> None:
+        from shekel import Budget
+        from shekel.exceptions import BudgetExceededError
+
+        b = Budget(max_usd=0.05)
+        mock_backend = MagicMock()
+        mock_backend.check_and_add.return_value = (False, "usd")
+        b._k8s_redis_backend = mock_backend
+        b._k8s_redis_name = "shekel:ns:budget"
+
+        with b:
+            with pytest.raises(BudgetExceededError):
+                b._record_spend(0.10, "gpt-4o", {"input": 10, "output": 5})
+
+    def test_redis_warn_only_suppresses_raise(self) -> None:
+        from shekel import Budget
+
+        b = Budget(max_usd=0.05, warn_only=True)
+        mock_backend = MagicMock()
+        mock_backend.check_and_add.return_value = (False, "usd")
+        b._k8s_redis_backend = mock_backend
+        b._k8s_redis_name = "shekel:ns:budget"
+
+        with b:
+            b._record_spend(0.10, "gpt-4o", {"input": 10, "output": 5})  # must not raise
+
 
 # ---------------------------------------------------------------------------
 # Per-pod cap
