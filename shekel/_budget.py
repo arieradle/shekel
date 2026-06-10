@@ -304,7 +304,7 @@ class Budget:
         self._paused_externally: bool = False
         self._k8s_poller: Any = None
         self._k8s_reporter: Any = None
-        self._per_pod_budget: Any = None
+        self._per_pod_cap_usd: float | None = None
         self._k8s_redis_backend: Any = None
         self._k8s_redis_name: str | None = None
         self._k8s_flush_every_usd: float | None = None
@@ -700,6 +700,7 @@ class Budget:
         self._check_warn()
         self._check_limit()
         self._check_call_limit()
+        self._check_per_pod_limit()
         if self._k8s_reporter is not None:
             self._k8s_reporter.on_spend(cost)
 
@@ -808,6 +809,17 @@ class Budget:
                 effective_call_limit,
                 self._last_model,
                 self._last_tokens,
+            )
+
+    def _check_per_pod_limit(self) -> None:
+        """Enforce the per-pod USD cap set via ConfigMap per_pod_cap (SHEK-26)."""
+        if self._per_pod_cap_usd is None:
+            return
+        if self._spent > self._per_pod_cap_usd:
+            from shekel.exceptions import BudgetExceededError  # noqa: PLC0415
+
+            raise BudgetExceededError(
+                self._spent, self._per_pod_cap_usd, self._last_model, self._last_tokens
             )
 
     # ------------------------------------------------------------------

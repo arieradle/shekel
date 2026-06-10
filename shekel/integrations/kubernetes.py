@@ -111,9 +111,7 @@ def apply_k8s_config(budget: Budget) -> None:
 
     # --- per_pod_cap ---
     if "per_pod_cap" in cm:
-        from shekel._budget import Budget as _Budget  # noqa: PLC0415
-
-        budget._per_pod_budget = _Budget(max_usd=float(cm["per_pod_cap"]))
+        budget._per_pod_cap_usd = float(cm["per_pod_cap"])
 
     # --- Redis backend ---
     if cm.get("backend") == "redis":

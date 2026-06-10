@@ -570,10 +570,33 @@ class TestRedisBackendActivation:
 
 
 class TestPerPodCap:
-    def test_per_pod_cap_stored_on_budget(self) -> None:
+    def test_per_pod_cap_stored_as_float(self) -> None:
         b = _budget_with_k8s({"per_pod_cap": "0.25"})
-        assert hasattr(b, "_per_pod_budget")
-        assert b._per_pod_budget.max_usd == pytest.approx(0.25)
+        assert b._per_pod_cap_usd == pytest.approx(0.25)
+
+    def test_per_pod_cap_does_not_recurse(self) -> None:
+        # Regression for SHEK-26: constructing a Budget with per_pod_cap in the
+        # ConfigMap must not trigger infinite recursion via nested Budget.__init__ calls.
+        b = _budget_with_k8s({"per_pod_cap": "0.10"})
+        assert b._per_pod_cap_usd == pytest.approx(0.10)
+        assert not hasattr(b, "_per_pod_budget")
+
+    def test_per_pod_cap_enforced_on_exceed(self) -> None:
+        from shekel.exceptions import BudgetExceededError
+
+        b = _budget_with_k8s({"per_pod_cap": "0.05"})
+        with b:
+            b._record_spend(0.03, "gpt-4o", {"input": 100, "output": 50})  # under cap — ok
+            with pytest.raises(BudgetExceededError) as exc_info:
+                b._record_spend(0.03, "gpt-4o", {"input": 100, "output": 50})  # exceeds cap
+        assert exc_info.value.limit == pytest.approx(0.05)
+
+    def test_per_pod_cap_not_enforced_when_absent(self) -> None:
+        # No per_pod_cap in ConfigMap → spending freely past any cap value must not raise.
+        b = _budget_with_k8s({})
+        with b:
+            b._record_spend(0.50, "gpt-4o", {"input": 100, "output": 50})
+            b._record_spend(0.50, "gpt-4o", {"input": 100, "output": 50})
 
 
 # ---------------------------------------------------------------------------
