@@ -92,6 +92,20 @@ class BudgetExceededError(Exception):
         )
 
 
+class BudgetPausedError(BudgetExceededError):
+    """Raised when an operator has paused the budget via Kubernetes ConfigMap kill-switch.
+
+    Subclasses BudgetExceededError so existing except-clauses catch it without changes.
+    """
+
+    def __str__(self) -> str:
+        return (
+            f"Budget paused by operator (${self.spent:.4f} spent)\n"
+            f"  Last call: {self.model}\n"
+            f"  Tip: Set paused=false in the shekel-budget ConfigMap to resume."
+        )
+
+
 class NodeBudgetExceededError(BudgetExceededError):
     """Raised when a LangGraph node exceeds its budget cap.
 

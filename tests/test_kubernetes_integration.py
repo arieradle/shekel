@@ -319,16 +319,31 @@ class TestKillSwitch:
 
     def test_paused_budget_raises_on_record_spend(self) -> None:
         from shekel._budget import Budget
-        from shekel.exceptions import BudgetExceededError
+        from shekel.exceptions import BudgetPausedError
 
         b = Budget(max_usd=1.00)
         b._paused_externally = True
 
-        with pytest.raises(BudgetExceededError):
+        with pytest.raises(BudgetPausedError):
             b._record_spend(0.01, "gpt-4o-mini", {"input": 10, "output": 5})
 
         # Paused check fires before spend is accumulated
         assert b._spent == pytest.approx(0.0)
+
+    def test_paused_error_is_subclass_of_budget_exceeded_error(self) -> None:
+        from shekel.exceptions import BudgetExceededError, BudgetPausedError
+
+        assert issubclass(BudgetPausedError, BudgetExceededError)
+
+    def test_limit_exceeded_is_not_paused_error(self) -> None:
+        from shekel._budget import Budget
+        from shekel.exceptions import BudgetExceededError, BudgetPausedError
+
+        b = Budget(max_usd=0.01)
+        with b:
+            with pytest.raises(BudgetExceededError) as exc_info:
+                b._record_spend(0.05, "gpt-4o", {"input": 10, "output": 5})
+        assert not isinstance(exc_info.value, BudgetPausedError)
 
     def test_not_paused_does_not_raise_on_record_spend(self) -> None:
         from shekel._budget import Budget

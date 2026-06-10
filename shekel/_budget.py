@@ -673,9 +673,9 @@ class Budget:
 
     def _record_spend(self, cost: float, model: str, tokens: dict[str, int]) -> None:
         if self._paused_externally:
-            from shekel.exceptions import BudgetExceededError  # noqa: PLC0415
+            from shekel.exceptions import BudgetPausedError  # noqa: PLC0415
 
-            raise BudgetExceededError(
+            raise BudgetPausedError(
                 spent=self._spent,
                 limit=self.max_usd or 0.0,
                 model=model,
