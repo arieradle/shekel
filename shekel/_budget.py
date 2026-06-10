@@ -828,6 +828,10 @@ class Budget:
         if self._per_pod_cap_usd is None:
             return
         if self._spent > self._per_pod_cap_usd:
+            self._emit_budget_exceeded_event()
+            if self.warn_only:
+                self._check_warn()
+                return
             from shekel.exceptions import BudgetExceededError  # noqa: PLC0415
 
             raise BudgetExceededError(

@@ -598,6 +598,14 @@ class TestPerPodCap:
             b._record_spend(0.50, "gpt-4o", {"input": 100, "output": 50})
             b._record_spend(0.50, "gpt-4o", {"input": 100, "output": 50})
 
+    def test_per_pod_cap_warn_only_does_not_raise(self) -> None:
+        # SHEK-33: warn_only=True must suppress the raise even when per_pod_cap is exceeded.
+        b = _budget_with_k8s({"per_pod_cap": "0.05"}, budget_kwargs={"warn_only": True})
+        with b:
+            b._record_spend(0.03, "gpt-4o", {"input": 10, "output": 5})
+            b._record_spend(0.03, "gpt-4o", {"input": 10, "output": 5})  # exceeds cap — must not raise
+        assert b._spent == pytest.approx(0.06)
+
 
 # ---------------------------------------------------------------------------
 # SHEK-27: poller/reporter restart on Budget re-entry
