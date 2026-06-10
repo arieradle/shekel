@@ -764,6 +764,51 @@ class TestErrorPaths:
 
         assert any("redis" in r.message.lower() for r in caplog.records)
 
+    def test_apply_k8s_config_exception_logs_warning(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        # Regression for SHEK-28: non-ImportError from apply_k8s_config must be
+        # logged as a warning so operators can diagnose misconfigured ConfigMaps.
+        import logging
+        from unittest.mock import patch
+
+        from shekel._budget import Budget
+
+        with patch(
+            "shekel.integrations.kubernetes.apply_k8s_config",
+            side_effect=ValueError("bad value"),
+        ):
+            with patch.dict(
+                "os.environ",
+                {"KUBERNETES_SERVICE_HOST": "10.0.0.1", "SHEKEL_BUDGET_NAME": "test-budget"},
+            ):
+                with caplog.at_level(logging.WARNING, logger="shekel._budget"):
+                    Budget()
+
+        assert any("K8s features disabled" in r.message for r in caplog.records)
+
+    def test_apply_k8s_config_import_error_is_silent(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        # ImportError (optional dependency not installed) must remain silent.
+        import logging
+        from unittest.mock import patch
+
+        from shekel._budget import Budget
+
+        with patch(
+            "shekel.integrations.kubernetes.apply_k8s_config",
+            side_effect=ImportError("no module"),
+        ):
+            with patch.dict(
+                "os.environ",
+                {"KUBERNETES_SERVICE_HOST": "10.0.0.1", "SHEKEL_BUDGET_NAME": "test-budget"},
+            ):
+                with caplog.at_level(logging.WARNING, logger="shekel._budget"):
+                    Budget()
+
+        assert not any("K8s features disabled" in r.message for r in caplog.records)
+
 
 class TestShek17Fields:
     def test_flush_every_usd_stored(self) -> None:

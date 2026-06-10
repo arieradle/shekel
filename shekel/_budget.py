@@ -318,8 +318,15 @@ class Budget:
             from shekel.integrations.kubernetes import apply_k8s_config  # noqa: PLC0415
 
             apply_k8s_config(self)
+        except ImportError:
+            pass  # kubernetes optional dependency not installed
         except Exception:
-            pass
+            import logging  # noqa: PLC0415
+
+            logging.getLogger(__name__).warning(
+                "shekel[k8s]: Failed to apply Kubernetes config; K8s features disabled.",
+                exc_info=True,
+            )
 
     # ------------------------------------------------------------------
     # Internal state reset
