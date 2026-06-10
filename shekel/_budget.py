@@ -707,14 +707,14 @@ class Budget:
         )
         self._calls_made += 1
         self._append_velocity_entry(cost)
+        if self._k8s_reporter is not None:
+            self._k8s_reporter.on_spend(cost)
         self._check_velocity_warn()
         self._check_velocity_limit()
         self._check_warn()
         self._check_limit()
         self._check_call_limit()
         self._check_per_pod_limit()
-        if self._k8s_reporter is not None:
-            self._k8s_reporter.on_spend(cost)
 
     def _check_warn(self) -> None:
         effective_limit = self._effective_limit

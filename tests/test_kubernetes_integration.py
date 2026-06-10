@@ -1331,6 +1331,26 @@ class TestKubernetesSpendReporter:
         assert b._k8s_reporter is None
         b._record_spend(0.05, "gpt-4", {"input": 100, "output": 50})  # must not raise
 
+    # ── Budget integration ─────────────────────────────────────────────────
+
+    def test_reporter_sees_cost_of_limit_exceeding_call(self) -> None:
+        # SHEK-32: on_spend must be called before enforcement checks so the
+        # reporter captures the cost of the call that triggers BudgetExceededError.
+        from shekel import Budget
+        from shekel.exceptions import BudgetExceededError
+        from shekel.integrations.kubernetes import KubernetesSpendReporter
+
+        reporter = KubernetesSpendReporter("b", "ns")
+        b = Budget(max_usd=0.05)
+        b._k8s_reporter = reporter
+
+        with b:
+            b._record_spend(0.03, "gpt-4o", {"input": 10, "output": 5})
+            with pytest.raises(BudgetExceededError):
+                b._record_spend(0.03, "gpt-4o", {"input": 10, "output": 5})
+
+        assert reporter._total_spent == pytest.approx(0.06)
+
     # ── Thread safety ──────────────────────────────────────────────────────
 
     def test_concurrent_on_spend_calls_thread_safe(self) -> None:
