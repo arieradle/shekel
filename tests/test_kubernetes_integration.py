@@ -910,6 +910,145 @@ class TestShek17Fields:
 
 
 # ---------------------------------------------------------------------------
+# SHEK-34: scope_group_by / scope_mode runtime behaviour
+# ---------------------------------------------------------------------------
+
+
+def _budget_with_k8s_and_pod_labels(
+    configmap_data: dict[str, str],
+    pod_labels: dict[str, str],
+    extra_env: dict[str, str] | None = None,
+) -> Any:
+    """Like _budget_with_k8s but also mocks read_namespaced_pod to return pod_labels."""
+    from shekel._budget import Budget
+
+    k8s_mock = _make_k8s_mock(configmap_data)
+    pod_mock = MagicMock()
+    pod_mock.metadata.labels = pod_labels
+    k8s_mock.client.CoreV1Api.return_value.read_namespaced_pod.return_value = pod_mock
+
+    env = {
+        "KUBERNETES_SERVICE_HOST": "10.0.0.1",
+        "SHEKEL_BUDGET_NAME": "test-budget",
+        "HOSTNAME": "worker-pod-1",
+        **(extra_env or {}),
+    }
+    with patch.dict("os.environ", env, clear=False):
+        with patch.dict(
+            "sys.modules",
+            {
+                "kubernetes": k8s_mock,
+                "kubernetes.client": k8s_mock.client,
+                "kubernetes.config": k8s_mock.config,
+            },
+        ):
+            with patch(
+                "builtins.open",
+                MagicMock(
+                    return_value=MagicMock(
+                        __enter__=MagicMock(
+                            return_value=MagicMock(read=MagicMock(return_value="default"))
+                        ),
+                        __exit__=MagicMock(return_value=False),
+                    )
+                ),
+            ):
+                b = Budget()
+    return b
+
+
+class TestScopeResolution:
+    def test_scope_group_by_reads_pod_label(self) -> None:
+        b = _budget_with_k8s_and_pod_labels(
+            {"scope_group_by": "team"},
+            pod_labels={"team": "backend"},
+        )
+        assert b._k8s_group_value == "backend"
+
+    def test_scope_group_by_env_var_overrides_pod_label(self) -> None:
+        b = _budget_with_k8s_and_pod_labels(
+            {"scope_group_by": "team"},
+            pod_labels={"team": "backend"},
+            extra_env={"SHEKEL_GROUP_VALUE": "frontend"},
+        )
+        assert b._k8s_group_value == "frontend"
+
+    def test_scope_group_by_falls_back_gracefully(self) -> None:
+        # Pod read raises — group_value stays "" and no exception propagates.
+        from shekel._budget import Budget
+
+        k8s_mock = _make_k8s_mock({"scope_group_by": "team"})
+        k8s_mock.client.CoreV1Api.return_value.read_namespaced_pod.side_effect = OSError(
+            "forbidden"
+        )
+        env = {
+            "KUBERNETES_SERVICE_HOST": "10.0.0.1",
+            "SHEKEL_BUDGET_NAME": "test-budget",
+            "HOSTNAME": "worker-pod-1",
+        }
+        with patch.dict("os.environ", env, clear=False):
+            with patch.dict(
+                "sys.modules",
+                {
+                    "kubernetes": k8s_mock,
+                    "kubernetes.client": k8s_mock.client,
+                    "kubernetes.config": k8s_mock.config,
+                },
+            ):
+                with patch(
+                    "builtins.open",
+                    MagicMock(
+                        return_value=MagicMock(
+                            __enter__=MagicMock(
+                                return_value=MagicMock(read=MagicMock(return_value="default"))
+                            ),
+                            __exit__=MagicMock(return_value=False),
+                        )
+                    ),
+                ):
+                    b = Budget()
+        assert b._k8s_group_value == ""
+
+    def test_scope_mode_shared_scopes_redis_key_to_group(self) -> None:
+        b = _budget_with_k8s_and_pod_labels(
+            {"scope_mode": "shared", "scope_group_by": "team", "backend": "redis"},
+            pod_labels={"team": "svc-a"},
+            extra_env={"REDIS_URL": "redis://localhost"},
+        )
+        assert b._k8s_redis_name == "shekel:default:test-budget:svc-a"
+
+    def test_scope_mode_shared_warns_when_no_group(self, caplog: Any) -> None:
+        import logging
+
+        with caplog.at_level(logging.WARNING, logger="shekel.integrations.kubernetes"):
+            b = _budget_with_k8s_and_pod_labels(
+                {"scope_mode": "shared", "backend": "redis"},
+                pod_labels={},  # no scope_group_by, no SHEKEL_GROUP_VALUE
+                extra_env={"REDIS_URL": "redis://localhost"},
+            )
+        assert b._k8s_redis_name == "shekel:default:test-budget"
+        assert any("falling back to per-pod" in r.message for r in caplog.records)
+
+    def test_scope_mode_per_pod_does_not_change_redis_key(self) -> None:
+        b = _budget_with_k8s_and_pod_labels(
+            {"scope_mode": "per_pod", "scope_group_by": "team", "backend": "redis"},
+            pod_labels={"team": "svc-a"},
+            extra_env={"REDIS_URL": "redis://localhost"},
+        )
+        assert b._k8s_redis_name == "shekel:default:test-budget"
+
+    def test_reporter_uses_k8s_group_value_not_env_var(self) -> None:
+        # group_value must come from _k8s_group_value (resolved at init), not a
+        # fresh SHEKEL_GROUP_VALUE read at reporter creation time.
+        b = _budget_with_k8s_and_pod_labels(
+            {"scope_group_by": "team", "backend": "k8s"},
+            pod_labels={"team": "payments"},
+        )
+        assert b._k8s_reporter is not None
+        assert b._k8s_reporter._group_value == "payments"
+
+
+# ---------------------------------------------------------------------------
 # SHEK-17: KubernetesSpendReporter
 # ---------------------------------------------------------------------------
 

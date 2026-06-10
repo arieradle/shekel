@@ -312,6 +312,7 @@ class Budget:
         self._k8s_flush_every_seconds: float | None = None
         self._k8s_scope_mode: str | None = None
         self._k8s_scope_group_by: str | None = None
+        self._k8s_group_value: str = ""
         self._k8s_budget_name: str | None = None
         self._k8s_namespace: str | None = None
         self._k8s_poll_interval: float = 10.0
@@ -888,8 +889,6 @@ class Budget:
             self._k8s_poller = poller
 
         if self._k8s_reporter is not None and not self._k8s_reporter.is_alive():
-            import os  # noqa: PLC0415
-
             from shekel.integrations.kubernetes import KubernetesSpendReporter  # noqa: PLC0415
 
             reporter = KubernetesSpendReporter(
@@ -897,7 +896,7 @@ class Budget:
                 namespace=self._k8s_namespace or "",
                 flush_every_seconds=self._k8s_flush_every_seconds or 60.0,
                 flush_every_usd=self._k8s_flush_every_usd,
-                group_value=os.environ.get("SHEKEL_GROUP_VALUE", ""),
+                group_value=self._k8s_group_value,
             )
             reporter.start()
             self._k8s_reporter = reporter

@@ -66,6 +66,27 @@ def _fetch_configmap(budget_name: str, namespace: str) -> dict[str, str] | None:
         return None
 
 
+def _read_pod_group_value(scope_group_by: str, namespace: str) -> str:
+    """Read the pod's label named *scope_group_by* and return its value."""
+    pod_name = os.environ.get("HOSTNAME", "")
+    if not pod_name:
+        return ""
+    try:
+        import kubernetes  # noqa: PLC0415
+
+        kubernetes.config.load_incluster_config()
+        v1 = kubernetes.client.CoreV1Api()
+        pod = v1.read_namespaced_pod(name=pod_name, namespace=namespace)
+        return str((pod.metadata.labels or {}).get(scope_group_by, ""))
+    except Exception as exc:
+        logger.warning(
+            "shekel[k8s]: Failed to read pod label %r for scope_group_by: %s",
+            scope_group_by,
+            exc,
+        )
+        return ""
+
+
 def apply_k8s_config(budget: Budget) -> None:
     """Load K8s ConfigMap and apply values to *budget* (mutates in place).
 
@@ -115,6 +136,17 @@ def apply_k8s_config(budget: Budget) -> None:
     if "per_pod_cap" in cm:
         budget._per_pod_cap_usd = float(cm["per_pod_cap"])
 
+    # --- Scope resolution (SHEK-34): must run before Redis key construction ---
+    scope_group_by = cm.get("scope_group_by")
+    scope_mode = cm.get("scope_mode")
+    budget._k8s_scope_group_by = scope_group_by
+    budget._k8s_scope_mode = scope_mode
+    # env var takes priority over pod-label discovery (ConfigMap < env var pattern)
+    group_value = os.environ.get("SHEKEL_GROUP_VALUE", "")
+    if not group_value and scope_group_by:
+        group_value = _read_pod_group_value(scope_group_by, namespace)
+    budget._k8s_group_value = group_value
+
     # --- Redis backend ---
     if cm.get("backend") == "redis":
         redis_url = os.environ.get("REDIS_URL")
@@ -123,8 +155,20 @@ def apply_k8s_config(budget: Budget) -> None:
                 from shekel.backends.redis import RedisBackend  # noqa: PLC0415
 
                 budget._k8s_redis_backend = RedisBackend(url=redis_url)
+                # Default key is per-pod; scope_mode=shared promotes it to a group key
                 budget._k8s_redis_name = cm.get("redis_key", f"shekel:{namespace}:{budget_name}")
                 budget._k8s_redis_window_seconds = float(cm.get("redis_window_seconds", "86400"))
+                if scope_mode == "shared" and "redis_key" not in cm:
+                    if budget._k8s_group_value:
+                        budget._k8s_redis_name = (
+                            f"shekel:{namespace}:{budget_name}:{budget._k8s_group_value}"
+                        )
+                    else:
+                        logger.warning(
+                            "shekel[k8s]: scope_mode=shared requires scope_group_by with a "
+                            "resolvable pod label or SHEKEL_GROUP_VALUE; "
+                            "falling back to per-pod Redis key."
+                        )
             except ImportError:
                 logger.warning(
                     "shekel[k8s]: 'redis' package not installed — skipping Redis backend."
@@ -135,18 +179,15 @@ def apply_k8s_config(budget: Budget) -> None:
     budget._k8s_flush_every_seconds = (
         float(cm["flush_every_seconds"]) if "flush_every_seconds" in cm else None
     )
-    budget._k8s_scope_mode = cm.get("scope_mode")
-    budget._k8s_scope_group_by = cm.get("scope_group_by")
 
     # --- SHEK-17: Spend reporter (only when backend=k8s) ---
     if cm.get("backend") == "k8s":
-        group_value = os.environ.get("SHEKEL_GROUP_VALUE", "")
         reporter = KubernetesSpendReporter(
             budget_name=budget_name,
             namespace=namespace,
             flush_every_seconds=budget._k8s_flush_every_seconds or 60.0,
             flush_every_usd=budget._k8s_flush_every_usd,
-            group_value=group_value,
+            group_value=budget._k8s_group_value,
         )
         reporter.start()
         budget._k8s_reporter = reporter
