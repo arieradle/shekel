@@ -290,3 +290,23 @@ def test_record_swallows_adapter_emit_exception() -> None:
             side_effect=RuntimeError("adapter crash"),
         ):
             _record(100, 50, "gpt-4o-mini")  # must not raise
+
+
+def test_chain_raises_on_nonpositive_max_usd() -> None:
+    from shekel import Budget
+
+    b = Budget(max_usd=1.0)
+    with pytest.raises(ValueError, match="chain max_usd must be positive"):
+        b.chain("step", max_usd=0.0)
+    with pytest.raises(ValueError, match="chain max_usd must be positive"):
+        b.chain("step", max_usd=-1.0)
+
+
+def test_chain_registers_component_budget() -> None:
+    from shekel import Budget
+
+    b = Budget(max_usd=1.0)
+    result = b.chain("summarize", max_usd=0.50)
+    assert result is b
+    assert "summarize" in b._chain_budgets
+    assert b._chain_budgets["summarize"].max_usd == pytest.approx(0.50)

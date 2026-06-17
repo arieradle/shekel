@@ -612,7 +612,8 @@ class TestRedisBackendActivation:
         from shekel import Budget
         from shekel.exceptions import BudgetExceededError
 
-        b = Budget(max_usd=0.05)
+        # max_usd must be high enough that _check_limit() doesn't fire first
+        b = Budget(max_usd=5.0)
         mock_backend = MagicMock()
         mock_backend.check_and_add.return_value = (False, "usd")
         b._k8s_redis_backend = mock_backend
