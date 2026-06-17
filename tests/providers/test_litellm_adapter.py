@@ -9,6 +9,18 @@ import pytest
 from tests.providers.conftest import MockLiteLLMChunk, ProviderTestBase
 
 
+def _litellm_available() -> bool:
+    try:
+        import litellm  # noqa: F401
+
+        return True
+    except ImportError:
+        return False
+
+
+_skip_no_litellm = pytest.mark.skipif(not _litellm_available(), reason="litellm not installed")
+
+
 class TestLiteLLMAdapterBasic(ProviderTestBase):
 
     def test_name_is_litellm(self):
@@ -163,6 +175,7 @@ class TestLiteLLMStreamWrapping(ProviderTestBase):
         assert len(chunks) == 2
 
 
+@_skip_no_litellm
 class TestLiteLLMPatching(ProviderTestBase):
 
     def test_install_patches_when_litellm_available(self):
@@ -220,6 +233,7 @@ class TestLiteLLMPatching(ProviderTestBase):
             adapter.remove_patches()  # Must not raise
 
 
+@_skip_no_litellm
 class TestLiteLLMCostRecording(ProviderTestBase):
 
     def test_completion_records_cost(self):
